@@ -1,0 +1,194 @@
+@using QuanLyDaoTao.Models
+@{
+    ViewData["Title"] = "Bảng điều khiển tổng quan";
+    Layout = "_Layout";
+    var hoatDongGanDay = ViewBag.HoatDongGanDay as List<NhatKyHeThong> ?? new List<NhatKyHeThong>();
+}
+
+<div class="container-fluid px-4 py-4" id="pnlDashboard">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h3 class="mb-1 fw-bold text-primary" id="lblTieuDeDashboard">
+                <i class="bi bi-speedometer2 me-2"></i>Bảng Điều Khiển Tổng Quan
+            </h3>
+            <span class="text-muted">Tổng quan hệ thống đào tạo, cơ cấu tổ chức và hoạt động gần đây</span>
+        </div>
+        <div class="d-flex gap-2">
+            <a asp-controller="CayToChuc" asp-action="Index" class="btn btn-primary" id="btnXemCayToChuc">
+                <i class="bi bi-diagram-3-fill me-1"></i>Xem Cây Tổ Chức
+            </a>
+            <a asp-controller="NhanSu" asp-action="Index" class="btn btn-outline-primary" id="btnXemNhanSu">
+                <i class="bi bi-people-fill me-1"></i>Hồ Sơ Nhân Sự
+            </a>
+        </div>
+    </div>
+
+    <!-- Hàng thống kê tổng số lượng -->
+    <div class="row g-3 mb-4">
+        <div class="col-xl-2 col-md-4 col-sm-6">
+            <div class="card border-0 shadow-sm h-100 border-start border-primary border-4">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <span class="text-muted small fw-bold text-uppercase">Khoa Đào Tạo</span>
+                        <div class="p-2 bg-primary bg-opacity-10 text-primary rounded"><i class="bi bi-bank fs-5"></i></div>
+                    </div>
+                    <h3 class="fw-bold mb-0" id="lblTongSoKhoa">@ViewBag.TongSoKhoa</h3>
+                    <a asp-controller="Khoa" asp-action="Index" class="stretched-link text-decoration-none small text-muted">Xem chi tiết &rarr;</a>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-2 col-md-4 col-sm-6">
+            <div class="card border-0 shadow-sm h-100 border-start border-info border-4">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <span class="text-muted small fw-bold text-uppercase">Bộ Môn</span>
+                        <div class="p-2 bg-info bg-opacity-10 text-info rounded"><i class="bi bi-diagram-2 fs-5"></i></div>
+                    </div>
+                    <h3 class="fw-bold mb-0" id="lblTongSoBoMon">@ViewBag.TongSoBoMon</h3>
+                    <a asp-controller="BoMon" asp-action="Index" class="stretched-link text-decoration-none small text-muted">Xem chi tiết &rarr;</a>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-2 col-md-4 col-sm-6">
+            <div class="card border-0 shadow-sm h-100 border-start border-success border-4">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <span class="text-muted small fw-bold text-uppercase">Lớp Học</span>
+                        <div class="p-2 bg-success bg-opacity-10 text-success rounded"><i class="bi bi-people fs-5"></i></div>
+                    </div>
+                    <h3 class="fw-bold mb-0" id="lblTongSoLop">@ViewBag.TongSoLop</h3>
+                    <a asp-controller="LopHoc" asp-action="Index" class="stretched-link text-decoration-none small text-muted">Xem chi tiết &rarr;</a>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-2 col-md-4 col-sm-6">
+            <div class="card border-0 shadow-sm h-100 border-start border-warning border-4">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <span class="text-muted small fw-bold text-uppercase">Học Viên</span>
+                        <div class="p-2 bg-warning bg-opacity-10 text-warning rounded"><i class="bi bi-person-badge fs-5"></i></div>
+                    </div>
+                    <h3 class="fw-bold mb-0" id="lblTongSoHocVien">@ViewBag.TongSoHocVien</h3>
+                    <a asp-controller="HocVien" asp-action="Index" class="stretched-link text-decoration-none small text-muted">Xem chi tiết &rarr;</a>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-2 col-md-4 col-sm-6">
+            <div class="card border-0 shadow-sm h-100 border-start border-danger border-4">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <span class="text-muted small fw-bold text-uppercase">Nhân Sự</span>
+                        <div class="p-2 bg-danger bg-opacity-10 text-danger rounded"><i class="bi bi-person-lines-fill fs-5"></i></div>
+                    </div>
+                    <h3 class="fw-bold mb-0" id="lblTongSoNhanSu">@ViewBag.TongSoNhanSu</h3>
+                    <a asp-controller="NhanSu" asp-action="Index" class="stretched-link text-decoration-none small text-muted">Xem chi tiết &rarr;</a>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-2 col-md-4 col-sm-6">
+            <div class="card border-0 shadow-sm h-100 border-start border-secondary border-4">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <span class="text-muted small fw-bold text-uppercase">Môn Học</span>
+                        <div class="p-2 bg-secondary bg-opacity-10 text-secondary rounded"><i class="bi bi-journal-bookmark fs-5"></i></div>
+                    </div>
+                    <h3 class="fw-bold mb-0" id="lblTongSoMonHoc">@ViewBag.TongSoMonHoc</h3>
+                    <a asp-controller="MonHoc" asp-action="Index" class="stretched-link text-decoration-none small text-muted">Xem chi tiết &rarr;</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-4">
+        <!-- Lối tắt thao tác nhanh -->
+        <div class="col-lg-4">
+            <div class="card shadow-sm border-0 h-100" id="pnlThaoTacNhanh">
+                <div class="card-header bg-white py-3 border-bottom">
+                    <h5 class="mb-0 text-primary fw-bold"><i class="bi bi-lightning-charge-fill me-2"></i>Thao Tác Nhanh</h5>
+                </div>
+                <div class="card-body">
+                    <div class="d-grid gap-2">
+                        <a asp-controller="NhanSu" asp-action="ThemMoi" class="btn btn-outline-primary text-start py-2" id="btnThemNhanSuNhanh">
+                            <i class="bi bi-person-plus-fill me-2"></i>Thêm Mới Hồ Sơ Nhân Sự
+                        </a>
+                        <a asp-controller="Khoa" asp-action="ThemMoi" class="btn btn-outline-primary text-start py-2" id="btnThemKhoaNhanh">
+                            <i class="bi bi-plus-circle-fill me-2"></i>Thêm Mới Khoa Đào Tạo
+                        </a>
+                        <a asp-controller="LopHoc" asp-action="ThemMoi" class="btn btn-outline-primary text-start py-2" id="btnThemLopNhanh">
+                            <i class="bi bi-people-fill me-2"></i>Thêm Mới Lớp Học
+                        </a>
+                        <a asp-controller="HocVien" asp-action="ThemMoi" class="btn btn-outline-primary text-start py-2" id="btnThemHocVienNhanh">
+                            <i class="bi bi-person-badge-fill me-2"></i>Thêm Mới Học Viên
+                        </a>
+                        <a asp-controller="PhanCongGiangDay" asp-action="ThemMoi" class="btn btn-outline-primary text-start py-2" id="btnThemPhanCongNhanh">
+                            <i class="bi bi-calendar-plus-fill me-2"></i>Thêm Phân Công Giảng Dạy
+                        </a>
+                        <hr class="my-2" />
+                        <a asp-controller="Excel" asp-action="NhapExcel" asp-route-module="NhanSu" class="btn btn-success text-start py-2" id="btnNhapExcelNhanSu">
+                            <i class="bi bi-file-earmark-excel-fill me-2"></i>Nhập Excel Nhân Sự (Preview/Commit)
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Bảng hoạt động gần đây -->
+        <div class="col-lg-8">
+            <div class="card shadow-sm border-0 h-100" id="pnlHoatDongGanDay">
+                <div class="card-header bg-white py-3 border-bottom d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0 text-primary fw-bold"><i class="bi bi-clock-history me-2"></i>Hoạt Động Kiểm Toán Gần Đây</h5>
+                    <a asp-controller="NhatKy" asp-action="Index" class="btn btn-sm btn-outline-secondary" id="btnXemTatCaNhatKy">Xem tất cả</a>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover table-striped align-middle mb-0" id="dgvHoatDongGanDay">
+                            <thead class="table-light">
+                                <tr>
+                                    <th class="ps-3">Thời điểm</th>
+                                    <th>Người thực hiện</th>
+                                    <th>Hành động</th>
+                                    <th>Bảng dữ liệu</th>
+                                    <th>Khóa bản ghi</th>
+                                    <th>Kết quả</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @if (hoatDongGanDay.Count == 0)
+                                {
+                                    <tr>
+                                        <td colspan="6" class="text-center py-4 text-muted">Chưa có hoạt động nào được ghi nhận</td>
+                                    </tr>
+                                }
+                                else
+                                {
+                                    foreach (var item in hoatDongGanDay)
+                                    {
+                                        <tr>
+                                            <td class="ps-3 text-muted small">@item.ThoiDiem.ToString("dd/MM/yyyy HH:mm:ss")</td>
+                                            <td class="fw-semibold">@item.NguoiThucHien</td>
+                                            <td>
+                                                <span class="badge bg-primary">@item.HanhDong</span>
+                                            </td>
+                                            <td><code>@item.BangDuLieu</code></td>
+                                            <td><span class="badge bg-light text-dark border">@(item.KhoaBanGhi ?? "-")</span></td>
+                                            <td>
+                                                @if (item.KetQua == "Thành công")
+                                                {
+                                                    <span class="badge bg-success">Thành công</span>
+                                                }
+                                                else
+                                                {
+                                                    <span class="badge bg-danger">@item.KetQua</span>
+                                                }
+                                            </td>
+                                        </tr>
+                                    }
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

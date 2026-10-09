@@ -1,0 +1,76 @@
+@model QuanLyDaoTao.ViewModels.TaiKhoan.TaoTaiKhoanViewModel
+@{
+    ViewData["Title"] = "Tạo mới tài khoản người dùng";
+    Layout = "_Layout";
+    var danhSachVaiTro = ViewBag.DanhSachVaiTro as List<string> ?? new List<string>();
+}
+
+<div class="container py-3" id="pnlTaoTaiKhoan">
+    <div class="row justify-content-center">
+        <div class="col-md-7">
+            <div class="card shadow-sm border-0">
+                <div class="card-header bg-white py-3 border-bottom">
+                    <h5 class="mb-0 text-primary" id="lblTieuDe">
+                        <i class="bi bi-person-plus-fill me-2"></i>Tạo Tài Khoản Người Dùng Mới
+                    </h5>
+                </div>
+                <div class="card-body p-4">
+                    <form asp-action="TaoMoi" method="post" id="frmTaoTaiKhoan">
+                        @Html.AntiForgeryToken()
+                        <div asp-validation-summary="ModelOnly" class="alert alert-danger" id="lblThongBaoLoi" role="alert"></div>
+
+                        <div class="mb-3">
+                            <label asp-for="Email" class="form-label fw-bold">Địa chỉ Email đăng nhập <span class="text-danger">*</span></label>
+                            <input asp-for="Email" class="form-control" id="txtEmail" placeholder="user@quanlydaotao.local" autofocus />
+                            <span asp-validation-for="Email" class="text-danger small"></span>
+                        </div>
+
+                        <div class="mb-3">
+                            <label asp-for="HoVaTen" class="form-label fw-bold">Họ và tên hiển thị <span class="text-danger">*</span></label>
+                            <input asp-for="HoVaTen" class="form-control" id="txtHoVaTen" placeholder="Nguyễn Văn A" />
+                            <span asp-validation-for="HoVaTen" class="text-danger small"></span>
+                        </div>
+
+                        <div class="mb-3">
+                            <label asp-for="MatKhau" class="form-label fw-bold">Mật khẩu ban đầu <span class="text-danger">*</span></label>
+                            <input asp-for="MatKhau" class="form-control" id="txtMatKhau" placeholder="Tối thiểu 6 ký tự" />
+                            <span asp-validation-for="MatKhau" class="text-danger small"></span>
+                        </div>
+
+                        <div class="mb-3">
+                            <label asp-for="VaiTro" class="form-label fw-bold">Vai trò phân quyền <span class="text-danger">*</span></label>
+                            <select asp-for="VaiTro" class="form-select" id="cboVaiTro">
+                                <option value="">-- Chọn vai trò phân quyền --</option>
+                                @foreach (var role in danhSachVaiTro)
+                                {
+                                    <option value="@role">@role</option>
+                                }
+                            </select>
+                            <span asp-validation-for="VaiTro" class="text-danger small"></span>
+                        </div>
+
+                        <div class="mb-4">
+                            <label asp-for="MaNhanSuLienKet" class="form-label fw-bold">Mã nhân sự liên kết (nếu có)</label>
+                            <input asp-for="MaNhanSuLienKet" class="form-control" id="txtMaNhanSuLienKet" placeholder="Ví dụ: NS0001" />
+                            <div class="form-text">Nhập mã nhân sự nếu tài khoản này dành riêng cho một cán bộ/giảng viên.</div>
+                            <span asp-validation-for="MaNhanSuLienKet" class="text-danger small"></span>
+                        </div>
+
+                        <div class="d-flex justify-content-end gap-2">
+                            <a asp-action="DanhSach" class="btn btn-outline-secondary" id="btnHuyThaoTac">
+                                <i class="bi bi-x-circle me-1"></i>Hủy Bỏ
+                            </a>
+                            <button type="submit" class="btn btn-primary" id="btnLuuTaiKhoan">
+                                <i class="bi bi-save me-1"></i>Lưu Tài Khoản
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

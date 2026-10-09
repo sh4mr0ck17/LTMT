@@ -1,0 +1,163 @@
+@model QuanLyDaoTao.ViewModels.TaiKhoan.QuanLyTaiKhoanViewModel
+@using QuanLyDaoTao.Models
+@{
+    ViewData["Title"] = "Quản lý tài khoản người dùng";
+    Layout = "_Layout";
+}
+
+<div class="container-fluid py-3" id="pnlDanhSachTaiKhoan">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <div>
+            <h4 class="mb-1 text-primary" id="lblTieuDe"><i class="bi bi-people-fill me-2"></i>Quản Lý Tài Khoản Hệ Thống</h4>
+            <small class="text-muted">Quản trị danh sách người dùng, vai trò phân quyền và trạng thái truy cập</small>
+        </div>
+        <div>
+            <a asp-action="TaoMoi" class="btn btn-primary" id="btnThemTaiKhoan">
+                <i class="bi bi-person-plus-fill me-1"></i>Tạo Tài Khoản Mới
+            </a>
+        </div>
+    </div>
+
+    @if (TempData["ThongBaoThanhCong"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show" role="alert" id="lblThongBaoThanhCong">
+            <i class="bi bi-check-circle me-2"></i>@TempData["ThongBaoThanhCong"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+
+    @if (TempData["ThongBaoLoi"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show" role="alert" id="lblThongBaoLoi">
+            <i class="bi bi-exclamation-triangle me-2"></i>@TempData["ThongBaoLoi"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+
+    <div class="card shadow-sm border-0 mb-4" id="pnlBoLoc">
+        <div class="card-body">
+            <form method="get" asp-action="DanhSach" class="row g-3 align-items-center" id="frmTimKiem">
+                <div class="col-md-5">
+                    <div class="input-group">
+                        <span class="input-group-text"><i class="bi bi-search"></i></span>
+                        <input type="text" name="tuKhoa" class="form-control" id="txtTimKiem" 
+                               placeholder="Tìm theo email, họ tên, mã nhân sự..." value="@Model.TuKhoa" />
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <select name="vaiTro" class="form-select" id="cboLocVaiTro">
+                        <option value="">-- Tất cả vai trò --</option>
+                        <option value="@VaiTroMacDinh.QuanTriVien" selected="@(Model.LocTheoVaiTro == VaiTroMacDinh.QuanTriVien ? "selected" : null)">Quản trị viên (Admin)</option>
+                        <option value="@VaiTroMacDinh.QuanLyDaoTao" selected="@(Model.LocTheoVaiTro == VaiTroMacDinh.QuanLyDaoTao ? "selected" : null)">Quản lý đào tạo (DataManager)</option>
+                        <option value="@VaiTroMacDinh.NguoiXem" selected="@(Model.LocTheoVaiTro == VaiTroMacDinh.NguoiXem ? "selected" : null)">Người xem (Viewer)</option>
+                    </select>
+                </div>
+                <div class="col-md-3 d-flex gap-2">
+                    <button type="submit" class="btn btn-outline-primary" id="btnTimKiem">
+                        <i class="bi bi-funnel me-1"></i>Lọc Dữ Liệu
+                    </button>
+                    <a asp-action="DanhSach" class="btn btn-outline-secondary" id="btnLamMoi">
+                        <i class="bi bi-arrow-clockwise me-1"></i>Làm Mới
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div class="card shadow-sm border-0" id="pnlBangDuLieu">
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover table-striped align-middle mb-0" id="dgvDanhSachTaiKhoan">
+                    <thead class="table-light">
+                        <tr>
+                            <th class="ps-3" style="width: 50px;">#</th>
+                            <th>Email Đăng Nhập</th>
+                            <th>Họ và Tên</th>
+                            <th>Mã Nhân Sự</th>
+                            <th>Vai Trò Phân Quyền</th>
+                            <th>Trạng Thái</th>
+                            <th>Ngày Tạo</th>
+                            <th class="text-center" style="width: 150px;">Thao Tác</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @if (Model.DanhSachTaiKhoan.Count == 0)
+                        {
+                            <tr>
+                                <td colspan="8" class="text-center py-4 text-muted">
+                                    <i class="bi bi-inbox fs-2 d-block mb-2"></i>Không tìm thấy tài khoản nào phù hợp
+                                </td>
+                            </tr>
+                        }
+                        else
+                        {
+                            int stt = 1;
+                            foreach (var item in Model.DanhSachTaiKhoan)
+                            {
+                                <tr>
+                                    <td class="ps-3 fw-bold text-muted">@(stt++)</td>
+                                    <td>
+                                        <span class="fw-semibold text-primary">@item.Email</span>
+                                    </td>
+                                    <td>@item.HoVaTen</td>
+                                    <td>
+                                        @if (!string.IsNullOrEmpty(item.MaNhanSuLienKet))
+                                        {
+                                            <span class="badge bg-info text-dark">@item.MaNhanSuLienKet</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="text-muted small">Không liên kết</span>
+                                        }
+                                    </td>
+                                    <td>
+                                        @foreach (var role in item.DanhSachVaiTro)
+                                        {
+                                            var badgeClass = role switch
+                                            {
+                                                VaiTroMacDinh.QuanTriVien => "bg-danger",
+                                                VaiTroMacDinh.QuanLyDaoTao => "bg-primary",
+                                                _ => "bg-secondary"
+                                            };
+                                            <span class="badge @badgeClass me-1">@role</span>
+                                        }
+                                    </td>
+                                    <td>
+                                        @if (item.CoHoatDong)
+                                        {
+                                            <span class="badge bg-success"><i class="bi bi-check-circle me-1"></i>Hoạt động</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="badge bg-secondary"><i class="bi bi-lock me-1"></i>Đã khóa</span>
+                                        }
+                                    </td>
+                                    <td>@item.NgayTao.ToString("dd/MM/yyyy HH:mm")</td>
+                                    <td class="text-center">
+                                        <form asp-action="KhoaMoKhoa" method="post" class="d-inline" id="frmKhoa_@item.Id">
+                                            @Html.AntiForgeryToken()
+                                            <input type="hidden" name="id" value="@item.Id" />
+                                            @if (item.CoHoatDong)
+                                            {
+                                                <button type="submit" class="btn btn-sm btn-outline-warning" title="Khóa tài khoản" id="btnKhoa_@item.Id"
+                                                        onclick="return confirm('Bạn có chắc chắn muốn khóa tài khoản này?');">
+                                                    <i class="bi bi-lock-fill"></i> Khóa
+                                                </button>
+                                            }
+                                            else
+                                            {
+                                                <button type="submit" class="btn btn-sm btn-outline-success" title="Mở khóa tài khoản" id="btnMoKhoa_@item.Id">
+                                                    <i class="bi bi-unlock-fill"></i> Mở
+                                                </button>
+                                            }
+                                        </form>
+                                    </td>
+                                </tr>
+                            }
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>

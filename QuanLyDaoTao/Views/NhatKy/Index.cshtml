@@ -1,0 +1,121 @@
+@model List<QuanLyDaoTao.Models.NhatKyHeThong>
+@{
+    ViewData["Title"] = "Nhật ký kiểm toán hệ thống";
+    Layout = "_Layout";
+}
+
+<div class="container-fluid px-4 py-3" id="pnlNhatKy">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <div>
+            <h4 class="mb-1 text-primary fw-bold" id="lblTieuDe">
+                <i class="bi bi-clock-history me-2"></i>Nhật Ký Kiểm Toán Hệ Thống
+            </h4>
+            <span class="text-muted small">Lịch sử ghi nhận thao tác của người dùng, thêm, sửa, xóa, nhập/xuất Excel và bảo mật</span>
+        </div>
+    </div>
+
+    <!-- Bộ lọc & Tìm kiếm -->
+    <div class="card shadow-sm border-0 mb-4" id="pnlBoLoc">
+        <div class="card-body">
+            <form method="get" asp-action="Index" class="row g-3 align-items-center" id="frmTimKiem">
+                <div class="col-md-5">
+                    <div class="input-group">
+                        <span class="input-group-text"><i class="bi bi-search"></i></span>
+                        <input type="text" name="tuKhoa" class="form-control" id="txtTimKiem" 
+                               placeholder="Tìm người thực hiện, khóa bản ghi, hành động..." value="@ViewBag.TuKhoa" />
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <select name="bangDuLieu" class="form-select" id="cboBangDuLieu">
+                        <option value="">-- Tất cả bảng dữ liệu --</option>
+                        <option value="Khoa" selected="@(ViewBag.BangDuLieu == "Khoa" ? "selected" : null)">Khoa</option>
+                        <option value="BoMon" selected="@(ViewBag.BangDuLieu == "BoMon" ? "selected" : null)">Bộ môn</option>
+                        <option value="LopHoc" selected="@(ViewBag.BangDuLieu == "LopHoc" ? "selected" : null)">Lớp học</option>
+                        <option value="HocVien" selected="@(ViewBag.BangDuLieu == "HocVien" ? "selected" : null)">Học viên</option>
+                        <option value="NhanSu" selected="@(ViewBag.BangDuLieu == "NhanSu" ? "selected" : null)">Nhân sự</option>
+                        <option value="MonHoc" selected="@(ViewBag.BangDuLieu == "MonHoc" ? "selected" : null)">Môn học</option>
+                        <option value="PhanCongGiangDay" selected="@(ViewBag.BangDuLieu == "PhanCongGiangDay" ? "selected" : null)">Phân công</option>
+                        <option value="TaiKhoan" selected="@(ViewBag.BangDuLieu == "TaiKhoan" ? "selected" : null)">Tài khoản</option>
+                    </select>
+                </div>
+                <div class="col-md-4 d-flex gap-2">
+                    <button type="submit" class="btn btn-primary" id="btnTimKiem">
+                        <i class="bi bi-funnel me-1"></i>Lọc Nhật Ký
+                    </button>
+                    <a asp-action="Index" class="btn btn-outline-secondary" id="btnLamMoi">Làm Mới</a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Bảng nhật ký -->
+    <div class="card shadow-sm border-0" id="pnlBangDuLieu">
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover table-striped align-middle mb-0" id="dgvDanhSachNhatKy">
+                    <thead class="table-light">
+                        <tr>
+                            <th class="ps-3" style="width: 50px;">#</th>
+                            <th style="width: 170px;">Thời Điểm</th>
+                            <th>Người Thực Hiện</th>
+                            <th>Hành Động</th>
+                            <th>Bảng Dữ Liệu</th>
+                            <th>Khóa Bản Ghi</th>
+                            <th>Chi Tiết Thay Đổi</th>
+                            <th class="text-center" style="width: 120px;">Kết Quả</th>
+                            <th>Địa Chỉ IP</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @if (Model.Count == 0)
+                        {
+                            <tr><td colspan="9" class="text-center py-4 text-muted">Không tìm thấy nhật ký kiểm toán nào</td></tr>
+                        }
+                        else
+                        {
+                            int stt = 1;
+                            foreach (var nk in Model)
+                            {
+                                <tr>
+                                    <td class="ps-3 fw-bold text-muted">@(stt++)</td>
+                                    <td class="font-monospace small">@nk.ThoiDiem.ToString("dd/MM/yyyy HH:mm:ss")</td>
+                                    <td class="fw-semibold">@nk.NguoiThucHien</td>
+                                    <td>
+                                        @{
+                                            var badgeAction = nk.HanhDong switch
+                                            {
+                                                "Thêm mới" => "bg-primary",
+                                                "Cập nhật" => "bg-info text-dark",
+                                                "Xóa" => "bg-danger",
+                                                "Nhập Excel" => "bg-success",
+                                                "Xuất Excel" => "bg-secondary",
+                                                _ => "bg-dark"
+                                            };
+                                        }
+                                        <span class="badge @badgeAction">@nk.HanhDong</span>
+                                    </td>
+                                    <td><code>@nk.BangDuLieu</code></td>
+                                    <td><span class="badge bg-light text-dark border">@(nk.KhoaBanGhi ?? "-")</span></td>
+                                    <td class="small text-truncate" style="max-width: 300px;" title="@(nk.GiaTriMoi ?? nk.GiaTriCu)">
+                                        @(nk.GiaTriMoi ?? nk.GiaTriCu ?? "-")
+                                    </td>
+                                    <td class="text-center">
+                                        @if (nk.KetQua == "Thành công")
+                                        {
+                                            <span class="badge bg-success">Thành công</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="badge bg-danger">@nk.KetQua</span>
+                                        }
+                                    </td>
+                                    <td class="small text-muted font-monospace">@(nk.DiaChiIp ?? "-")</td>
+                                </tr>
+                            }
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>

@@ -1,0 +1,184 @@
+@model QuanLyDaoTao.Models.Excel.KetQuaKiemTraExcel
+@{
+    var module = ViewBag.Module as string ?? Model.TenModule;
+    var tieuDeModule = ViewBag.TieuDeModule as string ?? module;
+    var maPhien = ViewBag.MaPhien as string ?? "";
+    ViewData["Title"] = $"Xem trước dữ liệu - {tieuDeModule}";
+    Layout = "_Layout";
+}
+
+<div class="container-fluid py-4" id="pnlXemTruocPreview">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <div>
+            <h4 class="mb-1 text-primary" id="lblTieuDe">
+                <i class="bi bi-eye-fill me-2"></i>Xem Trước & Kiểm Tra Dữ Liệu Excel: @tieuDeModule
+            </h4>
+            <span class="text-muted small">Tệp: <strong>@Model.TenTep</strong> | Trang tính: <strong>@Model.TenSheet</strong></span>
+        </div>
+        <div class="d-flex gap-2">
+            @if (Model.DanhSachLoi.Count > 0)
+            {
+                <a asp-action="XuatBaoCaoLoi" asp-route-maPhien="@maPhien" class="btn btn-outline-danger" id="btnTaiBaoCaoLoi">
+                    <i class="bi bi-file-earmark-arrow-down me-1"></i>Tải Báo Cáo Lỗi Excel
+                </a>
+            }
+            <a asp-controller="@module" asp-action="Index" class="btn btn-outline-secondary" id="btnHuyThaoTac">
+                <i class="bi bi-x-circle me-1"></i>Hủy Bỏ
+            </a>
+            @if (Model.SoDongHopLe > 0)
+            {
+                <form asp-action="XacNhanCommit" method="post" class="d-inline" id="frmXacNhanCommit">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" name="maPhien" value="@maPhien" />
+                    <button type="submit" class="btn btn-success btn-lg" id="btnXacNhanCommit"
+                            onclick="return confirm('Bạn có chắc chắn muốn ghi @Model.SoDongHopLe dòng dữ liệu hợp lệ vào cơ sở dữ liệu?');">
+                        <i class="bi bi-cloud-arrow-up-fill me-1"></i>Xác Nhận Nhập (@Model.SoDongHopLe dòng)
+                    </button>
+                </form>
+            }
+        </div>
+    </div>
+
+    <!-- Thống kê trạng thái -->
+    <div class="row g-3 mb-4">
+        <div class="col-md-4">
+            <div class="card border-0 shadow-sm bg-light text-center p-3">
+                <div class="text-muted small text-uppercase fw-bold">Tổng số dòng đọc được</div>
+                <div class="fs-2 fw-bold text-dark" id="lblThongKeTongSo">@Model.TongSoDong</div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card border-0 shadow-sm bg-success bg-opacity-10 text-center p-3 border-start border-success border-4">
+                <div class="text-success small text-uppercase fw-bold">Dòng dữ liệu hợp lệ</div>
+                <div class="fs-2 fw-bold text-success" id="lblThongKeHopLe">@Model.SoDongHopLe</div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card border-0 shadow-sm bg-danger bg-opacity-10 text-center p-3 border-start border-danger border-4">
+                <div class="text-danger small text-uppercase fw-bold">Dòng dữ liệu có lỗi</div>
+                <div class="fs-2 fw-bold text-danger" id="lblThongKeLoi">@Model.SoDongLoi</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Danh sách lỗi chi tiết nếu có -->
+    @if (Model.DanhSachLoi.Count > 0)
+    {
+        <div class="card shadow-sm border-0 border-top border-danger border-3 mb-4" id="pnlDanhSachLoi">
+            <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+                <h5 class="mb-0 text-danger fw-bold">
+                    <i class="bi bi-exclamation-triangle-fill me-2"></i>Danh Sách Lỗi Phát Hiện (@Model.DanhSachLoi.Count lỗi)
+                </h5>
+                <span class="badge bg-danger">Cần sửa trước khi nhập</span>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive" style="max-height: 280px;">
+                    <table class="table table-hover table-sm align-middle mb-0" id="dgvDanhSachLoiChiTiet">
+                        <thead class="table-danger sticky-top">
+                            <tr>
+                                <th class="ps-3" style="width: 70px;">Dòng</th>
+                                <th>Trường dữ liệu</th>
+                                <th>Địa chỉ ô</th>
+                                <th>Giá trị nhập</th>
+                                <th>Mã lỗi</th>
+                                <th>Mô tả chi tiết</th>
+                                <th>Hướng dẫn khắc phục</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var loi in Model.DanhSachLoi)
+                            {
+                                <tr>
+                                    <td class="ps-3 fw-bold text-danger">@(loi.SoDong > 0 ? loi.SoDong.ToString() : "Header")</td>
+                                    <td class="fw-semibold">@loi.TenTruong</td>
+                                    <td><code>@(loi.DiaChiO ?? "-")</code></td>
+                                    <td><span class="badge bg-light text-dark border">@(loi.GiaTriDauVao ?? "-")</span></td>
+                                    <td><code>@loi.MaLoi</code></td>
+                                    <td class="text-danger">@loi.MoTaLoi</td>
+                                    <td class="text-muted small">@loi.HuongXuLy</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    }
+
+    <!-- Bảng xem trước dữ liệu Preview -->
+    <div class="card shadow-sm border-0" id="pnlBangXemTruoc">
+        <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+            <h5 class="mb-0 text-primary fw-bold">
+                <i class="bi bi-table me-2"></i>Dữ Liệu Xem Trước (Preview Table)
+            </h5>
+            <small class="text-muted">Các dòng tô màu đỏ sẽ không được nhập vào hệ thống</small>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive" style="max-height: 500px;">
+                <table class="table table-hover table-bordered align-middle mb-0" id="dgvXemTruocDuLieu">
+                    <thead class="table-light sticky-top">
+                        <tr>
+                            <th class="text-center" style="width: 60px;">Dòng</th>
+                            <th class="text-center" style="width: 110px;">Trạng thái</th>
+                            @foreach (var cot in Model.DanhSachCot)
+                            {
+                                <th>@cot</th>
+                            }
+                            <th>Ghi chú lỗi</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @if (Model.DanhSachDongDuLieu.Count == 0)
+                        {
+                            <tr>
+                                <td colspan="@(Model.DanhSachCot.Count + 3)" class="text-center py-4 text-muted">
+                                    Không có dòng dữ liệu nào để hiển thị
+                                </td>
+                            </tr>
+                        }
+                        else
+                        {
+                            foreach (var dong in Model.DanhSachDongDuLieu)
+                            {
+                                var classDong = dong.LaHopLe ? "" : "table-danger";
+                                <tr class="@classDong">
+                                    <td class="text-center fw-bold text-muted">@dong.SoDong</td>
+                                    <td class="text-center">
+                                        @if (dong.LaHopLe)
+                                        {
+                                            <span class="badge bg-success"><i class="bi bi-check-circle me-1"></i>Hợp lệ</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="badge bg-danger"><i class="bi bi-x-circle me-1"></i>Lỗi</span>
+                                        }
+                                    </td>
+                                    @foreach (var cot in Model.DanhSachCot)
+                                    {
+                                        var val = dong.DuLieuCot.ContainsKey(cot) ? dong.DuLieuCot[cot] : "";
+                                        <td>@val</td>
+                                    }
+                                    <td>
+                                        @if (dong.DanhSachLoi.Count > 0)
+                                        {
+                                            <ul class="mb-0 ps-3 text-danger small">
+                                                @foreach (var msg in dong.DanhSachLoi)
+                                                {
+                                                    <li>@msg</li>
+                                                }
+                                            </ul>
+                                        }
+                                        else
+                                        {
+                                            <span class="text-success small"><i class="bi bi-check me-1"></i>Sẵn sàng lưu</span>
+                                        }
+                                    </td>
+                                </tr>
+                            }
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>

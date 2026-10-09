@@ -1,0 +1,171 @@
+@model QuanLyDaoTao.Models.BoMon
+@using QuanLyDaoTao.Models
+@{
+    ViewData["Title"] = $"Chi tiết Bộ môn: {Model.TenBoMon}";
+    Layout = "_Layout";
+    bool laQuanTri = User.IsInRole(VaiTroMacDinh.QuanTriVien) || User.IsInRole(VaiTroMacDinh.QuanLyDaoTao);
+}
+
+<div class="container-fluid px-4 py-3" id="pnlChiTietBoMon">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <div>
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb mb-1">
+                    <li class="breadcrumb-item"><a asp-action="Index">Danh sách Bộ môn</a></li>
+                    <li class="breadcrumb-item active" aria-current="page">@Model.TenBoMon</li>
+                </ol>
+            </nav>
+            <h4 class="mb-0 text-primary fw-bold" id="lblTenBoMon">
+                <i class="bi bi-diagram-2 me-2"></i>@Model.TenBoMon
+            </h4>
+        </div>
+        <div class="d-flex gap-2">
+            <a asp-action="Index" class="btn btn-outline-secondary" id="btnQuayLai">
+                <i class="bi bi-arrow-left me-1"></i>Quay Lại
+            </a>
+            @if (laQuanTri)
+            {
+                <a asp-action="ChinhSua" asp-route-id="@Model.BoMonId" class="btn btn-primary" id="btnChinhSua">
+                    <i class="bi bi-pencil-square me-1"></i>Chỉnh Sửa
+                </a>
+            }
+        </div>
+    </div>
+
+    <div class="row g-4">
+        <!-- Thông tin cơ bản -->
+        <div class="col-lg-4">
+            <div class="card shadow-sm border-0 mb-4">
+                <div class="card-header bg-white py-3 border-bottom">
+                    <h5 class="mb-0 text-primary fw-bold"><i class="bi bi-info-circle me-2"></i>Thông Tin Bộ Môn</h5>
+                </div>
+                <div class="card-body">
+                    <dl class="row mb-0">
+                        <dt class="col-sm-5 text-muted">Mã Bộ Môn:</dt>
+                        <dd class="col-sm-7"><span class="badge bg-primary fs-6 font-monospace">@Model.MaBoMon</span></dd>
+
+                        <dt class="col-sm-5 text-muted">Tên Bộ Môn:</dt>
+                        <dd class="col-sm-7 fw-bold">@Model.TenBoMon</dd>
+
+                        <dt class="col-sm-5 text-muted">Khoa Quản Lý:</dt>
+                        <dd class="col-sm-7">
+                            <a asp-controller="Khoa" asp-action="ChiTiet" asp-route-id="@Model.KhoaId">
+                                @(Model.Khoa?.TenKhoa ?? "-")
+                            </a>
+                        </dd>
+
+                        <dt class="col-sm-5 text-muted">Trạng Thái:</dt>
+                        <dd class="col-sm-7">
+                            @if (Model.CoHoatDong)
+                            {
+                                <span class="badge bg-success">Hoạt động</span>
+                            }
+                            else
+                            {
+                                <span class="badge bg-secondary">Đã khóa</span>
+                            }
+                        </dd>
+
+                        <dt class="col-sm-5 text-muted">Mô Tả:</dt>
+                        <dd class="col-sm-7">@(Model.MoTa ?? "-")</dd>
+                    </dl>
+                </div>
+            </div>
+        </div>
+
+        <!-- Danh sách nhân sự & Môn học -->
+        <div class="col-lg-8">
+            <div class="card shadow-sm border-0">
+                <div class="card-header bg-white border-bottom p-0">
+                    <ul class="nav nav-tabs card-header-tabs m-0 px-3" role="tablist">
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link active py-3" id="tab-nhansu" data-bs-toggle="tab" data-bs-target="#content-nhansu" type="button" role="tab">
+                                <i class="bi bi-person-lines-fill me-1"></i>Nhân Sự Thuộc Bộ Môn (@Model.NhanSus.Count)
+                            </button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link py-3" id="tab-monhoc" data-bs-toggle="tab" data-bs-target="#content-monhoc" type="button" role="tab">
+                                <i class="bi bi-journal-bookmark me-1"></i>Môn Học Phụ Trách (@Model.MonHocs.Count)
+                            </button>
+                        </li>
+                    </ul>
+                </div>
+                <div class="card-body p-0">
+                    <div class="tab-content">
+                        <!-- Tab Nhân sự -->
+                        <div class="tab-pane fade show active" id="content-nhansu" role="tabpanel">
+                            <div class="table-responsive">
+                                <table class="table table-hover align-middle mb-0" id="dgvNhanSuThuocBoMon">
+                                    <thead class="table-light">
+                                        <tr>
+                                            <th class="ps-3">Mã Nhân Sự</th>
+                                            <th>Họ và Tên</th>
+                                            <th>Email Công Việc</th>
+                                            <th>Số Điện Thoại</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        @if (Model.NhanSus.Count == 0)
+                                        {
+                                            <tr><td colspan="4" class="text-center py-3 text-muted">Chưa có nhân sự nào thuộc bộ môn này</td></tr>
+                                        }
+                                        else
+                                        {
+                                            foreach (var ns in Model.NhanSus)
+                                            {
+                                                <tr>
+                                                    <td class="ps-3 font-monospace fw-bold">@ns.MaNhanSu</td>
+                                                    <td><a asp-controller="NhanSu" asp-action="ChiTiet" asp-route-id="@ns.NhanSuId">@ns.HoVaTen</a></td>
+                                                    <td>@ns.EmailCongViec</td>
+                                                    <td>@(ns.SoDienThoai ?? "-")</td>
+                                                </tr>
+                                            }
+                                        }
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        <!-- Tab Môn học -->
+                        <div class="tab-pane fade" id="content-monhoc" role="tabpanel">
+                            <div class="table-responsive">
+                                <table class="table table-hover align-middle mb-0" id="dgvMonHocThuocBoMon">
+                                    <thead class="table-light">
+                                        <tr>
+                                            <th class="ps-3">Mã Môn Học</th>
+                                            <th>Tên Môn Học</th>
+                                            <th class="text-center">Số Tín Chỉ</th>
+                                            <th class="text-center">Trạng Thái</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        @if (Model.MonHocs.Count == 0)
+                                        {
+                                            <tr><td colspan="4" class="text-center py-3 text-muted">Chưa có môn học nào phụ trách bởi bộ môn này</td></tr>
+                                        }
+                                        else
+                                        {
+                                            foreach (var mh in Model.MonHocs)
+                                            {
+                                                <tr>
+                                                    <td class="ps-3 font-monospace fw-bold">@mh.MaMonHoc</td>
+                                                    <td><a asp-controller="MonHoc" asp-action="ChiTiet" asp-route-id="@mh.MonHocId">@mh.TenMonHoc</a></td>
+                                                    <td class="text-center"><span class="badge bg-info text-dark">@mh.SoTinChi</span></td>
+                                                    <td class="text-center">
+                                                        <span class="badge @(mh.CoHoatDong ? "bg-success" : "bg-secondary")">
+                                                            @(mh.CoHoatDong ? "Hoạt động" : "Khóa")
+                                                        </span>
+                                                    </td>
+                                                </tr>
+                                            }
+                                        }
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

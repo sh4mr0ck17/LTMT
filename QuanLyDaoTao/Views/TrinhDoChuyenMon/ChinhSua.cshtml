@@ -1,0 +1,59 @@
+@model QuanLyDaoTao.Models.TrinhDoChuyenMon
+@{
+    ViewData["Title"] = $"Chỉnh sửa Trình độ: {Model.TenTrinhDo}";
+    Layout = "_Layout";
+}
+
+<div class="container py-3" id="pnlChinhSuaTrinhDo">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="card shadow-sm border-0">
+                <div class="card-header bg-white py-3 border-bottom">
+                    <h5 class="mb-0 text-primary fw-bold" id="lblTieuDe">
+                        <i class="bi bi-pencil-square me-2"></i>Chỉnh Sửa Trình Độ: @Model.TenTrinhDo
+                    </h5>
+                </div>
+                <div class="card-body p-4">
+                    <form asp-action="ChinhSua" asp-route-id="@Model.TrinhDoChuyenMonId" method="post" id="frmChinhSuaTrinhDo">
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" asp-for="TrinhDoChuyenMonId" />
+
+                        <div asp-validation-summary="ModelOnly" class="alert alert-danger" id="lblThongBaoLoi" role="alert"></div>
+
+                        <div class="mb-3">
+                            <label asp-for="MaTrinhDo" class="form-label fw-bold">Mã Trình Độ <span class="text-danger">*</span></label>
+                            <input asp-for="MaTrinhDo" class="form-control" id="txtMaTrinhDo" />
+                            <span asp-validation-for="MaTrinhDo" class="text-danger small"></span>
+                        </div>
+
+                        <div class="mb-3">
+                            <label asp-for="TenTrinhDo" class="form-label fw-bold">Tên Trình Độ <span class="text-danger">*</span></label>
+                            <input asp-for="TenTrinhDo" class="form-control" id="txtTenTrinhDo" />
+                            <span asp-validation-for="TenTrinhDo" class="text-danger small"></span>
+                        </div>
+
+                        <div class="mb-3">
+                            <label asp-for="MoTa" class="form-label fw-bold">Mô Tả Tiêu Chuẩn</label>
+                            <textarea asp-for="MoTa" class="form-control" id="txtMoTa" rows="3"></textarea>
+                            <span asp-validation-for="MoTa" class="text-danger small"></span>
+                        </div>
+
+                        <div class="mb-3 form-check form-switch">
+                            <input asp-for="CoHoatDong" class="form-check-input" id="chkCoHoatDong" />
+                            <label asp-for="CoHoatDong" class="form-check-label fw-semibold">Đang hoạt động</label>
+                        </div>
+
+                        <div class="d-flex justify-content-end gap-2 mt-4">
+                            <a asp-action="Index" class="btn btn-outline-secondary" id="btnHuyThaoTac">Hủy Bỏ</a>
+                            <button type="submit" class="btn btn-primary" id="btnCapNhatTrinhDo">Cập Nhật</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

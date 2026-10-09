@@ -1,0 +1,158 @@
+@model List<QuanLyDaoTao.Models.Khoa>
+@using QuanLyDaoTao.Models
+@{
+    ViewData["Title"] = "Quản lý Khoa Đào tạo";
+    Layout = "_Layout";
+    bool laQuanTri = User.IsInRole(VaiTroMacDinh.QuanTriVien) || User.IsInRole(VaiTroMacDinh.QuanLyDaoTao);
+}
+
+<div class="container-fluid px-4 py-3" id="pnlDanhSachKhoa">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <div>
+            <h4 class="mb-1 text-primary fw-bold" id="lblTieuDe">
+                <i class="bi bi-bank me-2"></i>Quản Lý Khoa Đào Tạo
+            </h4>
+            <span class="text-muted small">Danh sách các khoa, bộ môn và lớp học trực thuộc trong hệ thống</span>
+        </div>
+        <div class="d-flex gap-2">
+            <a asp-controller="Excel" asp-action="TaiTepMau" asp-route-module="Khoa" class="btn btn-outline-secondary" id="btnTaiMauExcel">
+                <i class="bi bi-download me-1"></i>Tải Mẫu Excel
+            </a>
+            <a asp-controller="Excel" asp-action="XuatDuLieu" asp-route-module="Khoa" class="btn btn-outline-success" id="btnXuatExcel">
+                <i class="bi bi-file-earmark-excel me-1"></i>Xuất Excel
+            </a>
+            @if (laQuanTri)
+            {
+                <a asp-controller="Excel" asp-action="NhapExcel" asp-route-module="Khoa" class="btn btn-success" id="btnNhapExcel">
+                    <i class="bi bi-file-earmark-arrow-up me-1"></i>Nhập Excel
+                </a>
+                <a asp-action="ThemMoi" class="btn btn-primary" id="btnThemKhoa">
+                    <i class="bi bi-plus-circle-fill me-1"></i>Thêm Mới Khoa
+                </a>
+            }
+        </div>
+    </div>
+
+    <!-- Bộ lọc & Tìm kiếm -->
+    <div class="card shadow-sm border-0 mb-4" id="pnlBoLoc">
+        <div class="card-body">
+            <form method="get" asp-action="Index" class="row g-3 align-items-center" id="frmTimKiem">
+                <div class="col-md-6">
+                    <div class="input-group">
+                        <span class="input-group-text"><i class="bi bi-search"></i></span>
+                        <input type="text" name="tuKhoa" class="form-control" id="txtTimKiem" 
+                               placeholder="Tìm kiếm theo mã khoa, tên khoa..." value="@ViewBag.TuKhoa" />
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <select name="coHoatDong" class="form-select" id="cboLocTrangThai">
+                        <option value="">-- Tất cả trạng thái --</option>
+                        <option value="true" selected="@(ViewBag.CoHoatDong == true ? "selected" : null)">Đang hoạt động</option>
+                        <option value="false" selected="@(ViewBag.CoHoatDong == false ? "selected" : null)">Đã khóa</option>
+                    </select>
+                </div>
+                <div class="col-md-3 d-flex gap-2">
+                    <button type="submit" class="btn btn-primary" id="btnTimKiem">
+                        <i class="bi bi-funnel me-1"></i>Tìm Kiếm
+                    </button>
+                    <a asp-action="Index" class="btn btn-outline-secondary" id="btnLamMoi">
+                        <i class="bi bi-arrow-clockwise me-1"></i>Làm Mới
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Bảng dữ liệu Khoa -->
+    <div class="card shadow-sm border-0" id="pnlBangDuLieu">
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover table-striped align-middle mb-0" id="dgvDanhSachKhoa">
+                    <thead class="table-light">
+                        <tr>
+                            <th class="ps-3" style="width: 50px;">#</th>
+                            <th style="width: 130px;">Mã Khoa</th>
+                            <th>Tên Khoa</th>
+                            <th>Số Điện Thoại</th>
+                            <th>Email</th>
+                            <th>Địa Điểm</th>
+                            <th class="text-center" style="width: 90px;">Bộ Môn</th>
+                            <th class="text-center" style="width: 90px;">Lớp Học</th>
+                            <th class="text-center" style="width: 90px;">Nhân Sự</th>
+                            <th class="text-center" style="width: 120px;">Trạng Thái</th>
+                            <th class="text-center" style="width: 170px;">Thao Tác</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @if (Model.Count == 0)
+                        {
+                            <tr>
+                                <td colspan="11" class="text-center py-4 text-muted">
+                                    <i class="bi bi-inbox fs-2 d-block mb-2"></i>Không tìm thấy khoa nào trong hệ thống
+                                </td>
+                            </tr>
+                        }
+                        else
+                        {
+                            int stt = 1;
+                            foreach (var khoa in Model)
+                            {
+                                <tr>
+                                    <td class="ps-3 fw-bold text-muted">@(stt++)</td>
+                                    <td>
+                                        <span class="badge bg-primary bg-opacity-10 text-primary fw-bold font-monospace fs-6">@khoa.MaKhoa</span>
+                                    </td>
+                                    <td>
+                                        <a asp-action="ChiTiet" asp-route-id="@khoa.KhoaId" class="fw-semibold text-decoration-none text-dark">
+                                            @khoa.TenKhoa
+                                        </a>
+                                        @if (!string.IsNullOrEmpty(khoa.MoTa))
+                                        {
+                                            <div class="text-muted small text-truncate" style="max-width: 350px;">@khoa.MoTa</div>
+                                        }
+                                    </td>
+                                    <td>@(khoa.SoDienThoai ?? "-")</td>
+                                    <td>@(khoa.Email ?? "-")</td>
+                                    <td>@(khoa.DiaDiem ?? "-")</td>
+                                    <td class="text-center"><span class="badge bg-secondary">@khoa.BoMons.Count</span></td>
+                                    <td class="text-center"><span class="badge bg-info text-dark">@khoa.LopHocs.Count</span></td>
+                                    <td class="text-center"><span class="badge bg-success">@khoa.NhanSus.Count</span></td>
+                                    <td class="text-center">
+                                        @if (khoa.CoHoatDong)
+                                        {
+                                            <span class="badge bg-success"><i class="bi bi-check-circle me-1"></i>Hoạt động</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="badge bg-secondary"><i class="bi bi-lock me-1"></i>Đã khóa</span>
+                                        }
+                                    </td>
+                                    <td class="text-center">
+                                        <div class="btn-group btn-group-sm" role="group">
+                                            <a asp-action="ChiTiet" asp-route-id="@khoa.KhoaId" class="btn btn-outline-info" title="Xem chi tiết" id="btnXem_@khoa.KhoaId">
+                                                <i class="bi bi-eye"></i>
+                                            </a>
+                                            @if (laQuanTri)
+                                            {
+                                                <a asp-action="ChinhSua" asp-route-id="@khoa.KhoaId" class="btn btn-outline-primary" title="Chỉnh sửa" id="btnSua_@khoa.KhoaId">
+                                                    <i class="bi bi-pencil"></i>
+                                                </a>
+                                                <form asp-action="Xoa" asp-route-id="@khoa.KhoaId" method="post" class="d-inline" id="frmXoa_@khoa.KhoaId">
+                                                    @Html.AntiForgeryToken()
+                                                    <button type="submit" class="btn btn-outline-danger" title="Xóa khoa" id="btnXoa_@khoa.KhoaId"
+                                                            onclick="return confirm('Bạn có chắc chắn muốn xóa khoa \'@khoa.TenKhoa\'? Lưu ý hệ thống sẽ từ chối nếu khoa còn bộ môn, lớp học hoặc nhân sự.');">
+                                                        <i class="bi bi-trash"></i>
+                                                    </button>
+                                                </form>
+                                            }
+                                        </div>
+                                    </td>
+                                </tr>
+                            }
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>

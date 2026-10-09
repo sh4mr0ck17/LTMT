@@ -1,0 +1,227 @@
+@model List<QuanLyDaoTao.Models.Khoa>
+@{
+    ViewData["Title"] = "Cây tổ chức đào tạo";
+    Layout = "_Layout";
+}
+
+<div class="container-fluid px-4 py-3" id="pnlCayToChuc">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h4 class="mb-1 text-primary fw-bold" id="lblTieuDe">
+                <i class="bi bi-diagram-3-fill me-2"></i>Sơ Đồ Cây Tổ Chức Đào Tạo
+            </h4>
+            <span class="text-muted small">Cấu trúc phân cấp đơn vị: Ban Lãnh Đạo &rarr; Khoa &rarr; Bộ Môn / Lớp Học &rarr; Nhân Sự & Học Viên</span>
+        </div>
+        <div class="d-flex gap-2">
+            <button type="button" class="btn btn-outline-primary btn-sm" id="btnMoRongTatCa" onclick="moRongTatCa(true)">
+                <i class="bi bi-arrows-expand me-1"></i>Mở Rộng Tất Cả
+            </button>
+            <button type="button" class="btn btn-outline-secondary btn-sm" id="btnThuGonTatCa" onclick="moRongTatCa(false)">
+                <i class="bi bi-arrows-collapse me-1"></i>Thu Gọn Tất Cả
+            </button>
+        </div>
+    </div>
+
+    <!-- Node Cấp cao nhất: Ban Giám Hiệu / Ban Lãnh Đạo -->
+    <div class="card shadow-sm border-0 mb-4 border-start border-primary border-5">
+        <div class="card-body p-3 d-flex align-items-center justify-content-between bg-primary bg-opacity-10 rounded">
+            <div class="d-flex align-items-center">
+                <div class="p-3 bg-primary text-white rounded-circle me-3">
+                    <i class="bi bi-award-fill fs-3"></i>
+                </div>
+                <div>
+                    <h5 class="mb-0 fw-bold text-primary">BAN LÃNH ĐẠO / BAN GIÁM HIỆU ĐÀO TẠO</h5>
+                    <small class="text-muted">Cơ quan điều hành cao nhất quản lý các khoa, ngành và phòng ban chức năng</small>
+                </div>
+            </div>
+            <div>
+                <span class="badge bg-primary fs-6 px-3 py-2">@Model.Count Khoa Trực Thuộc</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Danh sách các Khoa đào tạo (Accordion) -->
+    <div class="accordion" id="accordionCayToChuc">
+        @for (int i = 0; i < Model.Count; i++)
+        {
+            var khoa = Model[i];
+            var collapseId = $"collapseKhoa_{khoa.KhoaId}";
+            var headingId = $"headingKhoa_{khoa.KhoaId}";
+
+            <div class="accordion-item shadow-sm border-0 mb-3 rounded overflow-hidden">
+                <h2 class="accordion-header" id="@headingId">
+                    <button class="accordion-button @(i > 0 ? "collapsed" : "") bg-white text-dark py-3" type="button" 
+                            data-bs-toggle="collapse" data-bs-target="#@collapseId" aria-expanded="@(i == 0 ? "true" : "false")" aria-controls="@collapseId">
+                        <div class="d-flex align-items-center justify-content-between w-100 me-3">
+                            <div class="d-flex align-items-center">
+                                <span class="badge bg-primary font-monospace fs-6 me-3">@khoa.MaKhoa</span>
+                                <span class="fw-bold fs-5 text-primary">@khoa.TenKhoa</span>
+                                @if (!khoa.CoHoatDong)
+                                {
+                                    <span class="badge bg-secondary ms-2">Đã khóa</span>
+                                }
+                            </div>
+                            <div class="d-flex gap-2">
+                                <span class="badge bg-info text-dark"><i class="bi bi-diagram-2 me-1"></i>@khoa.BoMons.Count Bộ môn</span>
+                                <span class="badge bg-success"><i class="bi bi-people me-1"></i>@khoa.LopHocs.Count Lớp</span>
+                                <span class="badge bg-primary"><i class="bi bi-person-lines-fill me-1"></i>@khoa.NhanSus.Count Nhân sự</span>
+                            </div>
+                        </div>
+                    </button>
+                </h2>
+                <div id="@collapseId" class="accordion-collapse collapse @(i == 0 ? "show" : "")" aria-labelledby="@headingId">
+                    <div class="accordion-body bg-light p-4">
+                        <div class="row g-4">
+                            <!-- Nhánh 1: Các Bộ môn trực thuộc -->
+                            <div class="col-lg-6">
+                                <div class="card shadow-sm border-0 h-100">
+                                    <div class="card-header bg-white py-2 border-bottom d-flex justify-content-between align-items-center">
+                                        <h6 class="mb-0 text-primary fw-bold">
+                                            <i class="bi bi-diagram-2-fill me-2"></i>Bộ Môn Trực Thuộc (@khoa.BoMons.Count)
+                                        </h6>
+                                        <a asp-controller="BoMon" asp-action="ThemMoi" class="btn btn-sm btn-outline-primary py-0">Thêm</a>
+                                    </div>
+                                    <div class="card-body p-0">
+                                        @if (khoa.BoMons.Count == 0)
+                                        {
+                                            <div class="p-3 text-center text-muted small">Chưa có bộ môn trực thuộc</div>
+                                        }
+                                        else
+                                        {
+                                            <ul class="list-group list-group-flush">
+                                                @foreach (var bm in khoa.BoMons)
+                                                {
+                                                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                                                        <div>
+                                                            <a asp-controller="BoMon" asp-action="ChiTiet" asp-route-id="@bm.BoMonId" class="fw-semibold text-decoration-none text-dark">
+                                                                @bm.TenBoMon
+                                                            </a>
+                                                            <span class="badge bg-light text-dark border font-monospace ms-1">@bm.MaBoMon</span>
+                                                            <div class="text-muted small">
+                                                                <i class="bi bi-person me-1"></i>@bm.NhanSus.Count cán bộ • 
+                                                                <i class="bi bi-journal me-1"></i>@bm.MonHocs.Count môn học
+                                                            </div>
+                                                        </div>
+                                                        <a asp-controller="BoMon" asp-action="ChiTiet" asp-route-id="@bm.BoMonId" class="btn btn-sm btn-outline-info">
+                                                            <i class="bi bi-eye"></i>
+                                                        </a>
+                                                    </li>
+                                                }
+                                            </ul>
+                                        }
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Nhánh 2: Các Lớp học trực thuộc -->
+                            <div class="col-lg-6">
+                                <div class="card shadow-sm border-0 h-100">
+                                    <div class="card-header bg-white py-2 border-bottom d-flex justify-content-between align-items-center">
+                                        <h6 class="mb-0 text-success fw-bold">
+                                            <i class="bi bi-people-fill me-2"></i>Lớp Học Đào Tạo (@khoa.LopHocs.Count)
+                                        </h6>
+                                        <a asp-controller="LopHoc" asp-action="ThemMoi" class="btn btn-sm btn-outline-success py-0">Thêm</a>
+                                    </div>
+                                    <div class="card-body p-0">
+                                        @if (khoa.LopHocs.Count == 0)
+                                        {
+                                            <div class="p-3 text-center text-muted small">Chưa có lớp học trực thuộc</div>
+                                        }
+                                        else
+                                        {
+                                            <ul class="list-group list-group-flush">
+                                                @foreach (var l in khoa.LopHocs)
+                                                {
+                                                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                                                        <div>
+                                                            <a asp-controller="LopHoc" asp-action="ChiTiet" asp-route-id="@l.LopHocId" class="fw-semibold text-decoration-none text-dark">
+                                                                @l.TenLop
+                                                            </a>
+                                                            <span class="badge bg-light text-dark border font-monospace ms-1">@l.MaLop</span>
+                                                            <div class="text-muted small">
+                                                                Niên khóa: @l.NienKhoa • Sĩ số: <strong>@l.HocViens.Count</strong>/@l.SoLuongToiDa
+                                                            </div>
+                                                        </div>
+                                                        <a asp-controller="LopHoc" asp-action="ChiTiet" asp-route-id="@l.LopHocId" class="btn btn-sm btn-outline-info">
+                                                            <i class="bi bi-eye"></i>
+                                                        </a>
+                                                    </li>
+                                                }
+                                            </ul>
+                                        }
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Nhánh 3: Nhân sự thuộc Khoa -->
+                            <div class="col-12">
+                                <div class="card shadow-sm border-0">
+                                    <div class="card-header bg-white py-2 border-bottom d-flex justify-content-between align-items-center">
+                                        <h6 class="mb-0 text-primary fw-bold">
+                                            <i class="bi bi-person-lines-fill me-2"></i>Danh Sách Nhân Sự Thuộc Khoa (@khoa.NhanSus.Count)
+                                        </h6>
+                                        <a asp-controller="Khoa" asp-action="ChiTiet" asp-route-id="@khoa.KhoaId" class="btn btn-sm btn-outline-primary py-0">Chi tiết khoa</a>
+                                    </div>
+                                    <div class="card-body p-0">
+                                        @if (khoa.NhanSus.Count == 0)
+                                        {
+                                            <div class="p-3 text-center text-muted small">Chưa có nhân sự nào trực thuộc khoa</div>
+                                        }
+                                        else
+                                        {
+                                            <div class="table-responsive">
+                                                <table class="table table-hover table-sm align-middle mb-0">
+                                                    <thead class="table-light">
+                                                        <tr>
+                                                            <th class="ps-3">Mã Cán Bộ</th>
+                                                            <th>Họ và Tên</th>
+                                                            <th>Chức Vụ</th>
+                                                            <th>Email Công Việc</th>
+                                                            <th>Số Điện Thoại</th>
+                                                            <th class="text-center">Hành Động</th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody>
+                                                        @foreach (var ns in khoa.NhanSus)
+                                                        {
+                                                            <tr>
+                                                                <td class="ps-3 font-monospace fw-bold">@ns.MaNhanSu</td>
+                                                                <td><a asp-controller="NhanSu" asp-action="ChiTiet" asp-route-id="@ns.NhanSuId">@ns.HoVaTen</a></td>
+                                                                <td><span class="badge bg-light text-dark border">@(ns.ChucVu?.TenChucVu ?? "Cán bộ")</span></td>
+                                                                <td>@ns.EmailCongViec</td>
+                                                                <td>@(ns.SoDienThoai ?? "-")</td>
+                                                                <td class="text-center">
+                                                                    <a asp-controller="NhanSu" asp-action="ChiTiet" asp-route-id="@ns.NhanSuId" class="btn btn-sm btn-outline-info">
+                                                                        <i class="bi bi-eye"></i>
+                                                                    </a>
+                                                                </td>
+                                                            </tr>
+                                                        }
+                                                    </tbody>
+                                                </table>
+                                            </div>
+                                        }
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+</div>
+
+<script>
+    function moRongTatCa(mo) {
+        var items = document.querySelectorAll('#accordionCayToChuc .accordion-collapse');
+        items.forEach(function (item) {
+            var collapse = bootstrap.Collapse.getOrCreateInstance(item);
+            if (mo) {
+                collapse.show();
+            } else {
+                collapse.hide();
+            }
+        });
+    }
+</script>

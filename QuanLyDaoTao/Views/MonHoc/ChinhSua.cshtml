@@ -1,0 +1,92 @@
+@model QuanLyDaoTao.Models.MonHoc
+@{
+    ViewData["Title"] = $"Chỉnh sửa Môn học: {Model.TenMonHoc}";
+    Layout = "_Layout";
+    var danhSachBoMon = ViewBag.DanhSachBoMon as List<QuanLyDaoTao.Models.BoMon> ?? new List<QuanLyDaoTao.Models.BoMon>();
+}
+
+<div class="container py-3" id="pnlChinhSuaMonHoc">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card shadow-sm border-0">
+                <div class="card-header bg-white py-3 border-bottom">
+                    <h5 class="mb-0 text-primary fw-bold" id="lblTieuDe">
+                        <i class="bi bi-pencil-square me-2"></i>Chỉnh Sửa Môn Học: @Model.TenMonHoc
+                    </h5>
+                </div>
+                <div class="card-body p-4">
+                    <form asp-action="ChinhSua" asp-route-id="@Model.MonHocId" method="post" id="frmChinhSuaMonHoc">
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" asp-for="MonHocId" />
+
+                        <div asp-validation-summary="ModelOnly" class="alert alert-danger" id="lblThongBaoLoi" role="alert"></div>
+
+                        <div class="row g-3">
+                            <div class="col-md-4">
+                                <label asp-for="MaMonHoc" class="form-label fw-bold">Mã Môn Học <span class="text-danger">*</span></label>
+                                <input asp-for="MaMonHoc" class="form-control" id="txtMaMonHoc" />
+                                <span asp-validation-for="MaMonHoc" class="text-danger small"></span>
+                            </div>
+
+                            <div class="col-md-8">
+                                <label asp-for="TenMonHoc" class="form-label fw-bold">Tên Môn Học <span class="text-danger">*</span></label>
+                                <input asp-for="TenMonHoc" class="form-control" id="txtTenMonHoc" />
+                                <span asp-validation-for="TenMonHoc" class="text-danger small"></span>
+                            </div>
+
+                            <div class="col-md-4">
+                                <label asp-for="SoTinChi" class="form-label fw-bold">Số Tín Chỉ <span class="text-danger">*</span></label>
+                                <input asp-for="SoTinChi" class="form-control" id="txtSoTinChi" type="number" min="1" max="20" />
+                                <span asp-validation-for="SoTinChi" class="text-danger small"></span>
+                            </div>
+
+                            <div class="col-md-4">
+                                <label asp-for="SoTietLyThuyet" class="form-label fw-bold">Số Tiết Lý Thuyết</label>
+                                <input asp-for="SoTietLyThuyet" class="form-control" id="txtSoTietLyThuyet" type="number" min="0" max="500" />
+                                <span asp-validation-for="SoTietLyThuyet" class="text-danger small"></span>
+                            </div>
+
+                            <div class="col-md-4">
+                                <label asp-for="SoTietThucHanh" class="form-label fw-bold">Số Tiết Thực Hành</label>
+                                <input asp-for="SoTietThucHanh" class="form-control" id="txtSoTietThucHanh" type="number" min="0" max="500" />
+                                <span asp-validation-for="SoTietThucHanh" class="text-danger small"></span>
+                            </div>
+
+                            <div class="col-12">
+                                <label asp-for="BoMonId" class="form-label fw-bold">Bộ Môn Phụ Trách</label>
+                                <select asp-for="BoMonId" class="form-select" id="cboChonBoMon">
+                                    <option value="">-- Chọn Bộ môn phụ trách --</option>
+                                    @foreach (var bm in danhSachBoMon)
+                                    {
+                                        <option value="@bm.BoMonId" selected="@(bm.BoMonId == Model.BoMonId ? "selected" : null)">@bm.TenBoMon (@bm.MaBoMon)</option>
+                                    }
+                                </select>
+                                <span asp-validation-for="BoMonId" class="text-danger small"></span>
+                            </div>
+
+                            <div class="col-12">
+                                <div class="form-check form-switch mt-2">
+                                    <input asp-for="CoHoatDong" class="form-check-input" id="chkCoHoatDong" />
+                                    <label asp-for="CoHoatDong" class="form-check-label fw-semibold">Môn học đang được giảng dạy</label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="d-flex justify-content-end gap-2 mt-4">
+                            <a asp-action="Index" class="btn btn-outline-secondary" id="btnHuyThaoTac">
+                                <i class="bi bi-x-circle me-1"></i>Hủy Bỏ
+                            </a>
+                            <button type="submit" class="btn btn-primary" id="btnCapNhatMonHoc">
+                                <i class="bi bi-check-circle me-1"></i>Cập Nhật Thay Đổi
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

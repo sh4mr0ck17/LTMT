@@ -1,0 +1,109 @@
+@model List<QuanLyDaoTao.Models.TrinhDoChuyenMon>
+@using QuanLyDaoTao.Models
+@{
+    ViewData["Title"] = "Trình độ chuyên môn";
+    Layout = "_Layout";
+    bool laQuanTri = User.IsInRole(VaiTroMacDinh.QuanTriVien) || User.IsInRole(VaiTroMacDinh.QuanLyDaoTao);
+}
+
+<div class="container py-3" id="pnlDanhSachTrinhDo">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <div>
+            <h4 class="mb-1 text-primary fw-bold" id="lblTieuDe">
+                <i class="bi bi-mortarboard me-2"></i>Danh Mục Trình Độ Chuyên Môn
+            </h4>
+            <span class="text-muted small">Quản lý danh sách trình độ học vấn, học vị và văn bằng chuyên ngành</span>
+        </div>
+        @if (laQuanTri)
+        {
+            <a asp-action="ThemMoi" class="btn btn-primary" id="btnThemTrinhDo">
+                <i class="bi bi-plus-circle-fill me-1"></i>Thêm Mới Trình Độ
+            </a>
+        }
+    </div>
+
+    <div class="card shadow-sm border-0 mb-4" id="pnlBoLoc">
+        <div class="card-body">
+            <form method="get" asp-action="Index" class="row g-3 align-items-center" id="frmTimKiem">
+                <div class="col-md-6">
+                    <div class="input-group">
+                        <span class="input-group-text"><i class="bi bi-search"></i></span>
+                        <input type="text" name="tuKhoa" class="form-control" id="txtTimKiem" 
+                               placeholder="Tìm theo mã hoặc tên trình độ..." value="@ViewBag.TuKhoa" />
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <select name="coHoatDong" class="form-select" id="cboLocTrangThai">
+                        <option value="">-- Tất cả trạng thái --</option>
+                        <option value="true" selected="@(ViewBag.CoHoatDong == true ? "selected" : null)">Hoạt động</option>
+                        <option value="false" selected="@(ViewBag.CoHoatDong == false ? "selected" : null)">Đã khóa</option>
+                    </select>
+                </div>
+                <div class="col-md-3 d-flex gap-2">
+                    <button type="submit" class="btn btn-primary" id="btnTimKiem">Tìm Kiếm</button>
+                    <a asp-action="Index" class="btn btn-outline-secondary" id="btnLamMoi">Làm Mới</a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div class="card shadow-sm border-0" id="pnlBangDuLieu">
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover table-striped align-middle mb-0" id="dgvDanhSachTrinhDo">
+                    <thead class="table-light">
+                        <tr>
+                            <th class="ps-3" style="width: 50px;">#</th>
+                            <th style="width: 140px;">Mã Trình Độ</th>
+                            <th>Tên Trình Độ</th>
+                            <th>Mô Tả Tiêu Chuẩn</th>
+                            <th class="text-center" style="width: 110px;">Nhân Sự</th>
+                            <th class="text-center" style="width: 120px;">Trạng Thái</th>
+                            <th class="text-center" style="width: 140px;">Thao Tác</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @if (Model.Count == 0)
+                        {
+                            <tr><td colspan="7" class="text-center py-4 text-muted">Không tìm thấy trình độ nào</td></tr>
+                        }
+                        else
+                        {
+                            int stt = 1;
+                            foreach (var td in Model)
+                            {
+                                <tr>
+                                    <td class="ps-3 fw-bold text-muted">@(stt++)</td>
+                                    <td><span class="badge bg-primary bg-opacity-10 text-primary font-monospace fs-6">@td.MaTrinhDo</span></td>
+                                    <td class="fw-semibold">@td.TenTrinhDo</td>
+                                    <td class="text-muted small">@(td.MoTa ?? "-")</td>
+                                    <td class="text-center"><span class="badge bg-info text-dark">@td.NhanSus.Count</span></td>
+                                    <td class="text-center">
+                                        <span class="badge @(td.CoHoatDong ? "bg-success" : "bg-secondary")">
+                                            @(td.CoHoatDong ? "Hoạt động" : "Khóa")
+                                        </span>
+                                    </td>
+                                    <td class="text-center">
+                                        @if (laQuanTri)
+                                        {
+                                            <a asp-action="ChinhSua" asp-route-id="@td.TrinhDoChuyenMonId" class="btn btn-sm btn-outline-primary" id="btnSua_@td.TrinhDoChuyenMonId">
+                                                <i class="bi bi-pencil"></i>
+                                            </a>
+                                            <form asp-action="Xoa" asp-route-id="@td.TrinhDoChuyenMonId" method="post" class="d-inline" id="frmXoa_@td.TrinhDoChuyenMonId">
+                                                @Html.AntiForgeryToken()
+                                                <button type="submit" class="btn btn-sm btn-outline-danger" id="btnXoa_@td.TrinhDoChuyenMonId"
+                                                        onclick="return confirm('Bạn có chắc chắn muốn xóa trình độ \'@td.TenTrinhDo\'?');">
+                                                    <i class="bi bi-trash"></i>
+                                                </button>
+                                            </form>
+                                        }
+                                    </td>
+                                </tr>
+                            }
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>

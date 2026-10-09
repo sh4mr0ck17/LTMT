@@ -1,0 +1,93 @@
+@model QuanLyDaoTao.Models.HocVien
+@using QuanLyDaoTao.Models
+@{
+    ViewData["Title"] = $"Hồ sơ: {Model.HoVaTen}";
+    Layout = "_Layout";
+    bool laQuanTri = User.IsInRole(VaiTroMacDinh.QuanTriVien) || User.IsInRole(VaiTroMacDinh.QuanLyDaoTao);
+}
+
+<div class="container py-3" id="pnlChiTietHocVien">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <div>
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb mb-1">
+                    <li class="breadcrumb-item"><a asp-action="Index">Danh sách Học viên</a></li>
+                    <li class="breadcrumb-item active" aria-current="page">@Model.HoVaTen</li>
+                </ol>
+            </nav>
+            <h4 class="mb-0 text-primary fw-bold" id="lblHoVaTen">
+                <i class="bi bi-person-badge me-2"></i>@Model.HoVaTen
+            </h4>
+        </div>
+        <div class="d-flex gap-2">
+            <a asp-action="Index" class="btn btn-outline-secondary" id="btnQuayLai">
+                <i class="bi bi-arrow-left me-1"></i>Quay Lại
+            </a>
+            @if (laQuanTri)
+            {
+                <a asp-action="ChinhSua" asp-route-id="@Model.HocVienId" class="btn btn-primary" id="btnChinhSua">
+                    <i class="bi bi-pencil-square me-1"></i>Chỉnh Sửa
+                </a>
+            }
+        </div>
+    </div>
+
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card shadow-sm border-0">
+                <div class="card-header bg-white py-3 border-bottom">
+                    <h5 class="mb-0 text-primary fw-bold"><i class="bi bi-info-circle me-2"></i>Thông Tin Chi Tiết Học Viên</h5>
+                </div>
+                <div class="card-body p-4">
+                    <dl class="row mb-0">
+                        <dt class="col-sm-4 text-muted">Mã Học Viên:</dt>
+                        <dd class="col-sm-8"><span class="badge bg-primary fs-6 font-monospace">@Model.MaHocVien</span></dd>
+
+                        <dt class="col-sm-4 text-muted">Họ và Tên:</dt>
+                        <dd class="col-sm-8 fw-bold fs-5">@Model.HoVaTen</dd>
+
+                        <dt class="col-sm-4 text-muted">Ngày Sinh:</dt>
+                        <dd class="col-sm-8">@Model.NgaySinh.ToString("dd/MM/yyyy")</dd>
+
+                        <dt class="col-sm-4 text-muted">Giới Tính:</dt>
+                        <dd class="col-sm-8">@Model.GioiTinh</dd>
+
+                        <dt class="col-sm-4 text-muted">Lớp Đào Tạo:</dt>
+                        <dd class="col-sm-8">
+                            <a asp-controller="LopHoc" asp-action="ChiTiet" asp-route-id="@Model.LopHocId">
+                                @(Model.LopHoc?.TenLop ?? "-") (@(Model.LopHoc?.MaLop))
+                            </a>
+                        </dd>
+
+                        <dt class="col-sm-4 text-muted">Khoa Quản Lý:</dt>
+                        <dd class="col-sm-8">@(Model.LopHoc?.Khoa?.TenKhoa ?? "-")</dd>
+
+                        <dt class="col-sm-4 text-muted">Địa Chỉ Email:</dt>
+                        <dd class="col-sm-8">@(Model.Email ?? "-")</dd>
+
+                        <dt class="col-sm-4 text-muted">Số Điện Thoại:</dt>
+                        <dd class="col-sm-8">@(Model.SoDienThoai ?? "-")</dd>
+
+                        <dt class="col-sm-4 text-muted">Địa Chỉ Cư Trú:</dt>
+                        <dd class="col-sm-8">@(Model.DiaChi ?? "-")</dd>
+
+                        <dt class="col-sm-4 text-muted">Trạng Thái:</dt>
+                        <dd class="col-sm-8">
+                            @if (Model.CoHoatDong)
+                            {
+                                <span class="badge bg-success">Đang theo học</span>
+                            }
+                            else
+                            {
+                                <span class="badge bg-secondary">Đã khóa</span>
+                            }
+                        </dd>
+
+                        <dt class="col-sm-4 text-muted">Ngày Tiếp Nhận:</dt>
+                        <dd class="col-sm-8">@Model.NgayTao.ToString("dd/MM/yyyy HH:mm")</dd>
+                    </dl>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

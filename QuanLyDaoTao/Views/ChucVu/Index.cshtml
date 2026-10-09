@@ -1,0 +1,109 @@
+@model List<QuanLyDaoTao.Models.ChucVu>
+@using QuanLyDaoTao.Models
+@{
+    ViewData["Title"] = "Danh mục Chức vụ";
+    Layout = "_Layout";
+    bool laQuanTri = User.IsInRole(VaiTroMacDinh.QuanTriVien) || User.IsInRole(VaiTroMacDinh.QuanLyDaoTao);
+}
+
+<div class="container py-3" id="pnlDanhSachChucVu">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <div>
+            <h4 class="mb-1 text-primary fw-bold" id="lblTieuDe">
+                <i class="bi bi-award me-2"></i>Danh Mục Chức Vụ Công Tác
+            </h4>
+            <span class="text-muted small">Quản lý danh sách các chức danh, vị trí lãnh đạo và công tác chuyên môn</span>
+        </div>
+        @if (laQuanTri)
+        {
+            <a asp-action="ThemMoi" class="btn btn-primary" id="btnThemChucVu">
+                <i class="bi bi-plus-circle-fill me-1"></i>Thêm Mới Chức Vụ
+            </a>
+        }
+    </div>
+
+    <div class="card shadow-sm border-0 mb-4" id="pnlBoLoc">
+        <div class="card-body">
+            <form method="get" asp-action="Index" class="row g-3 align-items-center" id="frmTimKiem">
+                <div class="col-md-6">
+                    <div class="input-group">
+                        <span class="input-group-text"><i class="bi bi-search"></i></span>
+                        <input type="text" name="tuKhoa" class="form-control" id="txtTimKiem" 
+                               placeholder="Tìm theo mã hoặc tên chức vụ..." value="@ViewBag.TuKhoa" />
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <select name="coHoatDong" class="form-select" id="cboLocTrangThai">
+                        <option value="">-- Tất cả trạng thái --</option>
+                        <option value="true" selected="@(ViewBag.CoHoatDong == true ? "selected" : null)">Hoạt động</option>
+                        <option value="false" selected="@(ViewBag.CoHoatDong == false ? "selected" : null)">Đã khóa</option>
+                    </select>
+                </div>
+                <div class="col-md-3 d-flex gap-2">
+                    <button type="submit" class="btn btn-primary" id="btnTimKiem">Tìm Kiếm</button>
+                    <a asp-action="Index" class="btn btn-outline-secondary" id="btnLamMoi">Làm Mới</a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div class="card shadow-sm border-0" id="pnlBangDuLieu">
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover table-striped align-middle mb-0" id="dgvDanhSachChucVu">
+                    <thead class="table-light">
+                        <tr>
+                            <th class="ps-3" style="width: 50px;">#</th>
+                            <th style="width: 140px;">Mã Chức Vụ</th>
+                            <th>Tên Chức Vụ</th>
+                            <th>Mô Tả Nhiệm Vụ</th>
+                            <th class="text-center" style="width: 110px;">Nhân Sự</th>
+                            <th class="text-center" style="width: 120px;">Trạng Thái</th>
+                            <th class="text-center" style="width: 140px;">Thao Tác</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @if (Model.Count == 0)
+                        {
+                            <tr><td colspan="7" class="text-center py-4 text-muted">Không tìm thấy chức vụ nào</td></tr>
+                        }
+                        else
+                        {
+                            int stt = 1;
+                            foreach (var cv in Model)
+                            {
+                                <tr>
+                                    <td class="ps-3 fw-bold text-muted">@(stt++)</td>
+                                    <td><span class="badge bg-primary bg-opacity-10 text-primary font-monospace fs-6">@cv.MaChucVu</span></td>
+                                    <td class="fw-semibold">@cv.TenChucVu</td>
+                                    <td class="text-muted small">@(cv.MoTa ?? "-")</td>
+                                    <td class="text-center"><span class="badge bg-info text-dark">@cv.NhanSus.Count</span></td>
+                                    <td class="text-center">
+                                        <span class="badge @(cv.CoHoatDong ? "bg-success" : "bg-secondary")">
+                                            @(cv.CoHoatDong ? "Hoạt động" : "Khóa")
+                                        </span>
+                                    </td>
+                                    <td class="text-center">
+                                        @if (laQuanTri)
+                                        {
+                                            <a asp-action="ChinhSua" asp-route-id="@cv.ChucVuId" class="btn btn-sm btn-outline-primary" id="btnSua_@cv.ChucVuId">
+                                                <i class="bi bi-pencil"></i>
+                                            </a>
+                                            <form asp-action="Xoa" asp-route-id="@cv.ChucVuId" method="post" class="d-inline" id="frmXoa_@cv.ChucVuId">
+                                                @Html.AntiForgeryToken()
+                                                <button type="submit" class="btn btn-sm btn-outline-danger" id="btnXoa_@cv.ChucVuId"
+                                                        onclick="return confirm('Bạn có chắc chắn muốn xóa chức vụ \'@cv.TenChucVu\'?');">
+                                                    <i class="bi bi-trash"></i>
+                                                </button>
+                                            </form>
+                                        }
+                                    </td>
+                                </tr>
+                            }
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>

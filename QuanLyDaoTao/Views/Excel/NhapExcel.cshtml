@@ -1,0 +1,77 @@
+@{
+    var module = ViewBag.Module as string ?? "Khoa";
+    var tieuDeModule = ViewBag.TieuDeModule as string ?? module;
+    ViewData["Title"] = $"Nhập Excel - {tieuDeModule}";
+    Layout = "_Layout";
+}
+
+<div class="container py-4" id="pnlNhapExcel">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card shadow-sm border-0">
+                <div class="card-header bg-primary text-white py-3">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0" id="lblTieuDe">
+                            <i class="bi bi-file-earmark-excel-fill me-2"></i>Nhập Dữ Liệu Từ Excel: @tieuDeModule
+                        </h5>
+                        <a asp-action="TaiTepMau" asp-route-module="@module" class="btn btn-light btn-sm fw-semibold text-primary" id="btnTaiTepMau">
+                            <i class="bi bi-download me-1"></i>Tải Tệp Mẫu Chuẩn
+                        </a>
+                    </div>
+                </div>
+                <div class="card-body p-4">
+                    <!-- Quy trình các bước -->
+                    <div class="d-flex justify-content-around text-center mb-4 pb-3 border-bottom">
+                        <div class="step-item text-primary fw-bold">
+                            <span class="badge bg-primary rounded-pill px-3 py-2 fs-6">1</span>
+                            <div class="small mt-1">Chọn tệp</div>
+                        </div>
+                        <div class="step-item text-muted">
+                            <span class="badge bg-secondary rounded-pill px-3 py-2 fs-6">2</span>
+                            <div class="small mt-1">Kiểm tra & Xem trước</div>
+                        </div>
+                        <div class="step-item text-muted">
+                            <span class="badge bg-secondary rounded-pill px-3 py-2 fs-6">3</span>
+                            <div class="small mt-1">Xác nhận ghi dữ liệu</div>
+                        </div>
+                    </div>
+
+                    <div class="alert alert-info d-flex align-items-start mb-4" role="alert">
+                        <i class="bi bi-info-circle-fill fs-4 me-3 text-info"></i>
+                        <div>
+                            <h6 class="alert-heading fw-bold mb-1">Hướng dẫn nhập dữ liệu an toàn:</h6>
+                            <ul class="mb-0 ps-3 small">
+                                <li>Vui lòng nhấn nút <strong>"Tải Tệp Mẫu Chuẩn"</strong> để có đúng cấu trúc tiêu đề cột và ví dụ hợp lệ.</li>
+                                <li>Hệ thống kiểm tra nghiêm ngặt tiêu đề cột (Header), kiểu dữ liệu và các ràng buộc khóa ngoại trước khi cho phép ghi.</li>
+                                <li>Dung lượng tệp tối đa: <strong>5 MB</strong> | Số dòng dữ liệu tối đa: <strong>1000 dòng</strong>.</li>
+                                <li>Mọi mã nghiệp vụ (giữ nguyên số 0 đầu) sẽ được xác thực trùng lặp trước khi lưu.</li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    <form asp-action="KiemTraTep" method="post" enctype="multipart/form-data" id="frmTaiLenTep">
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" name="module" value="@module" />
+
+                        <div asp-validation-summary="All" class="alert alert-danger" id="lblThongBaoLoi" role="alert"></div>
+
+                        <div class="mb-4">
+                            <label for="txtChonTepExcel" class="form-label fw-bold">Chọn tệp Excel từ máy tính (.xlsx) <span class="text-danger">*</span></label>
+                            <input type="file" name="tepExcel" class="form-control form-control-lg" id="txtChonTepExcel" accept=".xlsx" required />
+                            <div class="form-text">Chỉ chấp nhận tệp định dạng Microsoft Excel (.xlsx).</div>
+                        </div>
+
+                        <div class="d-flex justify-content-between align-items-center">
+                            <a asp-controller="@module" asp-action="Index" class="btn btn-outline-secondary" id="btnQuayLai">
+                                <i class="bi bi-arrow-left me-1"></i>Quay Lại Danh Sách
+                            </a>
+                            <button type="submit" class="btn btn-primary btn-lg" id="btnKiemTraTep">
+                                <i class="bi bi-search me-1"></i>Kiểm Tra & Xem Trước
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

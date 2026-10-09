@@ -1,0 +1,81 @@
+@model QuanLyDaoTao.Models.BoMon
+@{
+    ViewData["Title"] = $"Chỉnh sửa Bộ môn: {Model.TenBoMon}";
+    Layout = "_Layout";
+    var danhSachKhoa = ViewBag.DanhSachKhoa as List<QuanLyDaoTao.Models.Khoa> ?? new List<QuanLyDaoTao.Models.Khoa>();
+}
+
+<div class="container py-3" id="pnlChinhSuaBoMon">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card shadow-sm border-0">
+                <div class="card-header bg-white py-3 border-bottom">
+                    <h5 class="mb-0 text-primary fw-bold" id="lblTieuDe">
+                        <i class="bi bi-pencil-square me-2"></i>Chỉnh Sửa Bộ Môn: @Model.TenBoMon
+                    </h5>
+                </div>
+                <div class="card-body p-4">
+                    <form asp-action="ChinhSua" asp-route-id="@Model.BoMonId" method="post" id="frmChinhSuaBoMon">
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" asp-for="BoMonId" />
+                        <input type="hidden" asp-for="NgayTao" />
+
+                        <div asp-validation-summary="ModelOnly" class="alert alert-danger" id="lblThongBaoLoi" role="alert"></div>
+
+                        <div class="row g-3">
+                            <div class="col-md-4">
+                                <label asp-for="MaBoMon" class="form-label fw-bold">Mã Bộ Môn <span class="text-danger">*</span></label>
+                                <input asp-for="MaBoMon" class="form-control" id="txtMaBoMon" />
+                                <span asp-validation-for="MaBoMon" class="text-danger small"></span>
+                            </div>
+
+                            <div class="col-md-8">
+                                <label asp-for="TenBoMon" class="form-label fw-bold">Tên Bộ Môn <span class="text-danger">*</span></label>
+                                <input asp-for="TenBoMon" class="form-control" id="txtTenBoMon" />
+                                <span asp-validation-for="TenBoMon" class="text-danger small"></span>
+                            </div>
+
+                            <div class="col-12">
+                                <label asp-for="KhoaId" class="form-label fw-bold">Khoa Chủ Quản <span class="text-danger">*</span></label>
+                                <select asp-for="KhoaId" class="form-select" id="cboChonKhoa">
+                                    <option value="">-- Chọn Khoa chủ quản --</option>
+                                    @foreach (var k in danhSachKhoa)
+                                    {
+                                        <option value="@k.KhoaId" selected="@(k.KhoaId == Model.KhoaId ? "selected" : null)">@k.TenKhoa (@k.MaKhoa)</option>
+                                    }
+                                </select>
+                                <span asp-validation-for="KhoaId" class="text-danger small"></span>
+                            </div>
+
+                            <div class="col-12">
+                                <label asp-for="MoTa" class="form-label fw-bold">Mô Tả Chức Năng Nhiệm Vụ</label>
+                                <textarea asp-for="MoTa" class="form-control" id="txtMoTa" rows="3"></textarea>
+                                <span asp-validation-for="MoTa" class="text-danger small"></span>
+                            </div>
+
+                            <div class="col-12">
+                                <div class="form-check form-switch mt-2">
+                                    <input asp-for="CoHoatDong" class="form-check-input" id="chkCoHoatDong" />
+                                    <label asp-for="CoHoatDong" class="form-check-label fw-semibold">Bộ môn đang hoạt động</label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="d-flex justify-content-end gap-2 mt-4">
+                            <a asp-action="Index" class="btn btn-outline-secondary" id="btnHuyThaoTac">
+                                <i class="bi bi-x-circle me-1"></i>Hủy Bỏ
+                            </a>
+                            <button type="submit" class="btn btn-primary" id="btnCapNhatBoMon">
+                                <i class="bi bi-check-circle me-1"></i>Cập Nhật Thay Đổi
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

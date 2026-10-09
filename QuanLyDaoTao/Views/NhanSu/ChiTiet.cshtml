@@ -1,0 +1,276 @@
+@model QuanLyDaoTao.Models.NhanSu
+@using QuanLyDaoTao.Models
+@{
+    ViewData["Title"] = $"Hồ sơ nhân sự: {Model.HoVaTen}";
+    Layout = "_Layout";
+    bool laQuanTri = User.IsInRole(VaiTroMacDinh.QuanTriVien) || User.IsInRole(VaiTroMacDinh.QuanLyDaoTao);
+}
+
+<div class="container-fluid px-4 py-3" id="pnlChiTietNhanSu">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <div>
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb mb-1">
+                    <li class="breadcrumb-item"><a asp-action="Index">Danh sách Nhân sự</a></li>
+                    <li class="breadcrumb-item active" aria-current="page">@Model.HoVaTen</li>
+                </ol>
+            </nav>
+            <h4 class="mb-0 text-primary fw-bold" id="lblHoVaTen">
+                <i class="bi bi-person-lines-fill me-2"></i>Hồ Sơ Cán Bộ & Giảng Viên: @Model.HoVaTen
+            </h4>
+        </div>
+        <div class="d-flex gap-2">
+            <a asp-action="Index" class="btn btn-outline-secondary" id="btnQuayLai">
+                <i class="bi bi-arrow-left me-1"></i>Quay Lại
+            </a>
+            @if (laQuanTri)
+            {
+                <a asp-action="ChinhSua" asp-route-id="@Model.NhanSuId" class="btn btn-primary" id="btnChinhSua">
+                    <i class="bi bi-pencil-square me-1"></i>Chỉnh Sửa Hồ Sơ
+                </a>
+            }
+        </div>
+    </div>
+
+    <!-- Tóm tắt hồ sơ Card Header -->
+    <div class="card shadow-sm border-0 mb-4 bg-primary text-white">
+        <div class="card-body p-4">
+            <div class="d-flex align-items-center">
+                <div class="me-4 text-center">
+                    <div class="rounded-circle bg-white text-primary d-flex align-items-center justify-content-center shadow" style="width: 80px; height: 80px; font-size: 2.5rem;">
+                        <i class="bi bi-person-fill"></i>
+                    </div>
+                </div>
+                <div class="flex-grow-1">
+                    <div class="d-flex align-items-center gap-3 mb-1">
+                        <h3 class="mb-0 fw-bold">@Model.HoVaTen</h3>
+                        <span class="badge bg-light text-primary fs-6 font-monospace">@Model.MaNhanSu</span>
+                        <span class="badge bg-success">@Model.TrangThaiCongTac</span>
+                    </div>
+                    <p class="mb-0 text-white-50">
+                        <i class="bi bi-award me-1"></i>@(Model.ChucVu?.TenChucVu ?? "Cán bộ") • 
+                        <i class="bi bi-building me-1"></i>@(Model.Khoa?.TenKhoa ?? "Chưa phân khoa") 
+                        @(Model.BoMon != null ? $"(Bộ môn {Model.BoMon.TenBoMon})" : "") • 
+                        <i class="bi bi-envelope me-1"></i>@Model.EmailCongViec
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Chi tiết theo Tabs -->
+    <div class="card shadow-sm border-0">
+        <div class="card-header bg-white border-bottom p-0">
+            <ul class="nav nav-tabs card-header-tabs m-0 px-3" id="tabHoSoNhanSu" role="tablist">
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link active py-3" id="tab-canhan" data-bs-toggle="tab" data-bs-target="#content-canhan" type="button" role="tab">
+                        <i class="bi bi-person-vcard me-1"></i>Thông Tin Cá Nhân & Liên Hệ
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link py-3" id="tab-congtac" data-bs-toggle="tab" data-bs-target="#content-congtac" type="button" role="tab">
+                        <i class="bi bi-briefcase me-1"></i>Quá Trình Công Tác & Vị Trí
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link py-3" id="tab-chuyenmon" data-bs-toggle="tab" data-bs-target="#content-chuyenmon" type="button" role="tab">
+                        <i class="bi bi-mortarboard me-1"></i>Trình Độ & Chuyên Môn
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link py-3" id="tab-phancong" data-bs-toggle="tab" data-bs-target="#content-phancong" type="button" role="tab">
+                        <i class="bi bi-calendar-check me-1"></i>Phân Công Giảng Dạy (@Model.PhanCongGiangDays.Count)
+                    </button>
+                </li>
+            </ul>
+        </div>
+        <div class="card-body p-4">
+            <div class="tab-content" id="tabHoSoNhanSuContent">
+                <!-- Tab 1: Cá nhân & Liên hệ (Nhóm A, B, C) -->
+                <div class="tab-pane fade show active" id="content-canhan" role="tabpanel">
+                    <div class="row g-4">
+                        <div class="col-md-6">
+                            <h6 class="text-primary fw-bold border-bottom pb-2 mb-3">Thông Tin Cơ Bản</h6>
+                            <dl class="row mb-0">
+                                <dt class="col-sm-4 text-muted">Họ và Tên:</dt>
+                                <dd class="col-sm-8 fw-bold">@Model.HoVaTen</dd>
+
+                                <dt class="col-sm-4 text-muted">Ngày Sinh:</dt>
+                                <dd class="col-sm-8">@Model.NgaySinh.ToString("dd/MM/yyyy")</dd>
+
+                                <dt class="col-sm-4 text-muted">Giới Tính:</dt>
+                                <dd class="col-sm-8">@Model.GioiTinh</dd>
+
+                                <dt class="col-sm-4 text-muted">Quốc Tịch:</dt>
+                                <dd class="col-sm-8">@Model.QuocTich</dd>
+
+                                <dt class="col-sm-4 text-muted">Dân Tộc:</dt>
+                                <dd class="col-sm-8">@(Model.DanToc ?? "-")</dd>
+
+                                <dt class="col-sm-4 text-muted">Hôn Nhân:</dt>
+                                <dd class="col-sm-8">@(Model.TinhTrangHonNhan ?? "-")</dd>
+                            </dl>
+                        </div>
+                        <div class="col-md-6">
+                            <h6 class="text-primary fw-bold border-bottom pb-2 mb-3">Định Danh & Liên Lạc</h6>
+                            <dl class="row mb-0">
+                                <dt class="col-sm-4 text-muted">Loại Giấy Tờ:</dt>
+                                <dd class="col-sm-8">@Model.LoaiGiayTo</dd>
+
+                                <dt class="col-sm-4 text-muted">Số Giấy Tờ:</dt>
+                                <dd class="col-sm-8 fw-bold font-monospace">@(Model.SoGiayTo ?? "-")</dd>
+
+                                <dt class="col-sm-4 text-muted">Ngày / Nơi Cấp:</dt>
+                                <dd class="col-sm-8">@(Model.NgayCap?.ToString("dd/MM/yyyy") ?? "-") / @(Model.NoiCap ?? "-")</dd>
+
+                                <dt class="col-sm-4 text-muted">SĐT Liên Hệ:</dt>
+                                <dd class="col-sm-8">@(Model.SoDienThoai ?? "-")</dd>
+
+                                <dt class="col-sm-4 text-muted">Email Cơ Quan:</dt>
+                                <dd class="col-sm-8"><a href="mailto:@Model.EmailCongViec">@Model.EmailCongViec</a></dd>
+
+                                <dt class="col-sm-4 text-muted">Email Cá Nhân:</dt>
+                                <dd class="col-sm-8">@(Model.EmailCaNhan ?? "-")</dd>
+
+                                <dt class="col-sm-4 text-muted">Thường Trú:</dt>
+                                <dd class="col-sm-8">@(Model.DiaChiThuongTru ?? "-")</dd>
+
+                                <dt class="col-sm-4 text-muted">Liên Hệ Khẩn:</dt>
+                                <dd class="col-sm-8">@(Model.NguoiLienHeKhanCap ?? "-") (@(Model.SoDienThoaiKhanCap ?? "-"))</dd>
+                            </dl>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tab 2: Quá trình công tác (Nhóm D) -->
+                <div class="tab-pane fade" id="content-congtac" role="tabpanel">
+                    <div class="row g-4">
+                        <div class="col-md-6">
+                            <h6 class="text-primary fw-bold border-bottom pb-2 mb-3">Đơn Vị & Chức Vụ</h6>
+                            <dl class="row mb-0">
+                                <dt class="col-sm-5 text-muted">Khoa Trực Thuộc:</dt>
+                                <dd class="col-sm-7 fw-bold">@(Model.Khoa?.TenKhoa ?? "-")</dd>
+
+                                <dt class="col-sm-5 text-muted">Bộ Môn Trực Thuộc:</dt>
+                                <dd class="col-sm-7">@(Model.BoMon?.TenBoMon ?? "-")</dd>
+
+                                <dt class="col-sm-5 text-muted">Chức Vụ Công Tác:</dt>
+                                <dd class="col-sm-7"><span class="badge bg-primary">@(Model.ChucVu?.TenChucVu ?? "-")</span></dd>
+
+                                <dt class="col-sm-5 text-muted">Chức Danh Nghề Nghiệp:</dt>
+                                <dd class="col-sm-7">@(Model.ChucDanhNgheNghiep ?? "-")</dd>
+
+                                <dt class="col-sm-5 text-muted">Người Quản Lý:</dt>
+                                <dd class="col-sm-7">@(Model.NguoiQuanLyTrucTiep ?? "-")</dd>
+                            </dl>
+                        </div>
+                        <div class="col-md-6">
+                            <h6 class="text-primary fw-bold border-bottom pb-2 mb-3">Hợp Đồng & Thời Hạn</h6>
+                            <dl class="row mb-0">
+                                <dt class="col-sm-5 text-muted">Ngày Vào Làm:</dt>
+                                <dd class="col-sm-7">@(Model.NgayVaoLam?.ToString("dd/MM/yyyy") ?? "-")</dd>
+
+                                <dt class="col-sm-5 text-muted">Loại Hợp Đồng:</dt>
+                                <dd class="col-sm-7">@(Model.LoaiHopDong ?? "-")</dd>
+
+                                <dt class="col-sm-5 text-muted">Bắt Đầu HĐ:</dt>
+                                <dd class="col-sm-7">@(Model.NgayBatDauHopDong?.ToString("dd/MM/yyyy") ?? "-")</dd>
+
+                                <dt class="col-sm-5 text-muted">Kết Thúc HĐ:</dt>
+                                <dd class="col-sm-7">@(Model.NgayKetThucHopDong?.ToString("dd/MM/yyyy") ?? "Không xác định")</dd>
+
+                                <dt class="col-sm-5 text-muted">Trạng Thái:</dt>
+                                <dd class="col-sm-7"><span class="badge bg-success">@Model.TrangThaiCongTac</span></dd>
+                            </dl>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tab 3: Trình độ & Chuyên môn (Nhóm E) -->
+                <div class="tab-pane fade" id="content-chuyenmon" role="tabpanel">
+                    <div class="row g-4">
+                        <div class="col-md-6">
+                            <h6 class="text-primary fw-bold border-bottom pb-2 mb-3">Học Vấn & Bằng Cấp</h6>
+                            <dl class="row mb-0">
+                                <dt class="col-sm-5 text-muted">Trình Độ Chuyên Môn:</dt>
+                                <dd class="col-sm-7 fw-bold">@(Model.TrinhDoChuyenMon?.TenTrinhDo ?? "-")</dd>
+
+                                <dt class="col-sm-5 text-muted">Trình Độ Học Vấn:</dt>
+                                <dd class="col-sm-7">@(Model.TrinhDoHocVan ?? "-")</dd>
+
+                                <dt class="col-sm-5 text-muted">Chuyên Ngành:</dt>
+                                <dd class="col-sm-7">@(Model.ChuyenNganh ?? "-")</dd>
+
+                                <dt class="col-sm-5 text-muted">Trường Đào Tạo:</dt>
+                                <dd class="col-sm-7">@(Model.TruongDaoTao ?? "-")</dd>
+
+                                <dt class="col-sm-5 text-muted">Học Vị / Học Hàm:</dt>
+                                <dd class="col-sm-7">@(Model.HocVi ?? "-") / @(Model.HocHam ?? "-")</dd>
+                            </dl>
+                        </div>
+                        <div class="col-md-6">
+                            <h6 class="text-primary fw-bold border-bottom pb-2 mb-3">Nghiên Cứu & Kinh Nghiệm</h6>
+                            <dl class="row mb-0">
+                                <dt class="col-sm-5 text-muted">Lĩnh Vực Chuyên Môn:</dt>
+                                <dd class="col-sm-7">@(Model.LinhVucChuyenMon ?? "-")</dd>
+
+                                <dt class="col-sm-5 text-muted">Kinh Nghiệm:</dt>
+                                <dd class="col-sm-7">@(Model.KinhNghiemCongTac ?? "-")</dd>
+
+                                <dt class="col-sm-5 text-muted">Ghi Chú:</dt>
+                                <dd class="col-sm-7">@(Model.GhiChuChuyenMon ?? "-")</dd>
+                            </dl>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tab 4: Phân công giảng dạy (Nhóm F) -->
+                <div class="tab-pane fade" id="content-phancong" role="tabpanel">
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle mb-0" id="dgvPhanCongNhanSu">
+                            <thead class="table-light">
+                                <tr>
+                                    <th class="ps-3">Mã Phân Công</th>
+                                    <th>Môn Học Giảng Dạy</th>
+                                    <th>Lớp Tiếp Nhận</th>
+                                    <th>Học Kỳ</th>
+                                    <th>Vai Trò Giảng Dạy</th>
+                                    <th class="text-center">Chủ Nhiệm</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @if (Model.PhanCongGiangDays.Count == 0)
+                                {
+                                    <tr><td colspan="6" class="text-center py-4 text-muted">Chưa có phân công giảng dạy nào được giao</td></tr>
+                                }
+                                else
+                                {
+                                    foreach (var pc in Model.PhanCongGiangDays)
+                                    {
+                                        <tr>
+                                            <td class="ps-3 font-monospace fw-bold">@pc.MaPhanCong</td>
+                                            <td>@(pc.MonHoc?.TenMonHoc ?? "-")</td>
+                                            <td>@(pc.LopHoc?.TenLop ?? "-")</td>
+                                            <td>@pc.HocKy (@pc.NamHoc)</td>
+                                            <td><span class="badge bg-light text-dark border">@pc.VaiTroGiangDay</span></td>
+                                            <td class="text-center">
+                                                @if (pc.LaChuNhiem)
+                                                {
+                                                    <span class="badge bg-primary">GVCN</span>
+                                                }
+                                                else
+                                                {
+                                                    <span class="text-muted">-</span>
+                                                }
+                                            </td>
+                                        </tr>
+                                    }
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

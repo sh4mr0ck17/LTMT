@@ -1,0 +1,60 @@
+@model QuanLyDaoTao.ViewModels.TaiKhoan.DangNhapViewModel
+@{
+    ViewData["Title"] = "Đăng nhập hệ thống";
+    Layout = "_Layout";
+}
+
+<div class="row justify-content-center mt-5" id="pnlDangNhap">
+    <div class="col-md-5">
+        <div class="card shadow-sm border-0">
+            <div class="card-header bg-primary text-white text-center py-3">
+                <h4 class="mb-0" id="lblTieuDe"><i class="bi bi-shield-lock me-2"></i>Đăng Nhập Hệ Thống</h4>
+                <small class="text-white-50">Hệ thống Quản lý Đào tạo & Nhân sự</small>
+            </div>
+            <div class="card-body p-4">
+                <form asp-action="DangNhap" method="post" id="frmDangNhap">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" asp-for="DuongDanQuayLai" />
+
+                    <div asp-validation-summary="ModelOnly" class="alert alert-danger" id="lblThongBaoLoi" role="alert"></div>
+
+                    <div class="mb-3">
+                        <label asp-for="Email" class="form-label fw-bold">Địa chỉ Email</label>
+                        <div class="input-group">
+                            <span class="input-group-text"><i class="bi bi-envelope"></i></span>
+                            <input asp-for="Email" class="form-control" id="txtEmail" placeholder="admin@quanlydaotao.local" autofocus />
+                        </div>
+                        <span asp-validation-for="Email" class="text-danger small"></span>
+                    </div>
+
+                    <div class="mb-3">
+                        <label asp-for="MatKhau" class="form-label fw-bold">Mật khẩu</label>
+                        <div class="input-group">
+                            <span class="input-group-text"><i class="bi bi-key"></i></span>
+                            <input asp-for="MatKhau" class="form-control" id="txtMatKhau" placeholder="••••••••" />
+                        </div>
+                        <span asp-validation-for="MatKhau" class="text-danger small"></span>
+                    </div>
+
+                    <div class="mb-3 form-check">
+                        <input asp-for="GhiNhoDangNhap" class="form-check-input" id="chkGhiNhoDangNhap" />
+                        <label asp-for="GhiNhoDangNhap" class="form-check-label">Ghi nhớ đăng nhập trên thiết bị này</label>
+                    </div>
+
+                    <div class="d-grid gap-2 mt-4">
+                        <button type="submit" class="btn btn-primary btn-lg" id="btnDangNhap">
+                            <i class="bi bi-box-arrow-in-right me-2"></i>Đăng Nhập
+                        </button>
+                    </div>
+                </form>
+            </div>
+            <div class="card-footer bg-light text-center py-3 text-muted small">
+                Tài khoản mặc định: <code>admin@quanlydaotao.local</code> | Mật khẩu: <code>Admin@123456</code>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

@@ -1,0 +1,87 @@
+@model QuanLyDaoTao.Models.LopHoc
+@{
+    ViewData["Title"] = $"Chỉnh sửa Lớp: {Model.TenLop}";
+    Layout = "_Layout";
+    var danhSachKhoa = ViewBag.DanhSachKhoa as List<QuanLyDaoTao.Models.Khoa> ?? new List<QuanLyDaoTao.Models.Khoa>();
+}
+
+<div class="container py-3" id="pnlChinhSuaLop">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card shadow-sm border-0">
+                <div class="card-header bg-white py-3 border-bottom">
+                    <h5 class="mb-0 text-primary fw-bold" id="lblTieuDe">
+                        <i class="bi bi-pencil-square me-2"></i>Chỉnh Sửa Lớp Học: @Model.TenLop
+                    </h5>
+                </div>
+                <div class="card-body p-4">
+                    <form asp-action="ChinhSua" asp-route-id="@Model.LopHocId" method="post" id="frmChinhSuaLop">
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" asp-for="LopHocId" />
+                        <input type="hidden" asp-for="NgayTao" />
+
+                        <div asp-validation-summary="ModelOnly" class="alert alert-danger" id="lblThongBaoLoi" role="alert"></div>
+
+                        <div class="row g-3">
+                            <div class="col-md-4">
+                                <label asp-for="MaLop" class="form-label fw-bold">Mã Lớp <span class="text-danger">*</span></label>
+                                <input asp-for="MaLop" class="form-control" id="txtMaLop" />
+                                <span asp-validation-for="MaLop" class="text-danger small"></span>
+                            </div>
+
+                            <div class="col-md-8">
+                                <label asp-for="TenLop" class="form-label fw-bold">Tên Lớp Học <span class="text-danger">*</span></label>
+                                <input asp-for="TenLop" class="form-control" id="txtTenLop" />
+                                <span asp-validation-for="TenLop" class="text-danger small"></span>
+                            </div>
+
+                            <div class="col-md-6">
+                                <label asp-for="NienKhoa" class="form-label fw-bold">Niên Khóa <span class="text-danger">*</span></label>
+                                <input asp-for="NienKhoa" class="form-control" id="txtNienKhoa" />
+                                <span asp-validation-for="NienKhoa" class="text-danger small"></span>
+                            </div>
+
+                            <div class="col-md-6">
+                                <label asp-for="SoLuongToiDa" class="form-label fw-bold">Sĩ Số Tối Đa</label>
+                                <input asp-for="SoLuongToiDa" class="form-control" id="txtSoLuongToiDa" type="number" min="1" max="500" />
+                                <span asp-validation-for="SoLuongToiDa" class="text-danger small"></span>
+                            </div>
+
+                            <div class="col-12">
+                                <label asp-for="KhoaId" class="form-label fw-bold">Khoa Quản Lý <span class="text-danger">*</span></label>
+                                <select asp-for="KhoaId" class="form-select" id="cboChonKhoa">
+                                    <option value="">-- Chọn Khoa quản lý lớp --</option>
+                                    @foreach (var k in danhSachKhoa)
+                                    {
+                                        <option value="@k.KhoaId" selected="@(k.KhoaId == Model.KhoaId ? "selected" : null)">@k.TenKhoa (@k.MaKhoa)</option>
+                                    }
+                                </select>
+                                <span asp-validation-for="KhoaId" class="text-danger small"></span>
+                            </div>
+
+                            <div class="col-12">
+                                <div class="form-check form-switch mt-2">
+                                    <input asp-for="CoHoatDong" class="form-check-input" id="chkCoHoatDong" />
+                                    <label asp-for="CoHoatDong" class="form-check-label fw-semibold">Lớp học đang mở đào tạo</label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="d-flex justify-content-end gap-2 mt-4">
+                            <a asp-action="Index" class="btn btn-outline-secondary" id="btnHuyThaoTac">
+                                <i class="bi bi-x-circle me-1"></i>Hủy Bỏ
+                            </a>
+                            <button type="submit" class="btn btn-primary" id="btnCapNhatLop">
+                                <i class="bi bi-check-circle me-1"></i>Cập Nhật Thay Đổi
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

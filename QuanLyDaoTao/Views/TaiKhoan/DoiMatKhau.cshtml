@@ -1,0 +1,50 @@
+@model QuanLyDaoTao.ViewModels.TaiKhoan.DoiMatKhauViewModel
+@{
+    ViewData["Title"] = "Đổi mật khẩu tài khoản";
+    Layout = "_Layout";
+}
+
+<div class="row justify-content-center mt-4" id="pnlDoiMatKhau">
+    <div class="col-md-6">
+        <div class="card shadow-sm border-0">
+            <div class="card-header bg-white py-3 border-bottom">
+                <h5 class="mb-0 text-primary" id="lblTieuDe"><i class="bi bi-key-fill me-2"></i>Đổi Mật Khẩu Cá Nhân</h5>
+            </div>
+            <div class="card-body p-4">
+                <form asp-action="DoiMatKhau" method="post" id="frmDoiMatKhau">
+                    @Html.AntiForgeryToken()
+                    <div asp-validation-summary="ModelOnly" class="alert alert-danger" id="lblThongBaoLoi" role="alert"></div>
+
+                    <div class="mb-3">
+                        <label asp-for="MatKhauHienTai" class="form-label fw-bold">Mật khẩu hiện tại</label>
+                        <input asp-for="MatKhauHienTai" class="form-control" id="txtMatKhauHienTai" placeholder="Nhập mật khẩu hiện tại" />
+                        <span asp-validation-for="MatKhauHienTai" class="text-danger small"></span>
+                    </div>
+
+                    <div class="mb-3">
+                        <label asp-for="MatKhauMoi" class="form-label fw-bold">Mật khẩu mới</label>
+                        <input asp-for="MatKhauMoi" class="form-control" id="txtMatKhauMoi" placeholder="Nhập mật khẩu mới (tối thiểu 6 ký tự)" />
+                        <span asp-validation-for="MatKhauMoi" class="text-danger small"></span>
+                    </div>
+
+                    <div class="mb-4">
+                        <label asp-for="XacNhanMatKhauMoi" class="form-label fw-bold">Xác nhận mật khẩu mới</label>
+                        <input asp-for="XacNhanMatKhauMoi" class="form-control" id="txtXacNhanMatKhauMoi" placeholder="Nhập lại mật khẩu mới" />
+                        <span asp-validation-for="XacNhanMatKhauMoi" class="text-danger small"></span>
+                    </div>
+
+                    <div class="d-flex justify-content-end gap-2">
+                        <a asp-controller="Home" asp-action="Index" class="btn btn-outline-secondary" id="btnHuyThaoTac">Hủy Bỏ</a>
+                        <button type="submit" class="btn btn-primary" id="btnDoiMatKhau">
+                            <i class="bi bi-check-circle me-1"></i>Lưu Mật Khẩu Mới
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

@@ -1,0 +1,134 @@
+@model QuanLyDaoTao.Models.MonHoc
+@using QuanLyDaoTao.Models
+@{
+    ViewData["Title"] = $"Chi tiết Môn học: {Model.TenMonHoc}";
+    Layout = "_Layout";
+    bool laQuanTri = User.IsInRole(VaiTroMacDinh.QuanTriVien) || User.IsInRole(VaiTroMacDinh.QuanLyDaoTao);
+}
+
+<div class="container-fluid px-4 py-3" id="pnlChiTietMonHoc">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <div>
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb mb-1">
+                    <li class="breadcrumb-item"><a asp-action="Index">Danh sách Môn học</a></li>
+                    <li class="breadcrumb-item active" aria-current="page">@Model.TenMonHoc</li>
+                </ol>
+            </nav>
+            <h4 class="mb-0 text-primary fw-bold" id="lblTenMonHoc">
+                <i class="bi bi-journal-bookmark me-2"></i>@Model.TenMonHoc
+            </h4>
+        </div>
+        <div class="d-flex gap-2">
+            <a asp-action="Index" class="btn btn-outline-secondary" id="btnQuayLai">
+                <i class="bi bi-arrow-left me-1"></i>Quay Lại
+            </a>
+            @if (laQuanTri)
+            {
+                <a asp-action="ChinhSua" asp-route-id="@Model.MonHocId" class="btn btn-primary" id="btnChinhSua">
+                    <i class="bi bi-pencil-square me-1"></i>Chỉnh Sửa
+                </a>
+            }
+        </div>
+    </div>
+
+    <div class="row g-4">
+        <!-- Thông tin cơ bản môn học -->
+        <div class="col-lg-4">
+            <div class="card shadow-sm border-0 mb-4">
+                <div class="card-header bg-white py-3 border-bottom">
+                    <h5 class="mb-0 text-primary fw-bold"><i class="bi bi-info-circle me-2"></i>Thông Tin Môn Học</h5>
+                </div>
+                <div class="card-body">
+                    <dl class="row mb-0">
+                        <dt class="col-sm-5 text-muted">Mã Môn Học:</dt>
+                        <dd class="col-sm-7"><span class="badge bg-primary fs-6 font-monospace">@Model.MaMonHoc</span></dd>
+
+                        <dt class="col-sm-5 text-muted">Tên Môn Học:</dt>
+                        <dd class="col-sm-7 fw-bold">@Model.TenMonHoc</dd>
+
+                        <dt class="col-sm-5 text-muted">Số Tín Chỉ:</dt>
+                        <dd class="col-sm-7"><span class="badge bg-primary fs-6">@Model.SoTinChi</span></dd>
+
+                        <dt class="col-sm-5 text-muted">Lý Thuyết:</dt>
+                        <dd class="col-sm-7">@Model.SoTietLyThuyet tiết</dd>
+
+                        <dt class="col-sm-5 text-muted">Thực Hành:</dt>
+                        <dd class="col-sm-7">@Model.SoTietThucHanh tiết</dd>
+
+                        <dt class="col-sm-5 text-muted">Bộ Môn:</dt>
+                        <dd class="col-sm-7">
+                            @if (Model.BoMon != null)
+                            {
+                                <a asp-controller="BoMon" asp-action="ChiTiet" asp-route-id="@Model.BoMonId">
+                                    @Model.BoMon.TenBoMon
+                                </a>
+                            }
+                            else
+                            {
+                                <span class="text-muted">-</span>
+                            }
+                        </dd>
+
+                        <dt class="col-sm-5 text-muted">Trạng Thái:</dt>
+                        <dd class="col-sm-7">
+                            @if (Model.CoHoatDong)
+                            {
+                                <span class="badge bg-success">Hoạt động</span>
+                            }
+                            else
+                            {
+                                <span class="badge bg-secondary">Đã khóa</span>
+                            }
+                        </dd>
+                    </dl>
+                </div>
+            </div>
+        </div>
+
+        <!-- Phân công giảng dạy của môn -->
+        <div class="col-lg-8">
+            <div class="card shadow-sm border-0">
+                <div class="card-header bg-white py-3 border-bottom d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0 text-primary fw-bold">
+                        <i class="bi bi-calendar-check me-2"></i>Lịch Sử Phân Công Giảng Dạy (@Model.PhanCongGiangDays.Count)
+                    </h5>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle mb-0" id="dgvPhanCongCuaMon">
+                            <thead class="table-light">
+                                <tr>
+                                    <th class="ps-3">Mã Phân Công</th>
+                                    <th>Giảng Viên Giảng Dạy</th>
+                                    <th>Lớp Học</th>
+                                    <th>Học Kỳ</th>
+                                    <th>Vai Trò</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @if (Model.PhanCongGiangDays.Count == 0)
+                                {
+                                    <tr><td colspan="5" class="text-center py-4 text-muted">Chưa có phân công giảng dạy cho môn học này</td></tr>
+                                }
+                                else
+                                {
+                                    foreach (var pc in Model.PhanCongGiangDays)
+                                    {
+                                        <tr>
+                                            <td class="ps-3 font-monospace fw-bold">@pc.MaPhanCong</td>
+                                            <td>@(pc.NhanSu?.HoVaTen ?? "-")</td>
+                                            <td>@(pc.LopHoc?.TenLop ?? "-")</td>
+                                            <td>@pc.HocKy (@pc.NamHoc)</td>
+                                            <td><span class="badge bg-light text-dark border">@pc.VaiTroGiangDay</span></td>
+                                        </tr>
+                                    }
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

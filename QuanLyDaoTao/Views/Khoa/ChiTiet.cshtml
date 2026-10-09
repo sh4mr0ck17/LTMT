@@ -1,0 +1,213 @@
+@model QuanLyDaoTao.Models.Khoa
+@using QuanLyDaoTao.Models
+@{
+    ViewData["Title"] = $"Chi tiết: {Model.TenKhoa}";
+    Layout = "_Layout";
+    bool laQuanTri = User.IsInRole(VaiTroMacDinh.QuanTriVien) || User.IsInRole(VaiTroMacDinh.QuanLyDaoTao);
+    bool coTheXoa = ViewBag.CoTheXoa as bool? ?? false;
+}
+
+<div class="container-fluid px-4 py-3" id="pnlChiTietKhoa">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <div>
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb mb-1">
+                    <li class="breadcrumb-item"><a asp-action="Index">Danh sách Khoa</a></li>
+                    <li class="breadcrumb-item active" aria-current="page">@Model.TenKhoa</li>
+                </ol>
+            </nav>
+            <h4 class="mb-0 text-primary fw-bold" id="lblTenKhoa">
+                <i class="bi bi-bank me-2"></i>@Model.TenKhoa
+            </h4>
+        </div>
+        <div class="d-flex gap-2">
+            <a asp-action="Index" class="btn btn-outline-secondary" id="btnQuayLai">
+                <i class="bi bi-arrow-left me-1"></i>Quay Lại
+            </a>
+            @if (laQuanTri)
+            {
+                <a asp-action="ChinhSua" asp-route-id="@Model.KhoaId" class="btn btn-primary" id="btnChinhSua">
+                    <i class="bi bi-pencil-square me-1"></i>Chỉnh Sửa
+                </a>
+            }
+        </div>
+    </div>
+
+    <div class="row g-4">
+        <!-- Thông tin cơ bản của khoa -->
+        <div class="col-lg-4">
+            <div class="card shadow-sm border-0 mb-4">
+                <div class="card-header bg-white py-3 border-bottom">
+                    <h5 class="mb-0 text-primary fw-bold"><i class="bi bi-info-circle me-2"></i>Thông Tin Khoa</h5>
+                </div>
+                <div class="card-body">
+                    <dl class="row mb-0">
+                        <dt class="col-sm-5 text-muted">Mã Khoa:</dt>
+                        <dd class="col-sm-7"><span class="badge bg-primary fs-6 font-monospace">@Model.MaKhoa</span></dd>
+
+                        <dt class="col-sm-5 text-muted">Tên Khoa:</dt>
+                        <dd class="col-sm-7 fw-bold">@Model.TenKhoa</dd>
+
+                        <dt class="col-sm-5 text-muted">Điện Thoại:</dt>
+                        <dd class="col-sm-7">@(Model.SoDienThoai ?? "-")</dd>
+
+                        <dt class="col-sm-5 text-muted">Email:</dt>
+                        <dd class="col-sm-7">@(Model.Email ?? "-")</dd>
+
+                        <dt class="col-sm-5 text-muted">Địa Điểm:</dt>
+                        <dd class="col-sm-7">@(Model.DiaDiem ?? "-")</dd>
+
+                        <dt class="col-sm-5 text-muted">Trạng Thái:</dt>
+                        <dd class="col-sm-7">
+                            @if (Model.CoHoatDong)
+                            {
+                                <span class="badge bg-success">Hoạt động</span>
+                            }
+                            else
+                            {
+                                <span class="badge bg-secondary">Đã khóa</span>
+                            }
+                        </dd>
+
+                        <dt class="col-sm-5 text-muted">Mô Tả:</dt>
+                        <dd class="col-sm-7">@(Model.MoTa ?? "-")</dd>
+                    </dl>
+                </div>
+            </div>
+        </div>
+
+        <!-- Các thực thể trực thuộc: Tabs -->
+        <div class="col-lg-8">
+            <div class="card shadow-sm border-0">
+                <div class="card-header bg-white border-bottom p-0">
+                    <ul class="nav nav-tabs card-header-tabs m-0 px-3" id="tabChiTietKhoa" role="tablist">
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link active py-3" id="tab-bomon" data-bs-toggle="tab" data-bs-target="#content-bomon" type="button" role="tab">
+                                <i class="bi bi-diagram-2 me-1"></i>Bộ Môn (@Model.BoMons.Count)
+                            </button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link py-3" id="tab-lophoc" data-bs-toggle="tab" data-bs-target="#content-lophoc" type="button" role="tab">
+                                <i class="bi bi-people me-1"></i>Lớp Học (@Model.LopHocs.Count)
+                            </button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link py-3" id="tab-nhansu" data-bs-toggle="tab" data-bs-target="#content-nhansu" type="button" role="tab">
+                                <i class="bi bi-person-lines-fill me-1"></i>Nhân Sự (@Model.NhanSus.Count)
+                            </button>
+                        </li>
+                    </ul>
+                </div>
+                <div class="card-body p-0">
+                    <div class="tab-content" id="tabChiTietKhoaContent">
+                        <!-- Tab Bộ môn -->
+                        <div class="tab-pane fade show active" id="content-bomon" role="tabpanel">
+                            <div class="table-responsive">
+                                <table class="table table-hover align-middle mb-0" id="dgvBoMonTrucThuoc">
+                                    <thead class="table-light">
+                                        <tr>
+                                            <th class="ps-3">Mã Bộ Môn</th>
+                                            <th>Tên Bộ Môn</th>
+                                            <th>Mô Tả</th>
+                                            <th class="text-center">Trạng Thái</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        @if (Model.BoMons.Count == 0)
+                                        {
+                                            <tr><td colspan="4" class="text-center py-3 text-muted">Chưa có bộ môn trực thuộc</td></tr>
+                                        }
+                                        else
+                                        {
+                                            foreach (var bm in Model.BoMons)
+                                            {
+                                                <tr>
+                                                    <td class="ps-3 font-monospace fw-bold">@bm.MaBoMon</td>
+                                                    <td><a asp-controller="BoMon" asp-action="ChiTiet" asp-route-id="@bm.BoMonId">@bm.TenBoMon</a></td>
+                                                    <td class="text-muted small">@(bm.MoTa ?? "-")</td>
+                                                    <td class="text-center">
+                                                        <span class="badge @(bm.CoHoatDong ? "bg-success" : "bg-secondary")">
+                                                            @(bm.CoHoatDong ? "Hoạt động" : "Khóa")
+                                                        </span>
+                                                    </td>
+                                                </tr>
+                                            }
+                                        }
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        <!-- Tab Lớp học -->
+                        <div class="tab-pane fade" id="content-lophoc" role="tabpanel">
+                            <div class="table-responsive">
+                                <table class="table table-hover align-middle mb-0" id="dgvLopHocTrucThuoc">
+                                    <thead class="table-light">
+                                        <tr>
+                                            <th class="ps-3">Mã Lớp</th>
+                                            <th>Tên Lớp</th>
+                                            <th>Niên Khóa</th>
+                                            <th class="text-center">Sĩ Số Tối Đa</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        @if (Model.LopHocs.Count == 0)
+                                        {
+                                            <tr><td colspan="4" class="text-center py-3 text-muted">Chưa có lớp học trực thuộc</td></tr>
+                                        }
+                                        else
+                                        {
+                                            foreach (var l in Model.LopHocs)
+                                            {
+                                                <tr>
+                                                    <td class="ps-3 font-monospace fw-bold">@l.MaLop</td>
+                                                    <td><a asp-controller="LopHoc" asp-action="ChiTiet" asp-route-id="@l.LopHocId">@l.TenLop</a></td>
+                                                    <td>@l.NienKhoa</td>
+                                                    <td class="text-center">@l.SoLuongToiDa</td>
+                                                </tr>
+                                            }
+                                        }
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        <!-- Tab Nhân sự -->
+                        <div class="tab-pane fade" id="content-nhansu" role="tabpanel">
+                            <div class="table-responsive">
+                                <table class="table table-hover align-middle mb-0" id="dgvNhanSuTrucThuoc">
+                                    <thead class="table-light">
+                                        <tr>
+                                            <th class="ps-3">Mã Nhân Sự</th>
+                                            <th>Họ và Tên</th>
+                                            <th>Email Công Việc</th>
+                                            <th>Số Điện Thoại</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        @if (Model.NhanSus.Count == 0)
+                                        {
+                                            <tr><td colspan="4" class="text-center py-3 text-muted">Chưa có nhân sự trực thuộc</td></tr>
+                                        }
+                                        else
+                                        {
+                                            foreach (var ns in Model.NhanSus)
+                                            {
+                                                <tr>
+                                                    <td class="ps-3 font-monospace fw-bold">@ns.MaNhanSu</td>
+                                                    <td><a asp-controller="NhanSu" asp-action="ChiTiet" asp-route-id="@ns.NhanSuId">@ns.HoVaTen</a></td>
+                                                    <td>@ns.EmailCongViec</td>
+                                                    <td>@(ns.SoDienThoai ?? "-")</td>
+                                                </tr>
+                                            }
+                                        }
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

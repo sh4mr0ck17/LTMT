@@ -1,0 +1,57 @@
+@model QuanLyDaoTao.Models.ChucVu
+@{
+    ViewData["Title"] = "Thêm mới Chức vụ";
+    Layout = "_Layout";
+}
+
+<div class="container py-3" id="pnlThemChucVu">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="card shadow-sm border-0">
+                <div class="card-header bg-white py-3 border-bottom">
+                    <h5 class="mb-0 text-primary fw-bold" id="lblTieuDe">
+                        <i class="bi bi-plus-circle me-2"></i>Thêm Mới Chức Vụ Công Tác
+                    </h5>
+                </div>
+                <div class="card-body p-4">
+                    <form asp-action="ThemMoi" method="post" id="frmThemChucVu">
+                        @Html.AntiForgeryToken()
+                        <div asp-validation-summary="ModelOnly" class="alert alert-danger" id="lblThongBaoLoi" role="alert"></div>
+
+                        <div class="mb-3">
+                            <label asp-for="MaChucVu" class="form-label fw-bold">Mã Chức Vụ <span class="text-danger">*</span></label>
+                            <input asp-for="MaChucVu" class="form-control" id="txtMaChucVu" placeholder="Ví dụ: CV_TK, CV_GV..." autofocus />
+                            <span asp-validation-for="MaChucVu" class="text-danger small"></span>
+                        </div>
+
+                        <div class="mb-3">
+                            <label asp-for="TenChucVu" class="form-label fw-bold">Tên Chức Vụ <span class="text-danger">*</span></label>
+                            <input asp-for="TenChucVu" class="form-control" id="txtTenChucVu" placeholder="Trưởng khoa, Giảng viên..." />
+                            <span asp-validation-for="TenChucVu" class="text-danger small"></span>
+                        </div>
+
+                        <div class="mb-3">
+                            <label asp-for="MoTa" class="form-label fw-bold">Mô Tả Quyền Hạn Nhiệm Vụ</label>
+                            <textarea asp-for="MoTa" class="form-control" id="txtMoTa" rows="3" placeholder="Nhập mô tả về quyền hạn và trách nhiệm..."></textarea>
+                            <span asp-validation-for="MoTa" class="text-danger small"></span>
+                        </div>
+
+                        <div class="mb-3 form-check form-switch">
+                            <input asp-for="CoHoatDong" class="form-check-input" id="chkCoHoatDong" checked />
+                            <label asp-for="CoHoatDong" class="form-check-label fw-semibold">Đang hoạt động</label>
+                        </div>
+
+                        <div class="d-flex justify-content-end gap-2 mt-4">
+                            <a asp-action="Index" class="btn btn-outline-secondary" id="btnHuyThaoTac">Hủy Bỏ</a>
+                            <button type="submit" class="btn btn-primary" id="btnLuuChucVu">Lưu Dữ Liệu</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}
