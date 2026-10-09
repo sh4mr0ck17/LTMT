@@ -2841,23 +2841,23 @@
     ]
   },
   "packageFolders": {
-    "C:\\Users\\GIGABYTE G5 KD\\.nuget\\packages\\": {},
+    "C:\\Users\\HP\\.nuget\\packages\\": {},
     "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages": {}
   },
   "project": {
     "version": "1.0.0",
     "restore": {
-      "projectUniqueName": "C:\\Users\\GIGABYTE G5 KD\\Desktop\\Code\\LTMT3\\QuanLyDaoTao\\QuanLyDaoTao.csproj",
+      "projectUniqueName": "D:\\VSCodeStudio\\LTMT\\QuanLyDaoTao\\QuanLyDaoTao.csproj",
       "projectName": "QuanLyDaoTao",
-      "projectPath": "C:\\Users\\GIGABYTE G5 KD\\Desktop\\Code\\LTMT3\\QuanLyDaoTao\\QuanLyDaoTao.csproj",
-      "packagesPath": "C:\\Users\\GIGABYTE G5 KD\\.nuget\\packages\\",
-      "outputPath": "C:\\Users\\GIGABYTE G5 KD\\Desktop\\Code\\LTMT3\\QuanLyDaoTao\\obj\\",
+      "projectPath": "D:\\VSCodeStudio\\LTMT\\QuanLyDaoTao\\QuanLyDaoTao.csproj",
+      "packagesPath": "C:\\Users\\HP\\.nuget\\packages\\",
+      "outputPath": "D:\\VSCodeStudio\\LTMT\\QuanLyDaoTao\\obj\\",
       "projectStyle": "PackageReference",
       "fallbackFolders": [
         "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"
       ],
       "configFilePaths": [
-        "C:\\Users\\GIGABYTE G5 KD\\AppData\\Roaming\\NuGet\\NuGet.Config",
+        "C:\\Users\\HP\\AppData\\Roaming\\NuGet\\NuGet.Config",
         "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.FallbackLocation.config",
         "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.Offline.config"
       ],
