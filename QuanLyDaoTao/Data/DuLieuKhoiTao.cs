@@ -195,5 +195,125 @@ public static class DuLieuKhoiTao
             await context.MonHocs.AddRangeAsync(monLapTrinhNet, monCsdl);
             await context.SaveChangesAsync();
         }
+
+        // 9. Khởi tạo Hồ sơ Nhân sự / Giảng viên mẫu nếu chưa có
+        if (!await context.NhanSus.AnyAsync())
+        {
+            var khoaDau = await context.Khoas.FirstOrDefaultAsync();
+            var boMonDau = await context.BoMons.FirstOrDefaultAsync();
+            var chucVuGv = await context.ChucVus.FirstOrDefaultAsync(c => c.MaChucVu == "CV_GV") ?? await context.ChucVus.FirstOrDefaultAsync();
+            var trinhDoTs = await context.TrinhDoChuyenMons.FirstOrDefaultAsync(t => t.MaTrinhDo == "TD_TS") ?? await context.TrinhDoChuyenMons.FirstOrDefaultAsync();
+
+            if (khoaDau != null)
+            {
+                var ns1 = new NhanSu
+                {
+                    MaNhanSu = "CB_C500_01",
+                    HoVaTen = "Đại tá, TS. Nguyễn Minh Đức",
+                    NgaySinh = new DateTime(1978, 5, 19),
+                    GioiTinh = "Nam",
+                    EmailCongViec = "duc.nm@c500.edu.vn",
+                    SoDienThoai = "0912345678",
+                    SoGiayTo = "001078001234",
+                    KhoaId = khoaDau.KhoaId,
+                    BoMonId = boMonDau?.BoMonId,
+                    ChucVuId = chucVuGv?.ChucVuId,
+                    TrinhDoChuyenMonId = trinhDoTs?.TrinhDoChuyenMonId,
+                    ChucDanhNgheNghiep = "Giảng viên cao cấp",
+                    HocVi = "Tiến sĩ",
+                    HocHam = "Phó Giáo sư",
+                    ChuyenNganh = "An ninh mạng & Công nghệ thông tin",
+                    TruongDaoTao = "Học viện An ninh Nhân dân",
+                    TrangThaiCongTac = "Đang làm việc",
+                    CoHoatDong = true,
+                    NgayTao = DateTime.UtcNow
+                };
+                var ns2 = new NhanSu
+                {
+                    MaNhanSu = "CB_C500_02",
+                    HoVaTen = "Thượng tá, ThS. Trần Thu Hà",
+                    NgaySinh = new DateTime(1984, 10, 20),
+                    GioiTinh = "Nữ",
+                    EmailCongViec = "ha.tt@c500.edu.vn",
+                    SoDienThoai = "0987654321",
+                    SoGiayTo = "001184005678",
+                    KhoaId = khoaDau.KhoaId,
+                    BoMonId = boMonDau?.BoMonId,
+                    ChucVuId = chucVuGv?.ChucVuId,
+                    TrinhDoChuyenMonId = trinhDoTs?.TrinhDoChuyenMonId,
+                    ChucDanhNgheNghiep = "Giảng viên chính",
+                    HocVi = "Thạc sĩ",
+                    ChuyenNganh = "Hệ thống thông tin nghiệp vụ",
+                    TruongDaoTao = "Học viện An ninh Nhân dân",
+                    TrangThaiCongTac = "Đang làm việc",
+                    CoHoatDong = true,
+                    NgayTao = DateTime.UtcNow
+                };
+                await context.NhanSus.AddRangeAsync(ns1, ns2);
+                await context.SaveChangesAsync();
+            }
+        }
+
+        // 10. Khởi tạo Học viên mẫu nếu chưa có
+        if (!await context.HocViens.AnyAsync())
+        {
+            var lopDau = await context.LopHocs.FirstOrDefaultAsync();
+            if (lopDau != null)
+            {
+                await context.HocViens.AddRangeAsync(
+                    new HocVien
+                    {
+                        MaHocVien = "B20D52_001",
+                        HoVaTen = "Lê Hoàng Nam",
+                        NgaySinh = new DateTime(2004, 8, 15),
+                        GioiTinh = "Nam",
+                        LopHocId = lopDau.LopHocId,
+                        Email = "nam.lh@hv.c500.edu.vn",
+                        SoDienThoai = "0901112233",
+                        DiaChi = "Hà Nội",
+                        CoHoatDong = true,
+                        NgayTao = DateTime.UtcNow
+                    },
+                    new HocVien
+                    {
+                        MaHocVien = "B20D52_002",
+                        HoVaTen = "Phạm Mai Anh",
+                        NgaySinh = new DateTime(2004, 11, 2),
+                        GioiTinh = "Nữ",
+                        LopHocId = lopDau.LopHocId,
+                        Email = "anh.pm@hv.c500.edu.vn",
+                        SoDienThoai = "0902223344",
+                        DiaChi = "Hải Phòng",
+                        CoHoatDong = true,
+                        NgayTao = DateTime.UtcNow
+                    });
+                await context.SaveChangesAsync();
+            }
+        }
+
+        // 11. Khởi tạo Phân công giảng dạy mẫu nếu chưa có
+        if (!await context.PhanCongGiangDays.AnyAsync())
+        {
+            var nsDau = await context.NhanSus.FirstOrDefaultAsync();
+            var mhDau = await context.MonHocs.FirstOrDefaultAsync();
+            var lopDau = await context.LopHocs.FirstOrDefaultAsync();
+            if (nsDau != null && mhDau != null && lopDau != null)
+            {
+                await context.PhanCongGiangDays.AddAsync(new PhanCongGiangDay
+                {
+                    MaPhanCong = "PC_C500_01",
+                    NhanSuId = nsDau.NhanSuId,
+                    MonHocId = mhDau.MonHocId,
+                    LopHocId = lopDau.LopHocId,
+                    HocKy = "Học kỳ 1",
+                    NamHoc = "2026-2027",
+                    VaiTroGiangDay = "Giảng viên chính",
+                    LaChuNhiem = true,
+                    GhiChu = "Giảng đường A1 - C500",
+                    NgayTao = DateTime.UtcNow
+                });
+                await context.SaveChangesAsync();
+            }
+        }
     }
 }

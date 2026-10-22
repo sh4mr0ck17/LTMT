@@ -2,11 +2,12 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using QuanLyDaoTao.Data;
 using QuanLyDaoTao.Services;
+using QuanLyDaoTao.ViewModels.ThongKe;
 
 namespace QuanLyDaoTao.Controllers;
 
 /// <summary>
-/// Bộ điều khiển trang chủ và bảng điều khiển tổng quan (Dashboard) hệ thống.
+/// Bộ điều khiển trang chủ và bảng điều khiển tổng quan (Dashboard) hệ thống kèm báo cáo biểu đồ (Diagrams).
 /// </summary>
 public class HomeController : Controller
 {
@@ -28,21 +29,99 @@ public class HomeController : Controller
     }
 
     /// <summary>
-    /// Hiển thị bảng điều khiển tổng quan với thống kê số liệu và hoạt động gần đây.
+    /// Hiển thị bảng điều khiển tổng quan với thống kê số liệu, biểu đồ trực quan và hoạt động gần đây.
     /// </summary>
     public async Task<IActionResult> Index()
     {
-        ViewBag.TongSoKhoa = await _coSoDuLieu.Khoas.CountAsync();
-        ViewBag.TongSoBoMon = await _coSoDuLieu.BoMons.CountAsync();
-        ViewBag.TongSoLop = await _coSoDuLieu.LopHocs.CountAsync();
-        ViewBag.TongSoHocVien = await _coSoDuLieu.HocViens.CountAsync();
-        ViewBag.TongSoNhanSu = await _coSoDuLieu.NhanSus.CountAsync();
-        ViewBag.TongSoMonHoc = await _coSoDuLieu.MonHocs.CountAsync();
-        ViewBag.TongSoPhanCong = await _coSoDuLieu.PhanCongGiangDays.CountAsync();
+        var model = new BaoCaoDiagramViewModel
+        {
+            TongSoKhoa = await _coSoDuLieu.Khoas.CountAsync(),
+            TongSoBoMon = await _coSoDuLieu.BoMons.CountAsync(),
+            TongSoLop = await _coSoDuLieu.LopHocs.CountAsync(),
+            TongSoHocVien = await _coSoDuLieu.HocViens.CountAsync(),
+            TongSoNhanSu = await _coSoDuLieu.NhanSus.CountAsync(),
+            TongSoMonHoc = await _coSoDuLieu.MonHocs.CountAsync(),
+            TongSoPhanCong = await _coSoDuLieu.PhanCongGiangDays.CountAsync()
+        };
+
+        // 1. Thống kê theo Khoa (Số lượng học viên & lớp học)
+        var khoas = await _coSoDuLieu.Khoas
+            .Include(k => k.LopHocs)
+                .ThenInclude(l => l.HocViens)
+            .Include(k => k.NhanSus)
+            .AsNoTracking()
+            .ToListAsync();
+
+        foreach (var k in khoas)
+        {
+            model.DanhSachKhoa.Add(new ThongKeKhoaItem
+            {
+                TenKhoa = k.TenKhoa,
+                SoLop = k.LopHocs.Count,
+                SoHocVien = k.LopHocs.Sum(l => l.HocViens.Count),
+                SoNhanSu = k.NhanSus.Count
+            });
+        }
+
+        // 2. Thống kê theo Trình độ chuyên môn
+        var trinhDos = await _coSoDuLieu.TrinhDoChuyenMons
+            .Include(t => t.NhanSus)
+            .AsNoTracking()
+            .ToListAsync();
+
+        foreach (var td in trinhDos)
+        {
+            model.DanhSachTrinhDo.Add(new ThongKeTrinhDoItem
+            {
+                TenTrinhDo = td.TenTrinhDo,
+                SoLuong = td.NhanSus.Count
+            });
+        }
+
+        // 3. Thống kê theo Chức vụ công tác
+        var chucVus = await _coSoDuLieu.ChucVus
+            .Include(c => c.NhanSus)
+            .AsNoTracking()
+            .ToListAsync();
+
+        foreach (var cv in chucVus)
+        {
+            model.DanhSachChucVu.Add(new ThongKeChucVuItem
+            {
+                TenChucVu = cv.TenChucVu,
+                SoLuong = cv.NhanSus.Count
+            });
+        }
+
+        // 4. Thống kê theo Lớp học
+        var lops = await _coSoDuLieu.LopHocs
+            .Include(l => l.HocViens)
+            .AsNoTracking()
+            .Take(10)
+            .ToListAsync();
+
+        foreach (var l in lops)
+        {
+            model.DanhSachLop.Add(new ThongKeLopItem
+            {
+                TenLop = l.TenLop,
+                SoHocVien = l.HocViens.Count,
+                SoLuongToiDa = l.SoLuongToiDa
+            });
+        }
+
+        // Truyền các biến ViewBag để tương thích ngược với layout/tests hiện có
+        ViewBag.TongSoKhoa = model.TongSoKhoa;
+        ViewBag.TongSoBoMon = model.TongSoBoMon;
+        ViewBag.TongSoLop = model.TongSoLop;
+        ViewBag.TongSoHocVien = model.TongSoHocVien;
+        ViewBag.TongSoNhanSu = model.TongSoNhanSu;
+        ViewBag.TongSoMonHoc = model.TongSoMonHoc;
+        ViewBag.TongSoPhanCong = model.TongSoPhanCong;
 
         ViewBag.HoatDongGanDay = await _nhatKyDichVu.LayDanhSachNhatKyAsync(null, null, 10);
 
-        return View();
+        return View(model);
     }
 
     /// <summary>

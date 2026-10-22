@@ -69,6 +69,16 @@ public class QuanLyDaoTaoDbContext : IdentityDbContext<TaiKhoan, VaiTro, string>
     public DbSet<NhatKyHeThong> NhatKyHeThongs => Set<NhatKyHeThong>();
 
     /// <summary>
+    /// Bảng cấu hình các trường (cột) tùy chỉnh của từng nhóm quản lý.
+    /// </summary>
+    public DbSet<TruongTuyChinh> TruongTuyChinhs => Set<TruongTuyChinh>();
+
+    /// <summary>
+    /// Bảng lưu trữ giá trị của các trường tùy chỉnh cho từng bản ghi.
+    /// </summary>
+    public DbSet<GiaTriTruongTuyChinh> GiaTriTruongTuyChinhs => Set<GiaTriTruongTuyChinh>();
+
+    /// <summary>
     /// Cấu hình các ràng buộc, chỉ mục và mối quan hệ giữa các thực thể.
     /// </summary>
     /// <param name="modelBuilder">Đối tượng ModelBuilder để cấu hình lược đồ.</param>
@@ -235,6 +245,28 @@ public class QuanLyDaoTaoDbContext : IdentityDbContext<TaiKhoan, VaiTro, string>
             entity.HasIndex(nk => nk.ThoiDiem);
             entity.HasIndex(nk => nk.NguoiThucHien);
             entity.HasIndex(nk => nk.BangDuLieu);
+        });
+
+        // ==========================================
+        // CẤU HÌNH TRƯỜNG TÙY CHỈNH & GIÁ TRỊ
+        // ==========================================
+        modelBuilder.Entity<TruongTuyChinh>(entity =>
+        {
+            entity.HasKey(t => t.TruongTuyChinhId);
+            entity.HasIndex(t => new { t.TenBang, t.MaTruong }).IsUnique();
+            entity.HasIndex(t => t.TenBang);
+        });
+
+        modelBuilder.Entity<GiaTriTruongTuyChinh>(entity =>
+        {
+            entity.HasKey(g => g.GiaTriId);
+            entity.HasIndex(g => new { g.TruongTuyChinhId, g.KhoaBanGhi }).IsUnique();
+            entity.HasIndex(g => new { g.TenBang, g.KhoaBanGhi });
+
+            entity.HasOne(g => g.TruongTuyChinh)
+                  .WithMany(t => t.GiaTris)
+                  .HasForeignKey(g => g.TruongTuyChinhId)
+                  .OnDelete(DeleteBehavior.Cascade);
         });
     }
 }

@@ -124,4 +124,40 @@ public class QuanLyDaoTaoIntegrationTests : IClassFixture<WebApplicationFactory<
         Assert.Equal(HttpStatusCode.Redirect, response.StatusCode);
         Assert.Contains("/TaiKhoan/DangNhap", response.Headers.Location?.ToString());
     }
+
+    [Theory]
+    [InlineData("/images/logo_badge.png", "image/png")]
+    [InlineData("/images/logoT01.jpg", "image/jpeg")]
+    [InlineData("/css/site.css", "text/css")]
+    public async Task TaiNguyenLogoVaCssChuDeCAND_TraVeHttp200Ok(string url, string expectedMime)
+    {
+        // Arrange
+        var client = _factory.CreateClient();
+
+        // Act
+        var response = await client.GetAsync(url);
+
+        // Assert
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.Equal(expectedMime, response.Content.Headers.ContentType?.MediaType);
+        var bytes = await response.Content.ReadAsByteArrayAsync();
+        Assert.True(bytes.Length > 0);
+    }
+
+    [Fact]
+    public async Task GiaoDienTrangChu_HienThiLogoVaChuDeHocVienAnNinhNhanDan()
+    {
+        // Arrange
+        var client = _factory.CreateClient();
+
+        // Act
+        var response = await client.GetAsync("/");
+
+        // Assert
+        response.EnsureSuccessStatusCode();
+        var html = await response.Content.ReadAsStringAsync();
+        Assert.Contains("HỌC VIỆN AN NINH NHÂN DÂN", html);
+        Assert.Contains("logo_badge.png", html);
+        Assert.Contains("navbar-cand", html);
+    }
 }

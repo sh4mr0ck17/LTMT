@@ -65,7 +65,7 @@ public class ExcelDichVu : IExcelDichVu
             cell.Value = colDef.TenCot;
             cell.Style.Font.Bold = true;
             cell.Style.Font.FontColor = XLColor.White;
-            cell.Style.Fill.BackgroundColor = XLColor.FromArgb(13, 110, 253); // Primary Blue
+            cell.Style.Fill.BackgroundColor = XLColor.FromArgb(4, 121, 32); // Xanh lá đậm CAND (#047920)
             cell.Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
             cell.Style.Alignment.Vertical = XLAlignmentVerticalValues.Center;
         }

@@ -4,14 +4,19 @@
     Layout = "_Layout";
 }
 
-<div class="row justify-content-center mt-5" id="pnlDangNhap">
-    <div class="col-md-5">
-        <div class="card shadow-sm border-0">
-            <div class="card-header bg-primary text-white text-center py-3">
-                <h4 class="mb-0" id="lblTieuDe"><i class="bi bi-shield-lock me-2"></i>Đăng Nhập Hệ Thống</h4>
-                <small class="text-white-50">Hệ thống Quản lý Đào tạo & Nhân sự</small>
+<div class="row justify-content-center mt-4 mb-5" id="pnlDangNhap">
+    <div class="col-md-5 col-lg-4">
+        <div class="card shadow border-0 overflow-hidden" style="border-top: 4px solid #FFD700 !important;">
+            <div class="card-header text-white text-center py-4" style="background: linear-gradient(135deg, #013E10 0%, #047920 60%, #025917 100%); border-bottom: 3px solid #FFD700;">
+                <img src="~/images/logo_badge.png" alt="Logo Học viện An ninh Nhân dân" class="logo-cand-lg mb-3" />
+                <h5 class="mb-1 fw-bold text-uppercase" id="lblTieuDe" style="letter-spacing: 0.6px; color: #FFFFFF;">
+                    Học Viện An Ninh Nhân Dân
+                </h5>
+                <div class="small fw-semibold" style="color: #F2F0A5;">
+                    CỔNG THÔNG TIN QUẢN LÝ ĐÀO TẠO &amp; NHÂN SỰ (C500)
+                </div>
             </div>
-            <div class="card-body p-4">
+            <div class="card-body p-4 bg-white">
                 <form asp-action="DangNhap" method="post" id="frmDangNhap">
                     @Html.AntiForgeryToken()
                     <input type="hidden" asp-for="DuongDanQuayLai" />
@@ -19,18 +24,18 @@
                     <div asp-validation-summary="ModelOnly" class="alert alert-danger" id="lblThongBaoLoi" role="alert"></div>
 
                     <div class="mb-3">
-                        <label asp-for="Email" class="form-label fw-bold">Địa chỉ Email</label>
+                        <label asp-for="Email" class="form-label fw-bold text-dark">Địa chỉ Email công vụ</label>
                         <div class="input-group">
-                            <span class="input-group-text"><i class="bi bi-envelope"></i></span>
+                            <span class="input-group-text bg-light text-primary"><i class="bi bi-envelope-fill"></i></span>
                             <input asp-for="Email" class="form-control" id="txtEmail" placeholder="admin@quanlydaotao.local" autofocus />
                         </div>
                         <span asp-validation-for="Email" class="text-danger small"></span>
                     </div>
 
                     <div class="mb-3">
-                        <label asp-for="MatKhau" class="form-label fw-bold">Mật khẩu</label>
+                        <label asp-for="MatKhau" class="form-label fw-bold text-dark">Mật khẩu xác thực</label>
                         <div class="input-group">
-                            <span class="input-group-text"><i class="bi bi-key"></i></span>
+                            <span class="input-group-text bg-light text-primary"><i class="bi bi-key-fill"></i></span>
                             <input asp-for="MatKhau" class="form-control" id="txtMatKhau" placeholder="••••••••" />
                         </div>
                         <span asp-validation-for="MatKhau" class="text-danger small"></span>
@@ -38,18 +43,19 @@
 
                     <div class="mb-3 form-check">
                         <input asp-for="GhiNhoDangNhap" class="form-check-input" id="chkGhiNhoDangNhap" />
-                        <label asp-for="GhiNhoDangNhap" class="form-check-label">Ghi nhớ đăng nhập trên thiết bị này</label>
+                        <label asp-for="GhiNhoDangNhap" class="form-check-label">Ghi nhớ phiên đăng nhập trên thiết bị này</label>
                     </div>
 
                     <div class="d-grid gap-2 mt-4">
-                        <button type="submit" class="btn btn-primary btn-lg" id="btnDangNhap">
-                            <i class="bi bi-box-arrow-in-right me-2"></i>Đăng Nhập
+                        <button type="submit" class="btn btn-primary btn-lg fw-bold" id="btnDangNhap">
+                            <i class="bi bi-box-arrow-in-right me-2"></i>ĐĂNG NHẬP HỆ THỐNG
                         </button>
                     </div>
                 </form>
             </div>
-            <div class="card-footer bg-light text-center py-3 text-muted small">
-                Tài khoản mặc định: <code>admin@quanlydaotao.local</code> | Mật khẩu: <code>Admin@123456</code>
+            <div class="card-footer bg-light text-center py-3 text-muted small border-top">
+                <div>Tài khoản quản trị: <code>admin@quanlydaotao.local</code></div>
+                <div>Mật khẩu mặc định: <code>Admin@123456</code></div>
             </div>
         </div>
     </div>

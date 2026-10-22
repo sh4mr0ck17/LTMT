@@ -476,3 +476,4 @@ C:\Users\GIGABYTE G5 KD\Desktop\Code\LTMT3\QuanLyDaoTao.Tests\obj\Debug\net8.0\r
 C:\Users\GIGABYTE G5 KD\Desktop\Code\LTMT3\QuanLyDaoTao.Tests\obj\Debug\net8.0\QuanLyDaoTao.Tests.pdb
 C:\Users\GIGABYTE G5 KD\Desktop\Code\LTMT3\QuanLyDaoTao.Tests\obj\Debug\net8.0\QuanLyDaoTao.Tests.genruntimeconfig.cache
 C:\Users\GIGABYTE G5 KD\Desktop\Code\LTMT3\QuanLyDaoTao.Tests\obj\Debug\net8.0\ref\QuanLyDaoTao.Tests.dll
+C:\Users\GIGABYTE G5 KD\Desktop\Code\LTMT3\QuanLyDaoTao.Tests\obj\Debug\net8.0\QuanLyDaoTao.Tests.sourcelink.json

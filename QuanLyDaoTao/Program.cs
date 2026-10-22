@@ -46,6 +46,7 @@ builder.Services.AddScoped<ITrinhDoChuyenMonDichVu, TrinhDoChuyenMonDichVu>();
 builder.Services.AddScoped<IMonHocDichVu, MonHocDichVu>();
 builder.Services.AddScoped<IPhanCongGiangDayDichVu, PhanCongGiangDayDichVu>();
 builder.Services.AddScoped<IExcelDichVu, ExcelDichVu>();
+builder.Services.AddScoped<IQuanTriDuLieuDichVu, QuanTriDuLieuDichVu>();
 
 // Đăng ký MVC Controllers và Views
 builder.Services.AddControllersWithViews();

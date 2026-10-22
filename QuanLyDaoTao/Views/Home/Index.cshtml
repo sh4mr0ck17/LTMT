@@ -1,121 +1,197 @@
+@model QuanLyDaoTao.ViewModels.ThongKe.BaoCaoDiagramViewModel
 @using QuanLyDaoTao.Models
 @{
-    ViewData["Title"] = "Bảng điều khiển tổng quan";
+    ViewData["Title"] = "Bảng điều khiển & Thống kê Biểu đồ";
     Layout = "_Layout";
     var hoatDongGanDay = ViewBag.HoatDongGanDay as List<NhatKyHeThong> ?? new List<NhatKyHeThong>();
 }
 
-<div class="container-fluid px-4 py-4" id="pnlDashboard">
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <div>
-            <h3 class="mb-1 fw-bold text-primary" id="lblTieuDeDashboard">
-                <i class="bi bi-speedometer2 me-2"></i>Bảng Điều Khiển Tổng Quan
-            </h3>
-            <span class="text-muted">Tổng quan hệ thống đào tạo, cơ cấu tổ chức và hoạt động gần đây</span>
+<div class="container-fluid px-4 py-3" id="pnlDashboard">
+    <!-- Banner Học Viện An Ninh Nhân Dân (C500) -->
+    <div class="cand-banner-header p-3 mb-4 d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3">
+        <div class="d-flex align-items-center">
+            <img src="~/images/logo_badge.png" alt="Logo Học viện An ninh Nhân dân" class="logo-cand-md me-3" />
+            <div>
+                <div class="d-flex align-items-center gap-2 mb-1">
+                    <span class="badge badge-cand-gold">HỌC VIỆN AN NINH NHÂN DÂN • C500</span>
+                    <span class="badge badge-cand-red">BỘ CÔNG AN</span>
+                </div>
+                <h4 class="mb-0 fw-bold text-white" id="lblTieuDeDashboard">
+                    <i class="bi bi-speedometer2 me-2"></i>BẢNG ĐIỀU KHIỂN &amp; THỐNG KÊ BIỂU ĐỒ ĐÀO TẠO
+                </h4>
+                <span class="small" style="color: #F2F0A5;">Hệ thống giám sát cơ cấu tổ chức, quy mô đào tạo, nhân sự và phân công học thuật</span>
+            </div>
         </div>
-        <div class="d-flex gap-2">
-            <a asp-controller="CayToChuc" asp-action="Index" class="btn btn-primary" id="btnXemCayToChuc">
-                <i class="bi bi-diagram-3-fill me-1"></i>Xem Cây Tổ Chức
+        <div class="d-flex flex-wrap gap-2">
+            <a asp-controller="CayToChuc" asp-action="Index" class="btn fw-bold shadow-sm" style="background-color: #FFD700; color: #013E10;" id="btnXemCayToChuc">
+                <i class="bi bi-diagram-3-fill me-1"></i>Sơ Đồ Cây Tổ Chức
             </a>
-            <a asp-controller="NhanSu" asp-action="Index" class="btn btn-outline-primary" id="btnXemNhanSu">
-                <i class="bi bi-people-fill me-1"></i>Hồ Sơ Nhân Sự
+            <a asp-controller="QuanTriDuLieu" asp-action="Index" class="btn btn-outline-light fw-semibold" id="btnXemStudio">
+                <i class="bi bi-database-fill-gear me-1"></i>Quản Trị DB Studio
             </a>
         </div>
     </div>
 
-    <!-- Hàng thống kê tổng số lượng -->
+    <!-- Hàng thống kê tổng số lượng (KPI Metric Cards) -->
     <div class="row g-3 mb-4">
         <div class="col-xl-2 col-md-4 col-sm-6">
-            <div class="card border-0 shadow-sm h-100 border-start border-primary border-4">
-                <div class="card-body">
-                    <div class="d-flex justify-content-between align-items-center mb-2">
-                        <span class="text-muted small fw-bold text-uppercase">Khoa Đào Tạo</span>
-                        <div class="p-2 bg-primary bg-opacity-10 text-primary rounded"><i class="bi bi-bank fs-5"></i></div>
-                    </div>
-                    <h3 class="fw-bold mb-0" id="lblTongSoKhoa">@ViewBag.TongSoKhoa</h3>
-                    <a asp-controller="Khoa" asp-action="Index" class="stretched-link text-decoration-none small text-muted">Xem chi tiết &rarr;</a>
+            <div class="stat-kpi-card h-100">
+                <div class="d-flex justify-content-between align-items-center mb-1">
+                    <span class="text-muted small fw-bold text-uppercase">Khoa Đào Tạo</span>
+                    <i class="bi bi-bank text-primary fs-5"></i>
                 </div>
+                <h3 class="fw-bold mb-0 text-primary" id="lblTongSoKhoa">@Model.TongSoKhoa</h3>
+                <a asp-controller="Khoa" asp-action="Index" class="text-decoration-none small text-muted">Chi tiết &rarr;</a>
             </div>
         </div>
         <div class="col-xl-2 col-md-4 col-sm-6">
-            <div class="card border-0 shadow-sm h-100 border-start border-info border-4">
-                <div class="card-body">
-                    <div class="d-flex justify-content-between align-items-center mb-2">
-                        <span class="text-muted small fw-bold text-uppercase">Bộ Môn</span>
-                        <div class="p-2 bg-info bg-opacity-10 text-info rounded"><i class="bi bi-diagram-2 fs-5"></i></div>
-                    </div>
-                    <h3 class="fw-bold mb-0" id="lblTongSoBoMon">@ViewBag.TongSoBoMon</h3>
-                    <a asp-controller="BoMon" asp-action="Index" class="stretched-link text-decoration-none small text-muted">Xem chi tiết &rarr;</a>
+            <div class="stat-kpi-card h-100">
+                <div class="d-flex justify-content-between align-items-center mb-1">
+                    <span class="text-muted small fw-bold text-uppercase">Bộ Môn</span>
+                    <i class="bi bi-diagram-2 text-success fs-5"></i>
                 </div>
+                <h3 class="fw-bold mb-0 text-success" id="lblTongSoBoMon">@Model.TongSoBoMon</h3>
+                <a asp-controller="BoMon" asp-action="Index" class="text-decoration-none small text-muted">Chi tiết &rarr;</a>
             </div>
         </div>
         <div class="col-xl-2 col-md-4 col-sm-6">
-            <div class="card border-0 shadow-sm h-100 border-start border-success border-4">
-                <div class="card-body">
-                    <div class="d-flex justify-content-between align-items-center mb-2">
-                        <span class="text-muted small fw-bold text-uppercase">Lớp Học</span>
-                        <div class="p-2 bg-success bg-opacity-10 text-success rounded"><i class="bi bi-people fs-5"></i></div>
-                    </div>
-                    <h3 class="fw-bold mb-0" id="lblTongSoLop">@ViewBag.TongSoLop</h3>
-                    <a asp-controller="LopHoc" asp-action="Index" class="stretched-link text-decoration-none small text-muted">Xem chi tiết &rarr;</a>
+            <div class="stat-kpi-card stat-kpi-gold h-100">
+                <div class="d-flex justify-content-between align-items-center mb-1">
+                    <span class="text-muted small fw-bold text-uppercase">Lớp Học</span>
+                    <i class="bi bi-people text-warning fs-5"></i>
                 </div>
+                <h3 class="fw-bold mb-0 text-dark" id="lblTongSoLop">@Model.TongSoLop</h3>
+                <a asp-controller="LopHoc" asp-action="Index" class="text-decoration-none small text-muted">Chi tiết &rarr;</a>
             </div>
         </div>
         <div class="col-xl-2 col-md-4 col-sm-6">
-            <div class="card border-0 shadow-sm h-100 border-start border-warning border-4">
-                <div class="card-body">
-                    <div class="d-flex justify-content-between align-items-center mb-2">
-                        <span class="text-muted small fw-bold text-uppercase">Học Viên</span>
-                        <div class="p-2 bg-warning bg-opacity-10 text-warning rounded"><i class="bi bi-person-badge fs-5"></i></div>
-                    </div>
-                    <h3 class="fw-bold mb-0" id="lblTongSoHocVien">@ViewBag.TongSoHocVien</h3>
-                    <a asp-controller="HocVien" asp-action="Index" class="stretched-link text-decoration-none small text-muted">Xem chi tiết &rarr;</a>
+            <div class="stat-kpi-card stat-kpi-red h-100">
+                <div class="d-flex justify-content-between align-items-center mb-1">
+                    <span class="text-muted small fw-bold text-uppercase">Học Viên</span>
+                    <i class="bi bi-person-badge text-danger fs-5"></i>
                 </div>
+                <h3 class="fw-bold mb-0 text-danger" id="lblTongSoHocVien">@Model.TongSoHocVien</h3>
+                <a asp-controller="HocVien" asp-action="Index" class="text-decoration-none small text-muted">Chi tiết &rarr;</a>
             </div>
         </div>
         <div class="col-xl-2 col-md-4 col-sm-6">
-            <div class="card border-0 shadow-sm h-100 border-start border-danger border-4">
-                <div class="card-body">
-                    <div class="d-flex justify-content-between align-items-center mb-2">
-                        <span class="text-muted small fw-bold text-uppercase">Nhân Sự</span>
-                        <div class="p-2 bg-danger bg-opacity-10 text-danger rounded"><i class="bi bi-person-lines-fill fs-5"></i></div>
-                    </div>
-                    <h3 class="fw-bold mb-0" id="lblTongSoNhanSu">@ViewBag.TongSoNhanSu</h3>
-                    <a asp-controller="NhanSu" asp-action="Index" class="stretched-link text-decoration-none small text-muted">Xem chi tiết &rarr;</a>
+            <div class="stat-kpi-card h-100">
+                <div class="d-flex justify-content-between align-items-center mb-1">
+                    <span class="text-muted small fw-bold text-uppercase">Cán Bộ / GV</span>
+                    <i class="bi bi-person-lines-fill text-primary fs-5"></i>
                 </div>
+                <h3 class="fw-bold mb-0 text-primary" id="lblTongSoNhanSu">@Model.TongSoNhanSu</h3>
+                <a asp-controller="NhanSu" asp-action="Index" class="text-decoration-none small text-muted">Chi tiết &rarr;</a>
             </div>
         </div>
         <div class="col-xl-2 col-md-4 col-sm-6">
-            <div class="card border-0 shadow-sm h-100 border-start border-secondary border-4">
-                <div class="card-body">
-                    <div class="d-flex justify-content-between align-items-center mb-2">
-                        <span class="text-muted small fw-bold text-uppercase">Môn Học</span>
-                        <div class="p-2 bg-secondary bg-opacity-10 text-secondary rounded"><i class="bi bi-journal-bookmark fs-5"></i></div>
+            <div class="stat-kpi-card h-100">
+                <div class="d-flex justify-content-between align-items-center mb-1">
+                    <span class="text-muted small fw-bold text-uppercase">Môn Học</span>
+                    <i class="bi bi-journal-bookmark text-secondary fs-5"></i>
+                </div>
+                <h3 class="fw-bold mb-0 text-secondary" id="lblTongSoMonHoc">@Model.TongSoMonHoc</h3>
+                <a asp-controller="MonHoc" asp-action="Index" class="text-decoration-none small text-muted">Chi tiết &rarr;</a>
+            </div>
+        </div>
+    </div>
+
+    <!-- ==========================================================================
+         PANEL BIỂU ĐỒ THỐNG KÊ TRỰC QUAN (DIAGRAMS PANEL)
+         ========================================================================== -->
+    <div class="card shadow-sm border-0 mb-4" id="pnlBieuDoThongKe">
+        <div class="card-header bg-white py-3 border-bottom d-flex flex-wrap justify-content-between align-items-center gap-2">
+            <div class="d-flex align-items-center gap-2">
+                <span class="badge badge-cand-gold px-2 py-1"><i class="bi bi-pie-chart-fill me-1"></i>DIAGRAMS</span>
+                <h5 class="mb-0 text-primary fw-bold">
+                    <i class="bi bi-bar-chart-line-fill me-2"></i>Bảng Biểu Đồ Thống Kê &amp; Phân Tích Dữ Liệu
+                </h5>
+            </div>
+            <span class="text-muted small">Cập nhật trực tiếp theo thời gian thực từ cơ sở dữ liệu</span>
+        </div>
+        <div class="card-body p-4 bg-light">
+            <div class="row g-4">
+                <!-- Biểu đồ 1: Phân bố Học viên theo Khoa Đào tạo -->
+                <div class="col-lg-6">
+                    <div class="diagram-panel-card h-100">
+                        <div class="diagram-header">
+                            <span class="diagram-header-title">
+                                <i class="bi bi-bar-chart-fill text-success"></i>Quy Mô Học Viên &amp; Lớp Theo Khoa
+                            </span>
+                            <span class="badge bg-success">Cột (Bar)</span>
+                        </div>
+                        <div class="diagram-canvas-wrapper">
+                            <canvas id="chartHocVienTheoKhoa"></canvas>
+                        </div>
                     </div>
-                    <h3 class="fw-bold mb-0" id="lblTongSoMonHoc">@ViewBag.TongSoMonHoc</h3>
-                    <a asp-controller="MonHoc" asp-action="Index" class="stretched-link text-decoration-none small text-muted">Xem chi tiết &rarr;</a>
+                </div>
+
+                <!-- Biểu đồ 2: Cơ cấu Trình độ chuyên môn Cán bộ / Giảng viên -->
+                <div class="col-lg-6">
+                    <div class="diagram-panel-card h-100">
+                        <div class="diagram-header">
+                            <span class="diagram-header-title">
+                                <i class="bi bi-pie-chart-fill text-primary"></i>Cơ Cấu Trình Độ &amp; Học Vị Cán Bộ
+                            </span>
+                            <span class="badge bg-primary">Tròn (Doughnut)</span>
+                        </div>
+                        <div class="diagram-canvas-wrapper d-flex align-items-center justify-content-center">
+                            <canvas id="chartTrinhDoChuyenMon" style="max-height: 250px;"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Biểu đồ 3: Phân bổ Nhân sự theo Chức vụ công tác -->
+                <div class="col-lg-6">
+                    <div class="diagram-panel-card h-100">
+                        <div class="diagram-header">
+                            <span class="diagram-header-title">
+                                <i class="bi bi-award-fill text-warning"></i>Phân Bổ Nhân Sự Theo Chức Vụ
+                            </span>
+                            <span class="badge bg-warning text-dark">Ngang (Bar)</span>
+                        </div>
+                        <div class="diagram-canvas-wrapper">
+                            <canvas id="chartChucVuNhanSu"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Biểu đồ 4: Tỷ lệ Lấp đầy Sĩ số tại các Lớp học -->
+                <div class="col-lg-6">
+                    <div class="diagram-panel-card h-100">
+                        <div class="diagram-header">
+                            <span class="diagram-header-title">
+                                <i class="bi bi-people-fill text-info"></i>Tỷ Lệ Sĩ Số / Chỉ Tiêu Các Lớp
+                            </span>
+                            <span class="badge bg-info text-dark">So sánh (Grouped)</span>
+                        </div>
+                        <div class="diagram-canvas-wrapper">
+                            <canvas id="chartSiSoLopHoc"></canvas>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
 
+    <!-- Hàng dưới: Lối tắt thao tác nhanh & Hoạt động kiểm toán gần đây -->
     <div class="row g-4">
-        <!-- Lối tắt thao tác nhanh -->
+        <!-- Thao tác nghiệp vụ nhanh -->
         <div class="col-lg-4">
             <div class="card shadow-sm border-0 h-100" id="pnlThaoTacNhanh">
                 <div class="card-header bg-white py-3 border-bottom">
-                    <h5 class="mb-0 text-primary fw-bold"><i class="bi bi-lightning-charge-fill me-2"></i>Thao Tác Nhanh</h5>
+                    <h5 class="mb-0 text-primary fw-bold"><i class="bi bi-lightning-charge-fill me-2"></i>Thao Tác Nghiệp Vụ Nhanh</h5>
                 </div>
                 <div class="card-body">
                     <div class="d-grid gap-2">
                         <a asp-controller="NhanSu" asp-action="ThemMoi" class="btn btn-outline-primary text-start py-2" id="btnThemNhanSuNhanh">
-                            <i class="bi bi-person-plus-fill me-2"></i>Thêm Mới Hồ Sơ Nhân Sự
+                            <i class="bi bi-person-plus-fill me-2"></i>Thêm Mới Hồ Sơ Cán Bộ / Giảng Viên
                         </a>
                         <a asp-controller="Khoa" asp-action="ThemMoi" class="btn btn-outline-primary text-start py-2" id="btnThemKhoaNhanh">
                             <i class="bi bi-plus-circle-fill me-2"></i>Thêm Mới Khoa Đào Tạo
                         </a>
                         <a asp-controller="LopHoc" asp-action="ThemMoi" class="btn btn-outline-primary text-start py-2" id="btnThemLopNhanh">
-                            <i class="bi bi-people-fill me-2"></i>Thêm Mới Lớp Học
+                            <i class="bi bi-people-fill me-2"></i>Thêm Mới Lớp Học Chuyên Ngành
                         </a>
                         <a asp-controller="HocVien" asp-action="ThemMoi" class="btn btn-outline-primary text-start py-2" id="btnThemHocVienNhanh">
                             <i class="bi bi-person-badge-fill me-2"></i>Thêm Mới Học Viên
@@ -124,8 +200,8 @@
                             <i class="bi bi-calendar-plus-fill me-2"></i>Thêm Phân Công Giảng Dạy
                         </a>
                         <hr class="my-2" />
-                        <a asp-controller="Excel" asp-action="NhapExcel" asp-route-module="NhanSu" class="btn btn-success text-start py-2" id="btnNhapExcelNhanSu">
-                            <i class="bi bi-file-earmark-excel-fill me-2"></i>Nhập Excel Nhân Sự (Preview/Commit)
+                        <a asp-controller="QuanTriDuLieu" asp-action="Index" class="btn btn-primary text-start py-2" id="btnNhapExcelNhanSu">
+                            <i class="bi bi-database-fill-gear me-2"></i>Quản Trị Dữ Liệu Trực Tuyến (Live CRUD)
                         </a>
                     </div>
                 </div>
@@ -136,8 +212,8 @@
         <div class="col-lg-8">
             <div class="card shadow-sm border-0 h-100" id="pnlHoatDongGanDay">
                 <div class="card-header bg-white py-3 border-bottom d-flex justify-content-between align-items-center">
-                    <h5 class="mb-0 text-primary fw-bold"><i class="bi bi-clock-history me-2"></i>Hoạt Động Kiểm Toán Gần Đây</h5>
-                    <a asp-controller="NhatKy" asp-action="Index" class="btn btn-sm btn-outline-secondary" id="btnXemTatCaNhatKy">Xem tất cả</a>
+                    <h5 class="mb-0 text-primary fw-bold"><i class="bi bi-clock-history me-2"></i>Nhật Ký Kiểm Toán Gần Đây</h5>
+                    <a asp-controller="NhatKy" asp-action="Index" class="btn btn-sm btn-outline-primary" id="btnXemTatCaNhatKy">Xem tất cả</a>
                 </div>
                 <div class="card-body p-0">
                     <div class="table-responsive">
@@ -192,3 +268,168 @@
         </div>
     </div>
 </div>
+
+@section Scripts {
+    <!-- Thư viện Chart.js vẽ biểu đồ thống kê chuyên nghiệp -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.6/dist/chart.umd.min.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            // Dữ liệu từ ViewModel
+            const dsKhoa = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.DanhSachKhoa));
+            const dsTrinhDo = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.DanhSachTrinhDo));
+            const dsChucVu = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.DanhSachChucVu));
+            const dsLop = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.DanhSachLop));
+
+            // Bảng màu CAND chuẩn
+            const candColors = {
+                green: '#047920',
+                greenDark: '#025917',
+                gold: '#FFD700',
+                red: '#D91E18',
+                blue: '#0d6efd',
+                cyan: '#0dcaf0',
+                gray: '#6c757d'
+            };
+
+            // 1. Biểu đồ: Học viên & Lớp theo Khoa (Bar Chart)
+            const ctxKhoa = document.getElementById('chartHocVienTheoKhoa');
+            if (ctxKhoa) {
+                new Chart(ctxKhoa, {
+                    type: 'bar',
+                    data: {
+                        labels: dsKhoa.map(k => k.TenKhoa),
+                        datasets: [
+                            {
+                                label: 'Học viên',
+                                data: dsKhoa.map(k => k.SoHocVien),
+                                backgroundColor: 'rgba(4, 121, 32, 0.85)',
+                                borderColor: candColors.green,
+                                borderWidth: 1,
+                                borderRadius: 5
+                            },
+                            {
+                                label: 'Lớp học',
+                                data: dsKhoa.map(k => k.SoLop),
+                                backgroundColor: 'rgba(255, 215, 0, 0.85)',
+                                borderColor: '#c59b08',
+                                borderWidth: 1,
+                                borderRadius: 5
+                            }
+                        ]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: { position: 'top' }
+                        },
+                        scales: {
+                            y: { beginAtZero: true, ticks: { precision: 0 } }
+                        }
+                    }
+                });
+            }
+
+            // 2. Biểu đồ: Cơ cấu Trình độ chuyên môn (Doughnut Chart)
+            const ctxTrinhDo = document.getElementById('chartTrinhDoChuyenMon');
+            if (ctxTrinhDo) {
+                new Chart(ctxTrinhDo, {
+                    type: 'doughnut',
+                    data: {
+                        labels: dsTrinhDo.map(t => t.TenTrinhDo),
+                        datasets: [{
+                            data: dsTrinhDo.map(t => t.SoLuong),
+                            backgroundColor: [
+                                '#047920',
+                                '#0b8a28',
+                                '#FFD700',
+                                '#0dcaf0',
+                                '#D91E18',
+                                '#6c757d'
+                            ],
+                            borderWidth: 2,
+                            borderColor: '#ffffff'
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: { position: 'right' }
+                        }
+                    }
+                });
+            }
+
+            // 3. Biểu đồ: Phân bổ chức vụ (Horizontal Bar Chart)
+            const ctxChucVu = document.getElementById('chartChucVuNhanSu');
+            if (ctxChucVu) {
+                new Chart(ctxChucVu, {
+                    type: 'bar',
+                    data: {
+                        labels: dsChucVu.map(c => c.TenChucVu),
+                        datasets: [{
+                            axis: 'y',
+                            label: 'Số lượng cán bộ',
+                            data: dsChucVu.map(c => c.SoLuong),
+                            backgroundColor: 'rgba(255, 193, 7, 0.8)',
+                            borderColor: '#ffc107',
+                            borderWidth: 1,
+                            borderRadius: 4
+                        }]
+                    },
+                    options: {
+                        indexAxis: 'y',
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: { display: false }
+                        },
+                        scales: {
+                            x: { beginAtZero: true, ticks: { precision: 0 } }
+                        }
+                    }
+                });
+            }
+
+            // 4. Biểu đồ: Sĩ số lớp học (Grouped Bar Chart)
+            const ctxLop = document.getElementById('chartSiSoLopHoc');
+            if (ctxLop) {
+                new Chart(ctxLop, {
+                    type: 'bar',
+                    data: {
+                        labels: dsLop.map(l => l.TenLop),
+                        datasets: [
+                            {
+                                label: 'Sĩ số thực tế',
+                                data: dsLop.map(l => l.SoHocVien),
+                                backgroundColor: 'rgba(13, 202, 240, 0.85)',
+                                borderColor: '#0dcaf0',
+                                borderWidth: 1,
+                                borderRadius: 4
+                            },
+                            {
+                                label: 'Chỉ tiêu tối đa',
+                                data: dsLop.map(l => l.SoLuongToiDa),
+                                backgroundColor: 'rgba(108, 117, 125, 0.35)',
+                                borderColor: '#6c757d',
+                                borderWidth: 1,
+                                borderRadius: 4
+                            }
+                        ]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: { position: 'top' }
+                        },
+                        scales: {
+                            y: { beginAtZero: true, ticks: { precision: 0 } }
+                        }
+                    }
+                });
+            }
+        });
+    </script>
+}

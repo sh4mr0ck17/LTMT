@@ -1,22 +1,481 @@
+/* ==========================================================================
+   CHỦ ĐỀ GIAO DIỆN: HỌC VIỆN AN NINH NHÂN DÂN (C500) - CÔNG AN NHÂN DÂN VIỆT NAM
+   Bố cục: SIDEBAR TREE MENU (Menu dạng cây phân cấp bên cạnh) + DIAGRAMS PANEL
+   ========================================================================== */
+
+:root {
+  --cand-green: #047920;
+  --cand-green-dark: #025917;
+  --cand-green-deeper: #013e10;
+  --cand-green-deepest: #012b0b;
+  --cand-green-light: #e8f5e9;
+  --cand-gold: #ffd700;
+  --cand-gold-soft: #f2f0a5;
+  --cand-gold-dark: #c59b08;
+  --cand-red: #d91e18;
+  --sidebar-width: 280px;
+
+  /* Ghi đè biến gốc của Bootstrap 5 */
+  --bs-primary: #047920;
+  --bs-primary-rgb: 4, 121, 32;
+  --bs-success: #0b8a28;
+  --bs-success-rgb: 11, 138, 40;
+  --bs-link-color: #047920;
+  --bs-link-hover-color: #025917;
+}
+
 html {
-  font-size: 14px;
-}
-
-@media (min-width: 768px) {
-  html {
-    font-size: 16px;
-  }
-}
-
-.btn:focus, .btn:active:focus, .btn-link.nav-link:focus, .form-control:focus, .form-check-input:focus {
-  box-shadow: 0 0 0 0.1rem white, 0 0 0 0.25rem #258cfb;
-}
-
-html {
+  font-size: 14.5px;
   position: relative;
   min-height: 100%;
 }
 
+@media (min-width: 768px) {
+  html {
+    font-size: 15px;
+  }
+}
+
 body {
-  margin-bottom: 60px;
+  background-color: #f4f7f4 !important;
+  color: #1e2923;
+  font-family: "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  margin: 0;
+  padding: 0;
+  overflow-x: hidden;
+}
+
+/* ==========================================================================
+   1. BỐ CỤC CHÍNH (SIDEBAR + MAIN CONTENT WRAPPER)
+   ========================================================================== */
+.app-layout {
+  display: flex;
+  min-height: 100vh;
+  width: 100%;
+}
+
+/* Sidebar bên trái */
+.app-sidebar {
+  width: var(--sidebar-width);
+  min-width: var(--sidebar-width);
+  background: linear-gradient(180deg, #012b0b 0%, #013e10 40%, #025917 100%) !important;
+  border-right: 2px solid var(--cand-gold);
+  color: #ffffff;
+  display: flex;
+  flex-direction: column;
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  z-index: 1040;
+  box-shadow: 4px 0 16px rgba(1, 43, 11, 0.28);
+  transition: transform 0.3s ease, margin-left 0.3s ease;
+}
+
+.app-sidebar-header {
+  padding: 1.25rem 1rem 1rem 1rem;
+  border-bottom: 2px solid rgba(255, 215, 0, 0.35);
+  background: rgba(0, 0, 0, 0.15);
+}
+
+.app-sidebar-body {
+  flex-grow: 1;
+  overflow-y: auto;
+  padding: 0.75rem 0.5rem 1.5rem 0.5rem;
+}
+
+/* Thanh cuộn mảnh cho sidebar */
+.app-sidebar-body::-webkit-scrollbar {
+  width: 5px;
+}
+.app-sidebar-body::-webkit-scrollbar-thumb {
+  background: rgba(255, 215, 0, 0.3);
+  border-radius: 4px;
+}
+.app-sidebar-body::-webkit-scrollbar-thumb:hover {
+  background: var(--cand-gold);
+}
+
+.app-sidebar-footer {
+  padding: 0.75rem 1rem;
+  border-top: 1px solid rgba(255, 215, 0, 0.25);
+  background: rgba(0, 0, 0, 0.25);
+  font-size: 0.75rem;
+  color: var(--cand-gold-soft);
+}
+
+/* Vùng nội dung bên phải */
+.app-main {
+  flex-grow: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0; /* Tránh tràn bảng */
+  background-color: #f4f7f4;
+}
+
+/* Thanh công cụ trên cùng (Top bar) */
+.app-topbar {
+  background: #ffffff;
+  border-bottom: 2px solid #e0e6e1;
+  padding: 0.65rem 1.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.04);
+  position: sticky;
+  top: 0;
+  z-index: 1020;
+}
+
+.app-content {
+  flex-grow: 1;
+  padding-bottom: 2rem;
+}
+
+/* Responsive Sidebar trên thiết bị nhỏ */
+@media (max-width: 991.98px) {
+  .app-sidebar {
+    position: fixed;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    transform: translateX(-100%);
+  }
+  .app-sidebar.show {
+    transform: translateX(0);
+  }
+  .app-sidebar-backdrop {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 1030;
+  }
+  .app-sidebar-backdrop.show {
+    display: block;
+  }
+}
+
+/* ==========================================================================
+   2. HỆ THỐNG CÂY MENU (TREE NAVIGATION IN SIDEBAR)
+   ========================================================================== */
+.sidebar-tree {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+/* Tiêu đề nhóm phân cấp */
+.tree-category {
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.8px;
+  text-transform: uppercase;
+  color: var(--cand-gold);
+  padding: 0.85rem 0.75rem 0.35rem 0.75rem;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.tree-category i {
+  font-size: 0.8rem;
+}
+
+/* Mục đơn lẻ (Single Link) */
+.tree-link {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.55rem 0.75rem;
+  color: rgba(255, 255, 255, 0.9);
+  text-decoration: none;
+  border-radius: 6px;
+  font-size: 0.88rem;
+  font-weight: 500;
+  transition: all 0.18s ease;
+  margin-bottom: 2px;
+}
+
+.tree-link:hover,
+.tree-link:focus {
+  color: var(--cand-gold);
+  background-color: rgba(255, 255, 255, 0.12);
+  transform: translateX(3px);
+}
+
+.tree-link.active {
+  color: #012b0b !important;
+  background-color: var(--cand-gold) !important;
+  font-weight: 700;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+}
+
+.tree-link.active i {
+  color: #012b0b !important;
+}
+
+/* Nhánh cây cha có thể gập mở (Tree Branch / Parent Node) */
+.tree-branch-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 0.55rem 0.75rem;
+  color: rgba(255, 255, 255, 0.95);
+  background: transparent;
+  border: none;
+  border-radius: 6px;
+  font-size: 0.88rem;
+  font-weight: 600;
+  text-align: left;
+  cursor: pointer;
+  transition: all 0.18s ease;
+  margin-bottom: 2px;
+}
+
+.tree-branch-header:hover {
+  color: var(--cand-gold);
+  background-color: rgba(255, 255, 255, 0.08);
+}
+
+.tree-branch-header .branch-chevron {
+  transition: transform 0.2s ease;
+  font-size: 0.75rem;
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.tree-branch-header[aria-expanded="true"] .branch-chevron {
+  transform: rotate(90deg);
+  color: var(--cand-gold);
+}
+
+/* Các nhánh con bên trong (Sub-tree / Children Nodes) */
+.tree-subnodes {
+  list-style: none;
+  padding-left: 1.25rem;
+  margin: 0.2rem 0 0.5rem 0;
+  border-left: 2px dashed rgba(255, 215, 0, 0.35);
+  margin-left: 1.1rem;
+}
+
+.tree-sublink {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.45rem 0.65rem;
+  color: rgba(255, 255, 255, 0.82);
+  text-decoration: none;
+  border-radius: 5px;
+  font-size: 0.84rem;
+  font-weight: 500;
+  transition: all 0.15s ease;
+  margin-bottom: 2px;
+  position: relative;
+}
+
+.tree-sublink::before {
+  content: "•";
+  color: var(--cand-gold);
+  margin-right: 0.45rem;
+  font-size: 1rem;
+  line-height: 1;
+}
+
+.tree-sublink:hover {
+  color: var(--cand-gold);
+  background-color: rgba(255, 255, 255, 0.1);
+  transform: translateX(3px);
+}
+
+.tree-sublink.active {
+  color: #012b0b !important;
+  background-color: var(--cand-gold-soft) !important;
+  font-weight: 700;
+}
+
+/* ==========================================================================
+   3. PANEL BIỂU ĐỒ & THỐNG KÊ TRỰC QUAN (DIAGRAMS PANEL)
+   ========================================================================== */
+.diagram-panel-card {
+  background: #ffffff;
+  border-radius: 10px;
+  border: 1px solid #e0e8e2;
+  box-shadow: 0 3px 12px rgba(4, 121, 32, 0.06);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  overflow: hidden;
+}
+
+.diagram-panel-card:hover {
+  box-shadow: 0 6px 18px rgba(4, 121, 32, 0.12);
+}
+
+.diagram-header {
+  padding: 0.85rem 1.25rem;
+  background: linear-gradient(90deg, #f7faf8 0%, #edf4ee 100%);
+  border-bottom: 2px solid #dbe8dd;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.diagram-header-title {
+  font-weight: 700;
+  font-size: 0.95rem;
+  color: var(--cand-green-deeper);
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.diagram-canvas-wrapper {
+  position: relative;
+  padding: 1.25rem;
+  min-height: 260px;
+}
+
+/* Thẻ thống kê nhanh số liệu (KPI Stat Card) */
+.stat-kpi-card {
+  border-radius: 10px;
+  background: #ffffff;
+  border: 1px solid #e2ebe4;
+  border-left: 5px solid var(--cand-green) !important;
+  padding: 1rem;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+  transition: transform 0.18s ease;
+}
+
+.stat-kpi-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+.stat-kpi-gold {
+  border-left-color: var(--cand-gold) !important;
+}
+
+.stat-kpi-red {
+  border-left-color: var(--cand-red) !important;
+}
+
+/* ==========================================================================
+   4. CÁC THÀNH PHẦN KHÁC (LOGO, TABLE, BUTTONS)
+   ========================================================================== */
+.logo-cand-nav {
+  width: 44px;
+  height: 44px;
+  object-fit: contain;
+  border-radius: 50%;
+  border: 2px solid var(--cand-gold);
+  background-color: #ffffff;
+  padding: 1px;
+}
+
+.logo-cand-lg {
+  width: 90px;
+  height: 90px;
+  object-fit: contain;
+  border-radius: 50%;
+  border: 3px solid var(--cand-gold);
+  background-color: #ffffff;
+  padding: 2px;
+}
+
+.logo-cand-md {
+  width: 58px;
+  height: 58px;
+  object-fit: contain;
+  border-radius: 50%;
+  border: 2px solid var(--cand-gold);
+  background-color: #ffffff;
+  padding: 2px;
+}
+
+.cand-banner-header {
+  background: linear-gradient(135deg, #013e10 0%, #047920 65%, #068c25 100%);
+  border-bottom: 3px solid var(--cand-gold);
+  color: #ffffff;
+  border-radius: 10px;
+  box-shadow: 0 4px 15px rgba(2, 89, 23, 0.18);
+}
+
+.badge-cand-gold {
+  background-color: var(--cand-gold);
+  color: #013e10;
+  font-weight: 700;
+}
+
+.badge-cand-red {
+  background-color: var(--cand-red);
+  color: #ffffff;
+  font-weight: 600;
+}
+
+/* Nút bấm Primary */
+.btn-primary {
+  background-color: var(--cand-green) !important;
+  border-color: var(--cand-green-dark) !important;
+  color: #ffffff !important;
+  font-weight: 500;
+}
+
+.btn-primary:hover,
+.btn-primary:focus,
+.btn-primary:active {
+  background-color: var(--cand-green-dark) !important;
+  border-color: var(--cand-green-deeper) !important;
+  color: var(--cand-gold-soft) !important;
+  box-shadow: 0 3px 8px rgba(4, 121, 32, 0.28);
+}
+
+.btn-outline-primary {
+  color: var(--cand-green) !important;
+  border-color: var(--cand-green) !important;
+  font-weight: 500;
+}
+
+.btn-outline-primary:hover,
+.btn-outline-primary:focus,
+.btn-outline-primary:active {
+  background-color: var(--cand-green) !important;
+  border-color: var(--cand-green) !important;
+  color: #ffffff !important;
+}
+
+.bg-primary {
+  background-color: var(--cand-green) !important;
+}
+
+.bg-primary.bg-opacity-10 {
+  background-color: rgba(4, 121, 32, 0.12) !important;
+}
+
+.text-primary {
+  color: var(--cand-green) !important;
+}
+
+.border-primary {
+  border-color: var(--cand-green) !important;
+}
+
+.table thead.table-light th {
+  background-color: #e6f2e8 !important;
+  color: var(--cand-green-deeper) !important;
+  border-bottom: 2px solid #b7d9be !important;
+  font-weight: 700;
+  font-size: 0.78rem;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+}
+
+.table-hover tbody tr:hover {
+  background-color: rgba(4, 121, 32, 0.04) !important;
+}
+
+.footer-cand {
+  background: #ffffff;
+  color: #495057;
+  border-top: 2px solid #d9e3db;
 }

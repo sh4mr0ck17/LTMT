@@ -191,6 +191,42 @@ namespace QuanLyDaoTao.Migrations
                     b.ToTable("ChucVus");
                 });
 
+            modelBuilder.Entity("QuanLyDaoTao.Models.GiaTriTruongTuyChinh", b =>
+                {
+                    b.Property<int>("GiaTriId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("GiaTri")
+                        .HasMaxLength(2000)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("KhoaBanGhi")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("NgayCapNhat")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("TenBang")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("TruongTuyChinhId")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("GiaTriId");
+
+                    b.HasIndex("TenBang", "KhoaBanGhi");
+
+                    b.HasIndex("TruongTuyChinhId", "KhoaBanGhi")
+                        .IsUnique();
+
+                    b.ToTable("GiaTriTruongTuyChinhs");
+                });
+
             modelBuilder.Entity("QuanLyDaoTao.Models.HocVien", b =>
                 {
                     b.Property<int>("HocVienId")
@@ -815,6 +851,62 @@ namespace QuanLyDaoTao.Migrations
                     b.ToTable("TrinhDoChuyenMons");
                 });
 
+            modelBuilder.Entity("QuanLyDaoTao.Models.TruongTuyChinh", b =>
+                {
+                    b.Property<int>("TruongTuyChinhId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<bool>("CoHoatDong")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("GiaTriMacDinh")
+                        .HasMaxLength(255)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("KieuDuLieu")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("TEXT");
+
+                    b.Property<bool>("LaBatBuoc")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("MaTruong")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("NgayTao")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("TenBang")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("TenHienThi")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("ThuTuHienThi")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("TuyChonDanhSach")
+                        .HasMaxLength(500)
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("TruongTuyChinhId");
+
+                    b.HasIndex("TenBang");
+
+                    b.HasIndex("TenBang", "MaTruong")
+                        .IsUnique();
+
+                    b.ToTable("TruongTuyChinhs");
+                });
+
             modelBuilder.Entity("QuanLyDaoTao.Models.VaiTro", b =>
                 {
                     b.Property<string>("Id")
@@ -908,6 +1000,17 @@ namespace QuanLyDaoTao.Migrations
                         .IsRequired();
 
                     b.Navigation("Khoa");
+                });
+
+            modelBuilder.Entity("QuanLyDaoTao.Models.GiaTriTruongTuyChinh", b =>
+                {
+                    b.HasOne("QuanLyDaoTao.Models.TruongTuyChinh", "TruongTuyChinh")
+                        .WithMany("GiaTris")
+                        .HasForeignKey("TruongTuyChinhId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("TruongTuyChinh");
                 });
 
             modelBuilder.Entity("QuanLyDaoTao.Models.HocVien", b =>
@@ -1041,6 +1144,11 @@ namespace QuanLyDaoTao.Migrations
             modelBuilder.Entity("QuanLyDaoTao.Models.TrinhDoChuyenMon", b =>
                 {
                     b.Navigation("NhanSus");
+                });
+
+            modelBuilder.Entity("QuanLyDaoTao.Models.TruongTuyChinh", b =>
+                {
+                    b.Navigation("GiaTris");
                 });
 #pragma warning restore 612, 618
         }

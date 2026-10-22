@@ -1,0 +1,1132 @@
+@model QuanLyDaoTao.Models.QuanTri.DuLieuBangTrucTuyen
+@using QuanLyDaoTao.Models.QuanTri
+@{
+    ViewData["Title"] = $"Quản trị DB Trực tuyến: {Model.TenHienThi}";
+    Layout = "_Layout";
+    var danhSachBang = ViewBag.DanhSachBang as List<ThongTinBangHeThong> ?? new List<ThongTinBangHeThong>();
+}
+
+<div class="container-fluid px-4 py-3" id="pnlQuanTriDuLieu">
+    <!-- Banner tiêu đề Quản trị DB trực tiếp -->
+    <div class="cand-banner-header p-3 mb-3 d-flex flex-column flex-xl-row justify-content-between align-items-xl-center gap-3">
+        <div class="d-flex align-items-center">
+            <img src="~/images/logo_badge.png" alt="Logo C500" class="logo-cand-nav me-3" />
+            <div>
+                <div class="d-flex align-items-center gap-2">
+                    <span class="badge badge-cand-gold">ADMINISTRATOR STUDIO</span>
+                    <span class="badge badge-cand-red">LIVE DATABASE CRUD (+/- &amp; UNDO/REDO)</span>
+                </div>
+                <h4 class="mb-0 fw-bold text-white mt-1" id="lblTieuDe">
+                    <i class="bi bi-database-fill-gear me-2"></i>TRÌNH QUẢN TRỊ &amp; TÙY BIẾN DỮ LIỆU TRỰC TIẾP: @Model.TenHienThi.ToUpper()
+                </h4>
+                <small style="color: #F2F0A5;">Bấm dấu <strong>[+] / [-]</strong> trực tiếp trên bảng để thêm/bớt dòng &amp; cột, hỗ trợ <strong>Delete</strong>, <strong>Undo (Ctrl+Z)</strong> và <strong>Redo (Ctrl+Y)</strong> áp dụng thẳng lên Database</small>
+            </div>
+        </div>
+
+        <!-- Cụm nút điều khiển chính: Undo / Redo / Thêm-Bớt (+/-) / Delete / Lưu -->
+        <div class="d-flex flex-wrap gap-2 align-items-center">
+            <div class="btn-group shadow-sm" role="group" aria-label="Undo Redo">
+                <button type="button" class="btn btn-light fw-bold text-dark" id="btnUndoDb" onclick="thucHienUndo()" title="Hoàn tác thao tác vừa thực hiện (Ctrl+Z)" disabled>
+                    <i class="bi bi-arrow-counterclockwise me-1"></i>Undo (<span id="lblSoBuocUndo">0</span>)
+                </button>
+                <button type="button" class="btn btn-light fw-bold text-dark border-start" id="btnRedoDb" onclick="thucHienRedo()" title="Làm lại thao tác vừa hoàn tác (Ctrl+Y)" disabled>
+                    <i class="bi bi-arrow-clockwise me-1"></i>Redo (<span id="lblSoBuocRedo">0</span>)
+                </button>
+            </div>
+
+            <div class="btn-group shadow-sm" role="group" aria-label="Add Remove Rows">
+                <button type="button" class="btn btn-warning fw-bold text-dark" id="btnThemDongPlus" onclick="cuonToiDongThemNhanh()" title="Thêm dòng mới vào bảng [+]">
+                    <i class="bi bi-plus-lg me-1"></i>Thêm Dòng [+]
+                </button>
+                <button type="button" class="btn btn-danger fw-bold" id="btnXoaDongMinus" onclick="xoaDongDaChonHoacDongCuoi()" title="Xóa các dòng đã chọn hoặc bớt dòng cuối [-]">
+                    <i class="bi bi-dash-lg me-1"></i>Xóa / Bớt Dòng [-] (<span id="lblSoDongDaChon">0</span>)
+                </button>
+            </div>
+
+            <button type="button" class="btn btn-info fw-bold text-dark shadow-sm" id="btnMoModalTruongTuyChinh" data-bs-toggle="modal" data-bs-target="#mdlQuanLyTruongTuyChinh">
+                <i class="bi bi-columns-gap me-1"></i>+/- Cột Tùy Chỉnh (@Model.DanhSachTruongTuyChinh.Count)
+            </button>
+
+            <button type="button" class="btn btn-success fw-bold shadow-sm" id="btnLuuTatCaThayDoi" onclick="luuTatCaDongDaSua()">
+                <i class="bi bi-cloud-check-fill me-1"></i>Lưu Tất Cả (<span id="lblSoDongChoLuu">0</span>)
+            </button>
+        </div>
+    </div>
+
+    <!-- Thanh chuyển đổi nhanh giữa tất cả 11 nhóm quản lý trong hệ thống -->
+    <div class="card shadow-sm border-0 mb-3" id="pnlChonNhomQuanLy">
+        <div class="card-body py-2 px-3">
+            <div class="d-flex flex-wrap gap-2 align-items-center">
+                <span class="fw-bold text-primary small text-uppercase me-1"><i class="bi bi-layers-fill me-1"></i>Chọn Nhóm DB:</span>
+                @foreach (var b in danhSachBang)
+                {
+                    bool dangChon = string.Equals(b.TenBang, Model.TenBang, StringComparison.OrdinalIgnoreCase);
+                    <a asp-action="Index" asp-route-bang="@b.TenBang"
+                       class="btn btn-sm @(dangChon ? "btn-primary fw-bold shadow-sm" : "btn-outline-primary")"
+                       id="btnChonBang_@b.TenBang">
+                        <i class="bi @b.BieuTuong me-1"></i>@b.TenHienThi
+                        <span class="badge @(dangChon ? "bg-warning text-dark" : "bg-secondary") ms-1">@b.SoBanGhi</span>
+                        @if (b.SoTruongTuyChinh > 0)
+                        {
+                            <span class="badge bg-info text-dark ms-1" title="Số trường tùy chỉnh">+@b.SoTruongTuyChinh cột</span>
+                        }
+                    </a>
+                }
+            </div>
+        </div>
+    </div>
+
+    <!-- Thanh tìm kiếm nhanh, khôi phục cột ẩn và trạng thái thực thi DB -->
+    <div class="card shadow-sm border-0 mb-3" id="pnlThanhCongCuStudio">
+        <div class="card-body py-2 px-3 d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-2">
+            <form method="get" asp-action="Index" class="d-flex gap-2 flex-grow-1" style="max-width: 520px;" id="frmTimKiemStudio">
+                <input type="hidden" name="bang" value="@Model.TenBang" />
+                <div class="input-group input-group-sm">
+                    <span class="input-group-text bg-light"><i class="bi bi-search"></i></span>
+                    <input type="text" name="tuKhoa" class="form-control" id="txtTimKiemStudio"
+                           placeholder="Tìm kiếm nhanh trong bảng @Model.TenHienThi..." value="@ViewBag.TuKhoa" />
+                    <button type="submit" class="btn btn-primary" id="btnTimKiemStudio">Lọc</button>
+                    <a asp-action="Index" asp-route-bang="@Model.TenBang" class="btn btn-outline-secondary" id="btnLamMoiStudio">Làm mới</a>
+                </div>
+            </form>
+
+            <div class="d-flex flex-wrap align-items-center gap-2">
+                <button type="button" class="btn btn-sm btn-outline-secondary d-none" id="btnHienLaiCotAn" onclick="hienLaiTatCaCotAn()">
+                    <i class="bi bi-eye-fill me-1"></i>Hiện lại tất cả cột đã ẩn (<span id="lblSoCotAn">0</span>)
+                </button>
+                <div id="lblTrangThaiLuuDb" class="small fw-semibold text-success">
+                    <i class="bi bi-check2-circle me-1"></i>Kết nối trực tiếp SQLite DB sẵn sàng • Bấm [+] để thêm, [-] để xóa, Undo/Redo mọi lúc
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bảng dữ liệu Spreadsheet Live-Editable có nút [+] / [-] trực tiếp trên bảng -->
+    <div class="card shadow-sm border-0" id="pnlBangLiveCrud">
+        <div class="card-body p-0">
+            <form id="frmAntiForgeryStudio" class="d-none">
+                @Html.AntiForgeryToken()
+            </form>
+
+            <div class="table-responsive" style="max-height: 70vh;">
+                <table class="table table-bordered table-hover align-middle mb-0" id="dgvBangDuLieuTrucTuyen">
+                    <thead class="table-light sticky-top" style="z-index: 5;">
+                        <tr>
+                            <!-- Cột kiểm soát dòng: Checkbox chọn tất cả + Nút [+] / [-] trực tiếp -->
+                            <th class="text-center" style="width: 175px; min-width: 175px;">
+                                <div class="d-flex align-items-center justify-content-between px-1">
+                                    <div class="form-check m-0" title="Chọn / Bỏ chọn tất cả các dòng">
+                                        <input type="checkbox" class="form-check-input" id="chkChonTatCaDong" onchange="chonTatCaDong(this.checked)" />
+                                    </div>
+                                    <span class="small fw-bold">THAO TÁC DB</span>
+                                    <div class="btn-group btn-group-sm">
+                                        <button type="button" class="btn btn-success py-0 px-2 fw-bold" id="btnHeaderPlusRow"
+                                                onclick="cuonToiDongThemNhanh()" title="Thêm dòng mới trực tiếp [+]">
+                                            +
+                                        </button>
+                                        <button type="button" class="btn btn-danger py-0 px-2 fw-bold" id="btnHeaderMinusRow"
+                                                onclick="xoaDongDaChonHoacDongCuoi()" title="Xóa dòng đã chọn hoặc bớt dòng cuối [-]">
+                                            &minus;
+                                        </button>
+                                    </div>
+                                </div>
+                            </th>
+
+                            @foreach (var cot in Model.DanhSachCot)
+                            {
+                                <th data-col="@cot.MaCot" style="min-width: @(cot.LaKhoaChinh ? "80px" : "165px");">
+                                    <div class="d-flex align-items-center justify-content-between gap-1">
+                                        <span>
+                                            @cot.TenHienThi
+                                            @if (cot.LaBatBuoc && !cot.LaKhoaChinh)
+                                            {
+                                                <span class="text-danger">*</span>
+                                            }
+                                        </span>
+                                        <div class="d-flex align-items-center gap-1">
+                                            @if (cot.LaTruongTuyChinh)
+                                            {
+                                                <span class="badge bg-warning text-dark" style="font-size: 0.62rem;">Tùy chỉnh</span>
+                                                <button type="button" class="btn btn-outline-danger btn-sm py-0 px-1 fw-bold"
+                                                        onclick="xoaTruongTuyChinh(@cot.TruongTuyChinhId, '@cot.TenHienThi')"
+                                                        title="Xóa cột tùy chỉnh này khỏi DB [-]">
+                                                    &minus;
+                                                </button>
+                                            }
+                                            else if (cot.LaKhoaChinh)
+                                            {
+                                                <span class="badge bg-secondary" style="font-size: 0.62rem;">PK</span>
+                                            }
+                                            else
+                                            {
+                                                <button type="button" class="btn btn-outline-secondary btn-sm py-0 px-1 fw-bold"
+                                                        onclick="anCotTrenBang('@cot.MaCot', '@cot.TenHienThi')"
+                                                        title="Bớt / Ẩn cột này khỏi bảng [-]">
+                                                    &minus;
+                                                </button>
+                                            }
+                                        </div>
+                                    </div>
+                                    <div class="text-muted fw-normal" style="font-size: 0.68rem; text-transform: none;"><code>@cot.MaCot</code></div>
+                                </th>
+                            }
+
+                            <!-- Ô cuối cùng của Header: Nút [+ Thêm Cột] trực tiếp trên bảng -->
+                            <th class="text-center bg-warning bg-opacity-10" style="min-width: 150px;">
+                                <button type="button" class="btn btn-sm btn-warning fw-bold text-dark w-100" id="btnHeaderThemCotPlus"
+                                        onclick="themCotNhanhTrucTiepTrenBang()" title="Thêm trường (cột) mới trực tiếp vào bảng [+]">
+                                    <i class="bi bi-plus-circle-fill me-1"></i>+ Thêm Cột
+                                </button>
+                            </th>
+                        </tr>
+
+                        <!-- DÒNG THÊM NHANH TRỰC TIẾP TRÊN BẢNG (LUÔN HIỂN THỊ SẴN ĐỂ BẤM [+] THÊM NGAY) -->
+                        <tr id="rowThemNhanh" class="table-warning">
+                            <td class="text-center">
+                                <div class="d-flex align-items-center justify-content-center gap-1">
+                                    <button type="button" class="btn btn-sm btn-success fw-bold px-2" id="btnXacNhanThemNhanh" onclick="thucHienThemNhanh()" title="Thêm bản ghi mới này vào DB [+]">
+                                        <i class="bi bi-plus-lg"></i> Thêm [+]
+                                    </button>
+                                    <button type="button" class="btn btn-sm btn-outline-secondary px-2" id="btnXoaTrangDongThem" onclick="xoaTrangDongThemNhanh()" title="Xóa trắng ô nhập [-]">
+                                        &minus;
+                                    </button>
+                                </div>
+                            </td>
+                            @foreach (var cot in Model.DanhSachCot)
+                            {
+                                <td data-col="@cot.MaCot">
+                                    @if (cot.LaKhoaChinh)
+                                    {
+                                        <span class="badge bg-success"><i class="bi bi-plus-circle me-1"></i>Mới</span>
+                                    }
+                                    else if (cot.KieuDuLieu == "Logic")
+                                    {
+                                        <div class="form-check form-switch d-flex justify-content-center">
+                                            <input type="checkbox" class="form-check-input input-new-field" data-field="@cot.MaCot" checked />
+                                        </div>
+                                    }
+                                    else if (cot.KieuDuLieu == "KhoaNgoai" || cot.KieuDuLieu == "DanhSach")
+                                    {
+                                        <select class="form-select form-select-sm input-new-field" data-field="@cot.MaCot">
+                                            <option value="">-- Chọn --</option>
+                                            @foreach (var opt in cot.DanhSachLuaChon)
+                                            {
+                                                <option value="@opt.GiaTri">@opt.NhanHienThi</option>
+                                            }
+                                        </select>
+                                    }
+                                    else if (cot.KieuDuLieu == "NgayThang")
+                                    {
+                                        <input type="date" class="form-control form-control-sm input-new-field" data-field="@cot.MaCot" value="@DateTime.Today.ToString("yyyy-MM-dd")" />
+                                    }
+                                    else if (cot.KieuDuLieu == "SoNguyen")
+                                    {
+                                        <input type="number" class="form-control form-control-sm input-new-field" data-field="@cot.MaCot" value="1" />
+                                    }
+                                    else
+                                    {
+                                        <input type="text" class="form-control form-control-sm input-new-field" data-field="@cot.MaCot" placeholder="Nhập @cot.TenHienThi..." />
+                                    }
+                                </td>
+                            }
+                            <td class="text-center text-muted small">
+                                <span class="badge bg-warning text-dark">Dòng thêm nhanh</span>
+                            </td>
+                        </tr>
+                    </thead>
+
+                    <tbody id="tbodyDuLieuTrucTuyen">
+                        @if (Model.DanhSachDong.Count == 0)
+                        {
+                            <tr id="rowThongBaoTrong">
+                                <td colspan="@(Model.DanhSachCot.Count + 2)" class="text-center py-4 text-muted">
+                                    Bảng hiện chưa có bản ghi nào. Hãy điền vào <strong>Dòng thêm nhanh màu vàng phía trên</strong> rồi bấm nút <strong>"Thêm [+]"</strong>!
+                                </td>
+                            </tr>
+                        }
+                        else
+                        {
+                            foreach (var dong in Model.DanhSachDong)
+                            {
+                                var pkVal = dong.TryGetValue(Model.TenKhoaChinh, out var v) ? v ?? "" : "";
+                                <tr data-pk="@pkVal" id="row_@pkVal">
+                                    <td class="text-center bg-light">
+                                        <div class="d-flex align-items-center justify-content-between gap-1 px-1">
+                                            <input type="checkbox" class="form-check-input chk-select-row m-0" value="@pkVal"
+                                                   id="chkChonDong_@pkVal" onchange="capNhatSoDongDaChon()" title="Chọn dòng này để xóa" />
+                                            <div class="btn-group btn-group-sm">
+                                                <button type="button" class="btn btn-outline-success btn-save-row px-2" id="btnLuuDong_@pkVal"
+                                                        onclick="luuMotDong('@pkVal')" title="Lưu dòng này vào DB">
+                                                    <i class="bi bi-floppy-fill"></i>
+                                                </button>
+                                                <button type="button" class="btn btn-outline-primary px-2 fw-bold" id="btnNhanBanDong_@pkVal"
+                                                        onclick="nhanBanDongSangThemNhanh('@pkVal')" title="Chép dòng này lên dòng thêm mới [+]">
+                                                    +
+                                                </button>
+                                                <button type="button" class="btn btn-danger px-2 fw-bold" id="btnXoaDong_@pkVal"
+                                                        onclick="xoaMotDong('@pkVal')" title="Xóa / Bớt bản ghi này khỏi DB [-] (Delete)">
+                                                    &minus; / <i class="bi bi-trash-fill"></i>
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </td>
+
+                                    @foreach (var cot in Model.DanhSachCot)
+                                    {
+                                        var cellVal = dong.TryGetValue(cot.MaCot, out var cv) ? cv ?? "" : "";
+                                        <td data-col="@cot.MaCot">
+                                            @if (cot.LaKhoaChinh)
+                                            {
+                                                <span class="badge bg-light text-dark border font-monospace">@cellVal</span>
+                                            }
+                                            else if (cot.KieuDuLieu == "Logic")
+                                            {
+                                                bool isChecked = cellVal.Equals("true", StringComparison.OrdinalIgnoreCase) || cellVal == "1";
+                                                <div class="form-check form-switch d-flex justify-content-center">
+                                                    <input type="checkbox" class="form-check-input input-live-cell"
+                                                           data-pk="@pkVal" data-field="@cot.MaCot"
+                                                           data-prev="@(isChecked ? "true" : "false")"
+                                                           @(isChecked ? "checked" : "")
+                                                           onchange="ghiNhanSuaO(this, '@pkVal')" />
+                                                </div>
+                                            }
+                                            else if (cot.KieuDuLieu == "KhoaNgoai" || cot.KieuDuLieu == "DanhSach")
+                                            {
+                                                <select class="form-select form-select-sm input-live-cell"
+                                                        data-pk="@pkVal" data-field="@cot.MaCot"
+                                                        data-prev="@cellVal"
+                                                        onchange="ghiNhanSuaO(this, '@pkVal')">
+                                                    <option value="">-- Trống --</option>
+                                                    @foreach (var opt in cot.DanhSachLuaChon)
+                                                    {
+                                                        <option value="@opt.GiaTri" selected="@(opt.GiaTri == cellVal ? "selected" : null)">@opt.NhanHienThi</option>
+                                                    }
+                                                </select>
+                                            }
+                                            else if (cot.KieuDuLieu == "NgayThang")
+                                            {
+                                                <input type="date" class="form-control form-control-sm input-live-cell"
+                                                       data-pk="@pkVal" data-field="@cot.MaCot"
+                                                       data-prev="@cellVal"
+                                                       value="@cellVal"
+                                                       onchange="ghiNhanSuaO(this, '@pkVal')" />
+                                            }
+                                            else if (cot.KieuDuLieu == "SoNguyen")
+                                            {
+                                                <input type="number" class="form-control form-control-sm input-live-cell"
+                                                       data-pk="@pkVal" data-field="@cot.MaCot"
+                                                       data-prev="@cellVal"
+                                                       value="@cellVal"
+                                                       onchange="ghiNhanSuaO(this, '@pkVal')" />
+                                            }
+                                            else
+                                            {
+                                                <input type="text" class="form-control form-control-sm input-live-cell"
+                                                       data-pk="@pkVal" data-field="@cot.MaCot"
+                                                       data-prev="@cellVal"
+                                                       value="@cellVal"
+                                                       onchange="ghiNhanSuaO(this, '@pkVal')" />
+                                            }
+                                        </td>
+                                    }
+
+                                    <td class="text-center">
+                                        <button type="button" class="btn btn-sm btn-outline-danger py-0 px-2"
+                                                onclick="xoaMotDong('@pkVal')" title="Delete bản ghi #@pkVal">
+                                            <i class="bi bi-trash"></i> Delete
+                                        </button>
+                                    </td>
+                                </tr>
+                            }
+                        }
+                    </tbody>
+
+                    <!-- Chân bảng có nút [+] / [-] trực tiếp -->
+                    <tfoot class="table-light">
+                        <tr>
+                            <td colspan="@(Model.DanhSachCot.Count + 2)" class="py-2 px-3">
+                                <div class="d-flex flex-wrap justify-content-between align-items-center gap-2">
+                                    <div class="d-flex gap-2">
+                                        <button type="button" class="btn btn-sm btn-success fw-bold" id="btnFooterPlusRow" onclick="cuonToiDongThemNhanh()">
+                                            <i class="bi bi-plus-circle-fill me-1"></i>[+] Điền &amp; Thêm Dòng Mới
+                                        </button>
+                                        <button type="button" class="btn btn-sm btn-danger fw-bold" id="btnFooterMinusRow" onclick="xoaDongDaChonHoacDongCuoi()">
+                                            <i class="bi bi-dash-circle-fill me-1"></i>[-] Bớt Dòng Cuối / Xóa Dòng Đã Chọn
+                                        </button>
+                                        <button type="button" class="btn btn-sm btn-warning fw-bold text-dark" id="btnFooterPlusCol" onclick="themCotNhanhTrucTiepTrenBang()">
+                                            <i class="bi bi-columns-gap me-1"></i>[+] Thêm Cột Mới
+                                        </button>
+                                    </div>
+                                    <div class="small text-muted">
+                                        Tổng số bản ghi hiện tại: <strong>@Model.DanhSachDong.Count</strong> • Phím tắt: <code>Ctrl+Z</code> (Undo), <code>Ctrl+Y</code> (Redo)
+                                    </div>
+                                </div>
+                            </td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- MODAL QUẢN LÝ TRƯỜNG (CỘT) TÙY CHỈNH CHO NHÓM HIỆN TẠI -->
+<div class="modal fade" id="mdlQuanLyTruongTuyChinh" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content border-0 shadow">
+            <div class="modal-header text-white" style="background: linear-gradient(135deg, #013E10, #047920);">
+                <h5 class="modal-title fw-bold">
+                    <i class="bi bi-columns-gap me-2"></i>Quản Lý Trường (Cột) Tùy Chỉnh (+/-) — Bảng @Model.TenHienThi
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-4">
+                <!-- Form thêm trường mới -->
+                <div class="card bg-light border-0 mb-4">
+                    <div class="card-body">
+                        <h6 class="fw-bold text-primary mb-3"><i class="bi bi-plus-circle-fill me-1"></i>[+] Thêm Trường (Cột) Mới Vào Bảng @Model.TenHienThi</h6>
+                        <div class="row g-2 align-items-end">
+                            <div class="col-md-3">
+                                <label class="form-label small fw-bold">Mã trường (không dấu) *</label>
+                                <input type="text" class="form-control form-control-sm" id="txtMaTruongMoi" placeholder="VD: SoQuyetDinh" />
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label small fw-bold">Tên hiển thị cột *</label>
+                                <input type="text" class="form-control form-control-sm" id="txtTenHienThiMoi" placeholder="VD: Số Quyết Định" />
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label small fw-bold">Kiểu dữ liệu</label>
+                                <select class="form-select form-select-sm" id="cboKieuDuLieuMoi" onchange="kiemTraKieuDanhSach()">
+                                    <option value="VanBan">Văn bản (Text)</option>
+                                    <option value="SoNguyen">Số nguyên (Number)</option>
+                                    <option value="NgayThang">Ngày tháng (Date)</option>
+                                    <option value="Logic">Logic (Có / Không)</option>
+                                    <option value="DanhSach">Danh sách chọn (Dropdown)</option>
+                                </select>
+                            </div>
+                            <div class="col-md-2">
+                                <button type="button" class="btn btn-primary btn-sm w-100 fw-bold" id="btnThemTruongMoi" onclick="themTruongTuyChinhMoi()">
+                                    <i class="bi bi-plus-lg me-1"></i>[+] Thêm
+                                </button>
+                            </div>
+                            <div class="col-md-8 d-none mt-2" id="pnlTuyChonDanhSachMoi">
+                                <label class="form-label small fw-bold">Các lựa chọn (phân cách bằng dấu phẩy)</label>
+                                <input type="text" class="form-control form-control-sm" id="txtTuyChonDanhSachMoi" placeholder="VD: Xuất sắc, Giỏi, Khá, Trung bình" />
+                            </div>
+                            <div class="col-md-4 mt-2">
+                                <label class="form-label small fw-bold">Giá trị mặc định (nếu có)</label>
+                                <input type="text" class="form-control form-control-sm" id="txtGiaTriMacDinhMoi" placeholder="Giá trị mặc định..." />
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Danh sách các trường tùy chỉnh hiện có -->
+                <h6 class="fw-bold text-dark mb-2">Danh Sách Các Trường Tùy Chỉnh Hiện Có (@Model.DanhSachTruongTuyChinh.Count)</h6>
+                <div class="table-responsive">
+                    <table class="table table-sm table-bordered align-middle" id="dgvTruongTuyChinh">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Mã Trường</th>
+                                <th>Tên Hiển Thị</th>
+                                <th>Kiểu Dữ Liệu</th>
+                                <th>Tùy Chọn / Mặc Định</th>
+                                <th class="text-center" style="width: 140px;">Lưu / Xóa [-]</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @if (Model.DanhSachTruongTuyChinh.Count == 0)
+                            {
+                                <tr>
+                                    <td colspan="5" class="text-center text-muted py-3">
+                                        Chưa có trường tùy chỉnh nào cho bảng @Model.TenHienThi. Bạn có thể bấm <strong>"[+] Thêm"</strong> ở khung phía trên!
+                                    </td>
+                                </tr>
+                            }
+                            else
+                            {
+                                foreach (var ttc in Model.DanhSachTruongTuyChinh)
+                                {
+                                    <tr>
+                                        <td><code>@ttc.MaTruong</code></td>
+                                        <td>
+                                            <input type="text" class="form-control form-control-sm" id="txtSuaTenTruong_@ttc.TruongTuyChinhId" value="@ttc.TenHienThi" />
+                                        </td>
+                                        <td>
+                                            <select class="form-select form-select-sm" id="cboSuaKieuTruong_@ttc.TruongTuyChinhId">
+                                                <option value="VanBan" selected="@(ttc.KieuDuLieu == "VanBan" ? "selected" : null)">Văn bản</option>
+                                                <option value="SoNguyen" selected="@(ttc.KieuDuLieu == "SoNguyen" ? "selected" : null)">Số nguyên</option>
+                                                <option value="NgayThang" selected="@(ttc.KieuDuLieu == "NgayThang" ? "selected" : null)">Ngày tháng</option>
+                                                <option value="Logic" selected="@(ttc.KieuDuLieu == "Logic" ? "selected" : null)">Logic</option>
+                                                <option value="DanhSach" selected="@(ttc.KieuDuLieu == "DanhSach" ? "selected" : null)">Danh sách</option>
+                                            </select>
+                                        </td>
+                                        <td>
+                                            <input type="text" class="form-control form-control-sm" id="txtSuaTuyChon_@ttc.TruongTuyChinhId"
+                                                   value="@(ttc.TuyChonDanhSach ?? ttc.GiaTriMacDinh)" placeholder="Tùy chọn / Mặc định" />
+                                        </td>
+                                        <td class="text-center">
+                                            <div class="btn-group btn-group-sm">
+                                                <button type="button" class="btn btn-outline-primary" onclick="capNhatTruongTuyChinh(@ttc.TruongTuyChinhId)" title="Lưu cấu hình cột">
+                                                    <i class="bi bi-check-lg"></i> Lưu
+                                                </button>
+                                                <button type="button" class="btn btn-danger fw-bold" onclick="xoaTruongTuyChinh(@ttc.TruongTuyChinhId, '@ttc.TenHienThi')" title="Xóa cột này [-]">
+                                                    &minus; Xóa
+                                                </button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                }
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        const tenBangHienTai = '@Model.TenBang';
+        const tapDongDaSua = new Set();
+        const tapCotDaAn = new Set();
+
+        // Ngăn xếp lịch sử Undo / Redo lưu trong sessionStorage theo từng bảng để giữ nguyên cả khi reload
+        const STORAGE_UNDO_KEY = 'CAND_UNDO_' + tenBangHienTai;
+        const STORAGE_REDO_KEY = 'CAND_REDO_' + tenBangHienTai;
+
+        let undoStack = JSON.parse(sessionStorage.getItem(STORAGE_UNDO_KEY) || '[]');
+        let redoStack = JSON.parse(sessionStorage.getItem(STORAGE_REDO_KEY) || '[]');
+
+        function dongBoUndoRedoStorage() {
+            sessionStorage.setItem(STORAGE_UNDO_KEY, JSON.stringify(undoStack.slice(-30)));
+            sessionStorage.setItem(STORAGE_REDO_KEY, JSON.stringify(redoStack.slice(-30)));
+            capNhatNutUndoRedo();
+        }
+
+        function capNhatNutUndoRedo() {
+            const btnU = document.getElementById('btnUndoDb');
+            const btnR = document.getElementById('btnRedoDb');
+            document.getElementById('lblSoBuocUndo').innerText = undoStack.length;
+            document.getElementById('lblSoBuocRedo').innerText = redoStack.length;
+            if (btnU) btnU.disabled = undoStack.length === 0;
+            if (btnR) btnR.disabled = redoStack.length === 0;
+        }
+
+        function dayVaoUndo(actionObj) {
+            undoStack.push(actionObj);
+            redoStack = [];
+            dongBoUndoRedoStorage();
+        }
+
+        function layToken() {
+            return document.querySelector('#frmAntiForgeryStudio input[name="__RequestVerificationToken"]').value;
+        }
+
+        function hienThiThongBao(msg, thanhCong = true) {
+            const el = document.getElementById('lblTrangThaiLuuDb');
+            el.className = thanhCong ? 'small fw-bold text-success' : 'small fw-bold text-danger';
+            el.innerHTML = (thanhCong ? '<i class="bi bi-check-circle-fill me-1"></i>' : '<i class="bi bi-exclamation-triangle-fill me-1"></i>') + msg;
+        }
+
+        // Ghi nhận khi người dùng sửa 1 ô trên bảng (để hỗ trợ Undo/Redo từng ô & đánh dấu dòng cần lưu)
+        function ghiNhanSuaO(inp, pk) {
+            const field = inp.getAttribute('data-field');
+            const prevVal = inp.getAttribute('data-prev') ?? '';
+            const newVal = inp.type === 'checkbox' ? (inp.checked ? 'true' : 'false') : inp.value;
+
+            if (prevVal !== newVal) {
+                dayVaoUndo({
+                    loai: 'EDIT_CELL',
+                    pk: pk,
+                    field: field,
+                    giaTriCu: prevVal,
+                    giaTriMoi: newVal
+                });
+                inp.setAttribute('data-prev', newVal);
+            }
+            danhDauDongThayDoi(pk);
+        }
+
+        function danhDauDongThayDoi(pk) {
+            tapDongDaSua.add(pk);
+            document.getElementById('lblSoDongChoLuu').innerText = tapDongDaSua.size;
+            const row = document.getElementById('row_' + pk);
+            if (row) {
+                row.classList.add('table-info');
+            }
+            const btn = document.getElementById('btnLuuDong_' + pk);
+            if (btn) {
+                btn.classList.remove('btn-outline-success');
+                btn.classList.add('btn-success', 'fw-bold');
+            }
+        }
+
+        function thuThapDuLieuDong(pk) {
+            const inputs = document.querySelectorAll(`.input-live-cell[data-pk="${pk}"]`);
+            const duLieu = {};
+            inputs.forEach(inp => {
+                const field = inp.getAttribute('data-field');
+                if (inp.type === 'checkbox') {
+                    duLieu[field] = inp.checked ? 'true' : 'false';
+                } else {
+                    duLieu[field] = inp.value;
+                }
+            });
+            return duLieu;
+        }
+
+        function datGiaTriO(pk, field, val) {
+            const inp = document.querySelector(`.input-live-cell[data-pk="${pk}"][data-field="${field}"]`);
+            if (!inp) return;
+            if (inp.type === 'checkbox') {
+                inp.checked = (val === 'true' || val === '1');
+            } else {
+                inp.value = val ?? '';
+            }
+            inp.setAttribute('data-prev', val ?? '');
+        }
+
+        // Thực hiện UNDO (Hoàn tác trực tiếp lên giao diện & Database)
+        async function thucHienUndo() {
+            if (undoStack.length === 0) return;
+            const act = undoStack.pop();
+            redoStack.push(act);
+            dongBoUndoRedoStorage();
+
+            if (act.loai === 'EDIT_CELL') {
+                datGiaTriO(act.pk, act.field, act.giaTriCu);
+                await luuMotDong(act.pk, true);
+                hienThiThongBao(`Đã Undo (Hoàn tác) trường ${act.field} của bản ghi #${act.pk} trên DB!`, true);
+            } else if (act.loai === 'DELETE_ROW') {
+                // Khôi phục lại dòng vừa xóa vào DB
+                hienThiThongBao(`Đang Undo: Khôi phục lại bản ghi đã xóa vào DB...`, true);
+                const res = await fetch('/QuanTriDuLieu/ThemNhanh', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'RequestVerificationToken': layToken() },
+                    body: JSON.stringify({ tenBang: tenBangHienTai, duLieu: act.duLieuCu })
+                });
+                const kq = await res.json();
+                if (res.ok && kq.thanhCong) {
+                    act.pkMoi = kq.khoaBanGhi;
+                    dongBoUndoRedoStorage();
+                    window.location.reload();
+                } else {
+                    alert(kq.thongDiep || 'Không thể hoàn tác dòng đã xóa.');
+                }
+            } else if (act.loai === 'ADD_ROW') {
+                // Xóa dòng vừa thêm khỏi DB
+                hienThiThongBao(`Đang Undo: Xóa bản ghi #${act.pk} vừa thêm...`, true);
+                const res = await fetch('/QuanTriDuLieu/XoaNhanh', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'RequestVerificationToken': layToken() },
+                    body: JSON.stringify({ tenBang: tenBangHienTai, khoaBanGhi: act.pk })
+                });
+                if (res.ok) {
+                    window.location.reload();
+                }
+            } else if (act.loai === 'HIDE_COL') {
+                hienCotTrenBang(act.maCot);
+                hienThiThongBao(`Đã Undo: Hiện lại cột ${act.tenHienThi}!`, true);
+            }
+        }
+
+        // Thực hiện REDO (Làm lại thao tác vừa hoàn tác trực tiếp lên Database)
+        async function thucHienRedo() {
+            if (redoStack.length === 0) return;
+            const act = redoStack.pop();
+            undoStack.push(act);
+            dongBoUndoRedoStorage();
+
+            if (act.loai === 'EDIT_CELL') {
+                datGiaTriO(act.pk, act.field, act.giaTriMoi);
+                await luuMotDong(act.pk, true);
+                hienThiThongBao(`Đã Redo (Làm lại) trường ${act.field} của bản ghi #${act.pk} trên DB!`, true);
+            } else if (act.loai === 'DELETE_ROW') {
+                const pkCanXoa = act.pkMoi || act.pk;
+                const res = await fetch('/QuanTriDuLieu/XoaNhanh', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'RequestVerificationToken': layToken() },
+                    body: JSON.stringify({ tenBang: tenBangHienTai, khoaBanGhi: pkCanXoa })
+                });
+                if (res.ok) {
+                    window.location.reload();
+                }
+            } else if (act.loai === 'ADD_ROW') {
+                const res = await fetch('/QuanTriDuLieu/ThemNhanh', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'RequestVerificationToken': layToken() },
+                    body: JSON.stringify({ tenBang: tenBangHienTai, duLieu: act.duLieuMoi })
+                });
+                const kq = await res.json();
+                if (res.ok && kq.thanhCong) {
+                    act.pk = kq.khoaBanGhi;
+                    dongBoUndoRedoStorage();
+                    window.location.reload();
+                }
+            } else if (act.loai === 'HIDE_COL') {
+                anCotTrenBang(act.maCot, act.tenHienThi, true);
+            }
+        }
+
+        async function luuMotDong(pk, laUndoRedo = false) {
+            const duLieu = thuThapDuLieuDong(pk);
+            if (!laUndoRedo) {
+                hienThiThongBao(`Đang lưu bản ghi #${pk} lên DB...`, true);
+            }
+
+            const res = await fetch('/QuanTriDuLieu/CapNhatNhanh', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'RequestVerificationToken': layToken()
+                },
+                body: JSON.stringify({
+                    tenBang: tenBangHienTai,
+                    khoaBanGhi: pk,
+                    duLieu: duLieu
+                })
+            });
+
+            const kq = await res.json();
+            if (res.ok && kq.thanhCong) {
+                tapDongDaSua.delete(pk);
+                document.getElementById('lblSoDongChoLuu').innerText = tapDongDaSua.size;
+                const row = document.getElementById('row_' + pk);
+                if (row) {
+                    row.classList.remove('table-info');
+                }
+                const btn = document.getElementById('btnLuuDong_' + pk);
+                if (btn) {
+                    btn.classList.remove('btn-success', 'fw-bold');
+                    btn.classList.add('btn-outline-success');
+                }
+                if (!laUndoRedo) {
+                    hienThiThongBao(kq.thongDiep, true);
+                }
+            } else {
+                hienThiThongBao(kq.thongDiep || 'Lỗi khi lưu dữ liệu!', false);
+                alert(kq.thongDiep || 'Lỗi khi lưu dữ liệu!');
+            }
+        }
+
+        async function luuTatCaDongDaSua() {
+            if (tapDongDaSua.size === 0) {
+                hienThiThongBao('Chưa có dòng nào thay đổi cần lưu.', true);
+                return;
+            }
+
+            const danhSachCapNhat = [];
+            tapDongDaSua.forEach(pk => {
+                danhSachCapNhat.push({
+                    tenBang: tenBangHienTai,
+                    khoaBanGhi: pk,
+                    duLieu: thuThapDuLieuDong(pk)
+                });
+            });
+
+            hienThiThongBao(`Đang lưu đồng loạt ${danhSachCapNhat.length} bản ghi lên DB...`, true);
+
+            const res = await fetch('/QuanTriDuLieu/CapNhatHangLoat', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'RequestVerificationToken': layToken()
+                },
+                body: JSON.stringify({
+                    tenBang: tenBangHienTai,
+                    danhSachCapNhat: danhSachCapNhat
+                })
+            });
+
+            const kq = await res.json();
+            if (res.ok && kq.thanhCong) {
+                tapDongDaSua.forEach(pk => {
+                    const row = document.getElementById('row_' + pk);
+                    if (row) row.classList.remove('table-info');
+                });
+                tapDongDaSua.clear();
+                document.getElementById('lblSoDongChoLuu').innerText = '0';
+                hienThiThongBao(kq.thongDiep, true);
+            } else {
+                hienThiThongBao(kq.thongDiep || 'Lỗi khi lưu hàng loạt!', false);
+                alert(kq.thongDiep || 'Lỗi khi lưu hàng loạt!');
+            }
+        }
+
+        function cuonToiDongThemNhanh() {
+            const row = document.getElementById('rowThemNhanh');
+            row.classList.remove('d-none');
+            row.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            const firstInput = row.querySelector('input[type="text"], input[type="number"], select');
+            if (firstInput) firstInput.focus();
+        }
+
+        function xoaTrangDongThemNhanh() {
+            const inputs = document.querySelectorAll('.input-new-field');
+            inputs.forEach(inp => {
+                if (inp.type === 'checkbox') inp.checked = true;
+                else if (inp.type !== 'date') inp.value = '';
+            });
+            hienThiThongBao('Đã làm trống dòng nhập mới.', true);
+        }
+
+        function nhanBanDongSangThemNhanh(pk) {
+            const data = thuThapDuLieuDong(pk);
+            const inputs = document.querySelectorAll('.input-new-field');
+            inputs.forEach(inp => {
+                const f = inp.getAttribute('data-field');
+                if (data[f] !== undefined) {
+                    if (inp.type === 'checkbox') {
+                        inp.checked = (data[f] === 'true' || data[f] === '1');
+                    } else {
+                        inp.value = data[f];
+                    }
+                }
+            });
+            cuonToiDongThemNhanh();
+            hienThiThongBao(`Đã sao chép dữ liệu bản ghi #${pk} lên dòng thêm nhanh [+]. Hãy đổi Mã duy nhất rồi bấm "Thêm [+]"!`, true);
+        }
+
+        async function thucHienThemNhanh() {
+            const inputs = document.querySelectorAll('.input-new-field');
+            const duLieu = {};
+            inputs.forEach(inp => {
+                const field = inp.getAttribute('data-field');
+                if (inp.type === 'checkbox') {
+                    duLieu[field] = inp.checked ? 'true' : 'false';
+                } else {
+                    duLieu[field] = inp.value;
+                }
+            });
+
+            const res = await fetch('/QuanTriDuLieu/ThemNhanh', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'RequestVerificationToken': layToken()
+                },
+                body: JSON.stringify({
+                    tenBang: tenBangHienTai,
+                    duLieu: duLieu
+                })
+            });
+
+            const kq = await res.json();
+            if (res.ok && kq.thanhCong) {
+                dayVaoUndo({
+                    loai: 'ADD_ROW',
+                    pk: kq.khoaBanGhi,
+                    duLieuMoi: duLieu
+                });
+                hienThiThongBao(kq.thongDiep, true);
+                window.location.reload();
+            } else {
+                hienThiThongBao(kq.thongDiep || 'Không thể thêm bản ghi.', false);
+                alert(kq.thongDiep || 'Không thể thêm bản ghi.');
+            }
+        }
+
+        async function xoaMotDong(pk) {
+            if (!confirm(`Xác nhận xóa (Delete) bản ghi #${pk} khỏi bảng ${tenBangHienTai}? (Bạn có thể bấm Undo để khôi phục lại sau khi xóa)`)) {
+                return;
+            }
+
+            const duLieuTruocKhiXoa = thuThapDuLieuDong(pk);
+
+            const res = await fetch('/QuanTriDuLieu/XoaNhanh', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'RequestVerificationToken': layToken()
+                },
+                body: JSON.stringify({
+                    tenBang: tenBangHienTai,
+                    khoaBanGhi: pk
+                })
+            });
+
+            const kq = await res.json();
+            if (res.ok && kq.thanhCong) {
+                dayVaoUndo({
+                    loai: 'DELETE_ROW',
+                    pk: pk,
+                    duLieuCu: duLieuTruocKhiXoa
+                });
+                const row = document.getElementById('row_' + pk);
+                if (row) row.remove();
+                capNhatSoDongDaChon();
+                hienThiThongBao(kq.thongDiep + ' (Bấm Undo nếu muốn khôi phục)', true);
+            } else {
+                hienThiThongBao(kq.thongDiep || 'Không thể xóa bản ghi!', false);
+                alert(kq.thongDiep || 'Không thể xóa bản ghi!');
+            }
+        }
+
+        function chonTatCaDong(checked) {
+            document.querySelectorAll('.chk-select-row').forEach(chk => {
+                chk.checked = checked;
+            });
+            capNhatSoDongDaChon();
+        }
+
+        function capNhatSoDongDaChon() {
+            const dsChon = document.querySelectorAll('.chk-select-row:checked');
+            document.getElementById('lblSoDongDaChon').innerText = dsChon.length;
+        }
+
+        // Xóa các dòng đã chọn hoặc bớt dòng cuối cùng khi bấm nút [-]
+        async function xoaDongDaChonHoacDongCuoi() {
+            const dsChecked = Array.from(document.querySelectorAll('.chk-select-row:checked')).map(c => c.value);
+
+            if (dsChecked.length > 0) {
+                if (!confirm(`Bạn có chắc chắn muốn XÓA ${dsChecked.length} bản ghi đã chọn khỏi DB?`)) {
+                    return;
+                }
+
+                // Lưu vào Undo trước khi xóa
+                dsChecked.forEach(pk => {
+                    dayVaoUndo({
+                        loai: 'DELETE_ROW',
+                        pk: pk,
+                        duLieuCu: thuThapDuLieuDong(pk)
+                    });
+                });
+
+                const res = await fetch('/QuanTriDuLieu/XoaHangLoat', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'RequestVerificationToken': layToken()
+                    },
+                    body: JSON.stringify({
+                        tenBang: tenBangHienTai,
+                        danhSachKhoaBanGhi: dsChecked
+                    })
+                });
+
+                const kq = await res.json();
+                if (res.ok && kq.thanhCong) {
+                    dsChecked.forEach(pk => {
+                        const r = document.getElementById('row_' + pk);
+                        if (r) r.remove();
+                    });
+                    capNhatSoDongDaChon();
+                    hienThiThongBao(kq.thongDiep, true);
+                } else {
+                    alert(kq.thongDiep || 'Không thể xóa các bản ghi đã chọn!');
+                }
+                return;
+            }
+
+            // Nếu chưa tích chọn dòng nào, lấy dòng cuối cùng trong bảng để bớt dòng [-]
+            const allRows = document.querySelectorAll('#tbodyDuLieuTrucTuyen tr[data-pk]');
+            if (allRows.length === 0) {
+                alert('Hiện không có bản ghi nào trong bảng để xóa!');
+                return;
+            }
+
+            const lastRow = allRows[allRows.length - 1];
+            const lastPk = lastRow.getAttribute('data-pk');
+            await xoaMotDong(lastPk);
+        }
+
+        // Bớt / Ẩn cột trên bảng khi bấm nút [-] ở tiêu đề cột
+        function anCotTrenBang(maCot, tenHienThi, laRedo = false) {
+            document.querySelectorAll(`[data-col="${maCot}"]`).forEach(el => {
+                el.classList.add('d-none');
+            });
+            tapCotDaAn.add(maCot);
+            const btnHien = document.getElementById('btnHienLaiCotAn');
+            btnHien.classList.remove('d-none');
+            document.getElementById('lblSoCotAn').innerText = tapCotDaAn.size;
+
+            if (!laRedo) {
+                dayVaoUndo({
+                    loai: 'HIDE_COL',
+                    maCot: maCot,
+                    tenHienThi: tenHienThi
+                });
+            }
+            hienThiThongBao(`Đã tạm ẩn cột '${tenHienThi}'. Bấm Undo hoặc "Hiện lại cột đã ẩn" để khôi phục.`, true);
+        }
+
+        function hienCotTrenBang(maCot) {
+            document.querySelectorAll(`[data-col="${maCot}"]`).forEach(el => {
+                el.classList.remove('d-none');
+            });
+            tapCotDaAn.delete(maCot);
+            document.getElementById('lblSoCotAn').innerText = tapCotDaAn.size;
+            if (tapCotDaAn.size === 0) {
+                document.getElementById('btnHienLaiCotAn').classList.add('d-none');
+            }
+        }
+
+        function hienLaiTatCaCotAn() {
+            tapCotDaAn.forEach(maCot => {
+                document.querySelectorAll(`[data-col="${maCot}"]`).forEach(el => {
+                    el.classList.remove('d-none');
+                });
+            });
+            tapCotDaAn.clear();
+            document.getElementById('btnHienLaiCotAn').classList.add('d-none');
+            hienThiThongBao('Đã hiển thị lại toàn bộ các cột trên bảng!', true);
+        }
+
+        // Thêm cột tùy chỉnh mới trực tiếp khi bấm [+ Thêm Cột] ngay trên bảng
+        async function themCotNhanhTrucTiepTrenBang() {
+            const tenHienThi = prompt('Nhập TÊN HIỂN THỊ cho cột (trường) mới muốn thêm vào bảng ' + tenBangHienTai + ' (Ví dụ: Ghi chú riêng, Số quyết định, Cấp bậc):');
+            if (!tenHienThi || !tenHienThi.trim()) return;
+
+            // Tự động sinh Mã trường không dấu từ Tên hiển thị
+            const maTruongTuDong = tenHienThi.trim()
+                .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+                .replace(/đ/g, 'd').replace(/Đ/g, 'D')
+                .replace(/[^a-zA-Z0-9]/g, '_');
+
+            const res = await fetch('/QuanTriDuLieu/ThemTruongTuyChinh', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'RequestVerificationToken': layToken()
+                },
+                body: JSON.stringify({
+                    tenBang: tenBangHienTai,
+                    maTruong: maTruongTuDong,
+                    tenHienThi: tenHienThi.trim(),
+                    kieuDuLieu: 'VanBan',
+                    coHoatDong: true
+                })
+            });
+
+            const kq = await res.json();
+            if (res.ok && kq.thanhCong) {
+                window.location.reload();
+            } else {
+                alert(kq.thongDiep || 'Lỗi khi thêm cột mới!');
+            }
+        }
+
+        function kiemTraKieuDanhSach() {
+            const kieu = document.getElementById('cboKieuDuLieuMoi').value;
+            const pnl = document.getElementById('pnlTuyChonDanhSachMoi');
+            if (kieu === 'DanhSach') {
+                pnl.classList.remove('d-none');
+            } else {
+                pnl.classList.add('d-none');
+            }
+        }
+
+        async function themTruongTuyChinhMoi() {
+            const maTruong = document.getElementById('txtMaTruongMoi').value.trim();
+            const tenHienThi = document.getElementById('txtTenHienThiMoi').value.trim();
+            const kieuDuLieu = document.getElementById('cboKieuDuLieuMoi').value;
+            const tuyChon = document.getElementById('txtTuyChonDanhSachMoi').value.trim();
+            const macDinh = document.getElementById('txtGiaTriMacDinhMoi').value.trim();
+
+            if (!maTruong || !tenHienThi) {
+                alert('Vui lòng nhập Mã trường và Tên hiển thị cột!');
+                return;
+            }
+
+            const res = await fetch('/QuanTriDuLieu/ThemTruongTuyChinh', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'RequestVerificationToken': layToken()
+                },
+                body: JSON.stringify({
+                    tenBang: tenBangHienTai,
+                    maTruong: maTruong,
+                    tenHienThi: tenHienThi,
+                    kieuDuLieu: kieuDuLieu,
+                    tuyChonDanhSach: tuyChon || null,
+                    giaTriMacDinh: macDinh || null,
+                    coHoatDong: true
+                })
+            });
+
+            const kq = await res.json();
+            if (res.ok && kq.thanhCong) {
+                window.location.reload();
+            } else {
+                alert(kq.thongDiep || 'Lỗi khi thêm trường tùy chỉnh!');
+            }
+        }
+
+        async function capNhatTruongTuyChinh(id) {
+            const tenHienThi = document.getElementById('txtSuaTenTruong_' + id).value.trim();
+            const kieuDuLieu = document.getElementById('cboSuaKieuTruong_' + id).value;
+            const tuyChon = document.getElementById('txtSuaTuyChon_' + id).value.trim();
+
+            const res = await fetch('/QuanTriDuLieu/CapNhatTruongTuyChinh', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'RequestVerificationToken': layToken()
+                },
+                body: JSON.stringify({
+                    truongTuyChinhId: id,
+                    tenBang: tenBangHienTai,
+                    maTruong: 'Keep',
+                    tenHienThi: tenHienThi,
+                    kieuDuLieu: kieuDuLieu,
+                    tuyChonDanhSach: kieuDuLieu === 'DanhSach' ? tuyChon : null,
+                    giaTriMacDinh: kieuDuLieu !== 'DanhSach' ? tuyChon : null,
+                    coHoatDong: true
+                })
+            });
+
+            const kq = await res.json();
+            if (res.ok && kq.thanhCong) {
+                window.location.reload();
+            } else {
+                alert(kq.thongDiep || 'Lỗi khi cập nhật trường!');
+            }
+        }
+
+        async function xoaTruongTuyChinh(id, tenCot = '') {
+            if (!confirm(`Bạn có chắc chắn muốn xóa cột tùy chỉnh '${tenCot}' và toàn bộ dữ liệu của cột này khỏi DB?`)) {
+                return;
+            }
+
+            const res = await fetch('/QuanTriDuLieu/XoaTruongTuyChinh', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'RequestVerificationToken': layToken()
+                },
+                body: JSON.stringify(id)
+            });
+
+            const kq = await res.json();
+            if (res.ok && kq.thanhCong) {
+                window.location.reload();
+            } else {
+                alert(kq.thongDiep || 'Lỗi khi xóa trường!');
+            }
+        }
+
+        // Hỗ trợ phím tắt Ctrl+Z (Undo) và Ctrl+Y (Redo)
+        document.addEventListener('keydown', function (e) {
+            if (e.ctrlKey && !e.shiftKey && e.key.toLowerCase() === 'z') {
+                const activeTag = document.activeElement ? document.activeElement.tagName : '';
+                if (activeTag !== 'INPUT' && activeTag !== 'TEXTAREA') {
+                    e.preventDefault();
+                    thucHienUndo();
+                }
+            } else if ((e.ctrlKey && e.key.toLowerCase() === 'y') || (e.ctrlKey && e.shiftKey && e.key.toLowerCase() === 'z')) {
+                const activeTag = document.activeElement ? document.activeElement.tagName : '';
+                if (activeTag !== 'INPUT' && activeTag !== 'TEXTAREA') {
+                    e.preventDefault();
+                    thucHienRedo();
+                }
+            }
+        });
+
+        document.addEventListener('DOMContentLoaded', () => {
+            capNhatNutUndoRedo();
+        });
+    </script>
+}
