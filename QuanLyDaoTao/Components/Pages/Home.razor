@@ -1,0 +1,349 @@
+@page "/"
+@page "/Home"
+@page "/Home/Index"
+@inject IKhoaDichVu KhoaDichVu
+@inject IBoMonDichVu BoMonDichVu
+@inject ILopHocDichVu LopHocDichVu
+@inject IHocVienDichVu HocVienDichVu
+@inject INhanSuDichVu NhanSuDichVu
+@inject IMonHocDichVu MonHocDichVu
+@inject IPhanCongGiangDayDichVu PhanCongDichVu
+@inject INhatKyDichVu NhatKyDichVu
+@inject IJSRuntime JSRuntime
+
+<PageTitle>Bảng Điều Khiển Đào Tạo - Học Viện An Ninh Nhân Dân</PageTitle>
+
+<div class="container-fluid px-4 py-3" id="pnlDashboard">
+    <!-- Banner Học Viện An Ninh Nhân Dân (C500) -->
+    <div class="cand-banner-header p-3 mb-4 d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3">
+        <div class="d-flex align-items-center">
+            <img src="images/logo_badge.png" alt="Logo Học viện An ninh Nhân dân" class="logo-cand-md me-3" />
+            <div>
+                <div class="d-flex align-items-center gap-2 mb-1">
+                    <span class="badge badge-cand-gold">HỌC VIỆN AN NINH NHÂN DÂN • C500</span>
+                    <span class="badge badge-cand-red">BLAZOR .NET 8</span>
+                </div>
+                <h4 class="mb-0 fw-bold text-white" id="lblTieuDeDashboard">
+                    <i class="bi bi-speedometer2 me-2"></i>BẢNG ĐIỀU KHIỂN &amp; THỐNG KÊ BIỂU ĐỒ ĐÀO TẠO
+                </h4>
+                <span class="small" style="color: #F2F0A5;">Nền tảng Blazor tương tác thời gian thực • Giám sát cơ cấu tổ chức &amp; hồ sơ cán bộ C500</span>
+            </div>
+        </div>
+        <div class="d-flex flex-wrap gap-2">
+            <a href="CayToChuc" class="btn fw-bold shadow-sm" style="background-color: #FFD700; color: #013E10;" id="btnXemCayToChuc">
+                <i class="bi bi-diagram-3-fill me-1"></i>Sơ Đồ Cây Tổ Chức
+            </a>
+            <a href="QuanTriDuLieu" class="btn btn-outline-light fw-semibold" id="btnXemStudio">
+                <i class="bi bi-database-fill-gear me-1"></i>Studio DB Live
+            </a>
+        </div>
+    </div>
+
+    <!-- Hàng thống kê tổng số lượng (KPI Metric Cards) -->
+    <div class="row g-3 mb-4">
+        <div class="col-xl-2 col-md-4 col-sm-6">
+            <div class="stat-kpi-card h-100">
+                <div class="d-flex justify-content-between align-items-center mb-1">
+                    <span class="text-muted small fw-bold text-uppercase">Khoa Đào Tạo</span>
+                    <i class="bi bi-bank text-primary fs-5"></i>
+                </div>
+                <h3 class="fw-bold mb-0 text-primary" id="lblTongSoKhoa">@tongSoKhoa</h3>
+                <a href="Khoa" class="text-decoration-none small text-muted">Chi tiết &rarr;</a>
+            </div>
+        </div>
+        <div class="col-xl-2 col-md-4 col-sm-6">
+            <div class="stat-kpi-card h-100">
+                <div class="d-flex justify-content-between align-items-center mb-1">
+                    <span class="text-muted small fw-bold text-uppercase">Bộ Môn</span>
+                    <i class="bi bi-diagram-2 text-success fs-5"></i>
+                </div>
+                <h3 class="fw-bold mb-0 text-success" id="lblTongSoBoMon">@tongSoBoMon</h3>
+                <a href="BoMon" class="text-decoration-none small text-muted">Chi tiết &rarr;</a>
+            </div>
+        </div>
+        <div class="col-xl-2 col-md-4 col-sm-6">
+            <div class="stat-kpi-card stat-kpi-gold h-100">
+                <div class="d-flex justify-content-between align-items-center mb-1">
+                    <span class="text-muted small fw-bold text-uppercase">Lớp Học</span>
+                    <i class="bi bi-people text-warning fs-5"></i>
+                </div>
+                <h3 class="fw-bold mb-0 text-dark" id="lblTongSoLop">@tongSoLop</h3>
+                <a href="LopHoc" class="text-decoration-none small text-muted">Chi tiết &rarr;</a>
+            </div>
+        </div>
+        <div class="col-xl-2 col-md-4 col-sm-6">
+            <div class="stat-kpi-card stat-kpi-red h-100">
+                <div class="d-flex justify-content-between align-items-center mb-1">
+                    <span class="text-muted small fw-bold text-uppercase">Học Viên</span>
+                    <i class="bi bi-person-badge text-danger fs-5"></i>
+                </div>
+                <h3 class="fw-bold mb-0 text-danger" id="lblTongSoHocVien">@tongSoHocVien</h3>
+                <a href="HocVien" class="text-decoration-none small text-muted">Chi tiết &rarr;</a>
+            </div>
+        </div>
+        <div class="col-xl-2 col-md-4 col-sm-6">
+            <div class="stat-kpi-card h-100">
+                <div class="d-flex justify-content-between align-items-center mb-1">
+                    <span class="text-muted small fw-bold text-uppercase">Cán Bộ / GV</span>
+                    <i class="bi bi-person-lines-fill text-primary fs-5"></i>
+                </div>
+                <h3 class="fw-bold mb-0 text-primary" id="lblTongSoNhanSu">@tongSoNhanSu</h3>
+                <a href="NhanSu" class="text-decoration-none small text-muted">Chi tiết &rarr;</a>
+            </div>
+        </div>
+        <div class="col-xl-2 col-md-4 col-sm-6">
+            <div class="stat-kpi-card h-100">
+                <div class="d-flex justify-content-between align-items-center mb-1">
+                    <span class="text-muted small fw-bold text-uppercase">Môn Học</span>
+                    <i class="bi bi-journal-bookmark text-secondary fs-5"></i>
+                </div>
+                <h3 class="fw-bold mb-0 text-secondary" id="lblTongSoMonHoc">@tongSoMonHoc</h3>
+                <a href="MonHoc" class="text-decoration-none small text-muted">Chi tiết &rarr;</a>
+            </div>
+        </div>
+    </div>
+
+    <!-- PANEL BIỂU ĐỒ THỐNG KÊ TRỰC QUAN (DIAGRAMS PANEL) -->
+    <div class="card shadow-sm border-0 mb-4" id="pnlBieuDoThongKe">
+        <div class="card-header bg-white py-3 border-bottom d-flex flex-wrap justify-content-between align-items-center gap-2">
+            <div class="d-flex align-items-center gap-2">
+                <span class="badge badge-cand-gold px-2 py-1"><i class="bi bi-pie-chart-fill me-1"></i>DIAGRAMS</span>
+                <h5 class="mb-0 text-primary fw-bold">
+                    <i class="bi bi-bar-chart-line-fill me-2"></i>Bảng Biểu Đồ Thống Kê &amp; Phân Tích Dữ Liệu
+                </h5>
+            </div>
+            <span class="text-muted small">Cập nhật trực tiếp thời gian thực từ cơ sở dữ liệu SQLite</span>
+        </div>
+        <div class="card-body p-4 bg-light">
+            <div class="row g-4">
+                <!-- Biểu đồ 1: Phân bố Học viên theo Khoa Đào tạo -->
+                <div class="col-lg-6">
+                    <div class="diagram-panel-card h-100">
+                        <div class="diagram-header">
+                            <span class="diagram-header-title">
+                                <i class="bi bi-bar-chart-fill text-success"></i>Quy Mô Học Viên &amp; Lớp Theo Khoa
+                            </span>
+                            <span class="badge bg-success">Cột (Bar)</span>
+                        </div>
+                        <div class="diagram-canvas-wrapper">
+                            <canvas id="chartHocVienTheoKhoa"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Biểu đồ 2: Cơ cấu Trình độ chuyên môn Cán bộ / Giảng viên -->
+                <div class="col-lg-6">
+                    <div class="diagram-panel-card h-100">
+                        <div class="diagram-header">
+                            <span class="diagram-header-title">
+                                <i class="bi bi-pie-chart-fill text-primary"></i>Cơ Cấu Trình Độ &amp; Học Vị Cán Bộ
+                            </span>
+                            <span class="badge bg-primary">Tròn (Doughnut)</span>
+                        </div>
+                        <div class="diagram-canvas-wrapper d-flex align-items-center justify-content-center">
+                            <canvas id="chartTrinhDoChuyenMon" style="max-height: 250px;"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Biểu đồ 3: Phân bổ Nhân sự theo Chức vụ công tác -->
+                <div class="col-lg-6">
+                    <div class="diagram-panel-card h-100">
+                        <div class="diagram-header">
+                            <span class="diagram-header-title">
+                                <i class="bi bi-award-fill text-warning"></i>Phân Bổ Nhân Sự Theo Chức Vụ
+                            </span>
+                            <span class="badge bg-warning text-dark">Ngang (Bar)</span>
+                        </div>
+                        <div class="diagram-canvas-wrapper">
+                            <canvas id="chartChucVuNhanSu"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Biểu đồ 4: Tỷ lệ Lấp đầy Sĩ số tại các Lớp học -->
+                <div class="col-lg-6">
+                    <div class="diagram-panel-card h-100">
+                        <div class="diagram-header">
+                            <span class="diagram-header-title">
+                                <i class="bi bi-people-fill text-info"></i>Tỷ Lệ Sĩ Số / Chỉ Tiêu Các Lớp
+                            </span>
+                            <span class="badge bg-info text-dark">So sánh (Grouped)</span>
+                        </div>
+                        <div class="diagram-canvas-wrapper">
+                            <canvas id="chartSiSoLopHoc"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Hàng dưới: Lối tắt thao tác nhanh & Hoạt động kiểm toán gần đây -->
+    <div class="row g-4">
+        <!-- Thao tác nghiệp vụ nhanh -->
+        <div class="col-lg-4">
+            <div class="card shadow-sm border-0 h-100" id="pnlThaoTacNhanh">
+                <div class="card-header bg-white py-3 border-bottom">
+                    <h5 class="mb-0 text-primary fw-bold"><i class="bi bi-lightning-charge-fill me-2"></i>Thao Tác Nghiệp Vụ Nhanh</h5>
+                </div>
+                <div class="card-body">
+                    <div class="d-grid gap-2">
+                        <a href="NhanSu" class="btn btn-outline-primary text-start py-2" id="btnThemNhanSuNhanh">
+                            <i class="bi bi-person-lines-fill me-2"></i>Danh Sách Cán Bộ / Giảng Viên
+                        </a>
+                        <a href="Khoa" class="btn btn-outline-primary text-start py-2" id="btnThemKhoaNhanh">
+                            <i class="bi bi-bank me-2"></i>Quản Lý Khoa Đào Tạo
+                        </a>
+                        <a href="LopHoc" class="btn btn-outline-primary text-start py-2" id="btnThemLopNhanh">
+                            <i class="bi bi-people-fill me-2"></i>Quản Lý Lớp Học Chuyên Ngành
+                        </a>
+                        <a href="HocVien" class="btn btn-outline-primary text-start py-2" id="btnThemHocVienNhanh">
+                            <i class="bi bi-person-badge-fill me-2"></i>Quản Lý Học Viên
+                        </a>
+                        <a href="PhanCongGiangDay" class="btn btn-outline-primary text-start py-2" id="btnThemPhanCongNhanh">
+                            <i class="bi bi-calendar-plus-fill me-2"></i>Phân Công Giảng Dạy
+                        </a>
+                        <hr class="my-2" />
+                        <a href="QuanTriDuLieu" class="btn btn-primary text-start py-2" id="btnNhapExcelNhanSu">
+                            <i class="bi bi-database-fill-gear me-2"></i>Quản Trị Dữ Liệu Trực Tuyến (Live CRUD)
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Bảng hoạt động gần đây -->
+        <div class="col-lg-8">
+            <div class="card shadow-sm border-0 h-100" id="pnlHoatDongGanDay">
+                <div class="card-header bg-white py-3 border-bottom d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0 text-primary fw-bold"><i class="bi bi-clock-history me-2"></i>Nhật Ký Kiểm Toán Gần Đây</h5>
+                    <a href="NhatKy" class="btn btn-sm btn-outline-primary" id="btnXemTatCaNhatKy">Xem tất cả</a>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover table-striped align-middle mb-0" id="dgvHoatDongGanDay">
+                            <thead class="table-light">
+                                <tr>
+                                    <th class="ps-3">Thời điểm</th>
+                                    <th>Người thực hiện</th>
+                                    <th>Hành động</th>
+                                    <th>Bảng dữ liệu</th>
+                                    <th>Khóa bản ghi</th>
+                                    <th>Kết quả</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @if (hoatDongGanDay.Count == 0)
+                                {
+                                    <tr>
+                                        <td colspan="6" class="text-center py-4 text-muted">Chưa có hoạt động nào được ghi nhận</td>
+                                    </tr>
+                                }
+                                else
+                                {
+                                    foreach (var item in hoatDongGanDay)
+                                    {
+                                        <tr>
+                                            <td class="ps-3 text-muted small">@item.ThoiDiem.ToString("dd/MM/yyyy HH:mm:ss")</td>
+                                            <td class="fw-semibold">@item.NguoiThucHien</td>
+                                            <td>
+                                                <span class="badge bg-primary">@item.HanhDong</span>
+                                            </td>
+                                            <td><code>@item.BangDuLieu</code></td>
+                                            <td><span class="badge bg-light text-dark border">@(item.KhoaBanGhi ?? "-")</span></td>
+                                            <td>
+                                                @if (item.KetQua == "Thành công")
+                                                {
+                                                    <span class="badge bg-success">Thành công</span>
+                                                }
+                                                else
+                                                {
+                                                    <span class="badge bg-danger">@item.KetQua</span>
+                                                }
+                                            </td>
+                                        </tr>
+                                    }
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    private int tongSoKhoa;
+    private int tongSoBoMon;
+    private int tongSoLop;
+    private int tongSoHocVien;
+    private int tongSoNhanSu;
+    private int tongSoMonHoc;
+    private int tongSoPhanCong;
+
+    private List<ThongKeKhoaItem> dsKhoa = new();
+    private List<ThongKeTrinhDoItem> dsTrinhDo = new();
+    private List<ThongKeChucVuItem> dsChucVu = new();
+    private List<ThongKeLopItem> dsLop = new();
+    private List<NhatKyHeThong> hoatDongGanDay = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        var khoas = await KhoaDichVu.LayDanhSachAsync();
+        var bomons = await BoMonDichVu.LayDanhSachAsync();
+        var lophocs = await LopHocDichVu.LayDanhSachAsync();
+        var hocviens = await HocVienDichVu.LayDanhSachAsync();
+        var nhansus = await NhanSuDichVu.LayDanhSachAsync();
+        var monhocs = await MonHocDichVu.LayDanhSachAsync();
+        var phancongs = await PhanCongDichVu.LayDanhSachAsync();
+        hoatDongGanDay = await NhatKyDichVu.LayDanhSachNhatKyAsync(null, null, 10);
+
+        tongSoKhoa = khoas.Count;
+        tongSoBoMon = bomons.Count;
+        tongSoLop = lophocs.Count;
+        tongSoHocVien = hocviens.Count;
+        tongSoNhanSu = nhansus.Count;
+        tongSoMonHoc = monhocs.Count;
+        tongSoPhanCong = phancongs.Count;
+
+        foreach (var k in khoas)
+        {
+            dsKhoa.Add(new ThongKeKhoaItem
+            {
+                TenKhoa = k.TenKhoa,
+                SoLop = k.LopHocs?.Count ?? 0,
+                SoHocVien = k.LopHocs?.Sum(l => l.HocViens?.Count ?? 0) ?? 0,
+                SoNhanSu = k.NhanSus?.Count ?? 0
+            });
+        }
+
+        foreach (var l in lophocs.Take(10))
+        {
+            dsLop.Add(new ThongKeLopItem
+            {
+                TenLop = l.TenLop,
+                SoHocVien = l.HocViens?.Count ?? 0,
+                SoLuongToiDa = l.SoLuongToiDa
+            });
+        }
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            try
+            {
+                var khoasJson = System.Text.Json.JsonSerializer.Serialize(dsKhoa);
+                var lopsJson = System.Text.Json.JsonSerializer.Serialize(dsLop);
+                await JSRuntime.InvokeVoidAsync("khoiTaoBieuDoDashboard", khoasJson, lopsJson);
+            }
+            catch
+            {
+                // Fallback nếu Chart.js chưa load
+            }
+        }
+    }
+}

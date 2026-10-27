@@ -1,0 +1,148 @@
+@inject NavigationManager NavigationManager
+
+<div class="app-sidebar-header">
+    <a class="d-flex align-items-center text-decoration-none text-white" href="" id="lblLogo">
+        <img src="images/logo_badge.png" alt="Logo Học viện An ninh Nhân dân" class="logo-cand-nav me-2 shadow-sm" />
+        <div class="lh-sm">
+            <span class="d-block fw-bold text-white" style="font-size: 0.95rem; letter-spacing: 0.4px;">HỌC VIỆN AN NINH</span>
+            <span class="brand-subtitle" style="color: #FFD700; font-size: 0.7rem; font-weight: 700;">NHÂN DÂN • C500</span>
+        </div>
+    </a>
+</div>
+
+<div class="app-sidebar-body">
+    <ul class="sidebar-tree">
+        <!-- NHÓM 1: TỔNG QUAN & SƠ ĐỒ -->
+        <li class="tree-category">
+            <i class="bi bi-compass"></i><span>Tổng Quan &amp; Sơ Đồ</span>
+        </li>
+        <li>
+            <NavLink href="" Match="NavLinkMatch.All" class="tree-link">
+                <span><i class="bi bi-speedometer2 me-2"></i>Bảng Điều Khiển</span>
+                <span class="badge bg-light text-dark small py-1">Dashboard</span>
+            </NavLink>
+        </li>
+        <li>
+            <NavLink href="CayToChuc" class="tree-link">
+                <span><i class="bi bi-diagram-3-fill me-2" style="color: #FFD700;"></i>Cây Tổ Chức C500</span>
+                <span class="badge badge-cand-gold small py-1">Tree</span>
+            </NavLink>
+        </li>
+
+        <!-- NHÓM 2: CƠ CẤU TỔ CHỨC (Khoa & Bộ môn) -->
+        <li class="tree-category mt-2">
+            <i class="bi bi-building"></i><span>Cơ Cấu Đơn Vị</span>
+        </li>
+        <li>
+            <button type="button" class="tree-branch-header" @onclick="() => isToChucExpanded = !isToChucExpanded" aria-expanded="@(isToChucExpanded ? "true" : "false")">
+                <span><i class="bi bi-bank me-2 text-warning"></i>Khoa &amp; Bộ Môn</span>
+                <i class="bi bi-chevron-right branch-chevron"></i>
+            </button>
+            <ul class="tree-subnodes @(isToChucExpanded ? "" : "d-none")">
+                <li>
+                    <NavLink href="Khoa" class="tree-sublink">
+                        <span>Danh sách Khoa</span>
+                    </NavLink>
+                </li>
+                <li>
+                    <NavLink href="BoMon" class="tree-sublink">
+                        <span>Danh sách Bộ môn</span>
+                    </NavLink>
+                </li>
+            </ul>
+        </li>
+
+        <!-- NHÓM 3: QUẢN LÝ ĐÀO TẠO -->
+        <li class="tree-category mt-2">
+            <i class="bi bi-mortarboard-fill"></i><span>Quản Lý Đào Tạo</span>
+        </li>
+        <li>
+            <button type="button" class="tree-branch-header" @onclick="() => isDaoTaoExpanded = !isDaoTaoExpanded" aria-expanded="@(isDaoTaoExpanded ? "true" : "false")">
+                <span><i class="bi bi-people-fill me-2 text-info"></i>Lớp &amp; Học Viên</span>
+                <i class="bi bi-chevron-right branch-chevron"></i>
+            </button>
+            <ul class="tree-subnodes @(isDaoTaoExpanded ? "" : "d-none")">
+                <li>
+                    <NavLink href="LopHoc" class="tree-sublink">
+                        <span>Quản lý Lớp học</span>
+                    </NavLink>
+                </li>
+                <li>
+                    <NavLink href="HocVien" class="tree-sublink">
+                        <span>Quản lý Học viên</span>
+                    </NavLink>
+                </li>
+                <li>
+                    <NavLink href="MonHoc" class="tree-sublink">
+                        <span>Môn học &amp; Tín chỉ</span>
+                    </NavLink>
+                </li>
+                <li>
+                    <NavLink href="PhanCongGiangDay" class="tree-sublink">
+                        <span>Phân công giảng dạy</span>
+                    </NavLink>
+                </li>
+            </ul>
+        </li>
+
+        <!-- NHÓM 4: HỒ SƠ NHÂN SỰ -->
+        <li class="tree-category mt-2">
+            <i class="bi bi-person-workspace"></i><span>Hồ Sơ Cán Bộ &amp; GV</span>
+        </li>
+        <li>
+            <NavLink href="NhanSu" class="tree-link" Match="NavLinkMatch.Prefix">
+                <span><i class="bi bi-person-lines-fill me-2" style="color: #FFD700;"></i>Hồ Sơ Cán Bộ (Toàn Diện)</span>
+                <span class="badge badge-cand-gold small py-1">Hub</span>
+            </NavLink>
+        </li>
+
+        <!-- NHÓM 5: TIỆN ÍCH EXCEL -->
+        <li class="tree-category mt-2">
+            <i class="bi bi-file-earmark-excel-fill"></i><span>Tiện Ích Excel</span>
+        </li>
+        <li>
+            <a href="Excel/NhapExcel?module=NhanSu" class="tree-link">
+                <span><i class="bi bi-file-earmark-arrow-up me-2 text-success"></i>Nhập Excel Nhân Sự</span>
+            </a>
+        </li>
+        <li>
+            <a href="Excel/NhapExcel?module=Khoa" class="tree-link">
+                <span><i class="bi bi-file-earmark-arrow-up me-2 text-success"></i>Nhập Excel Khoa</span>
+            </a>
+        </li>
+
+        <!-- NHÓM 6: HỆ THỐNG & TÙY BIẾN DB (ADMINISTRATOR) -->
+        <li class="tree-category mt-2">
+            <i class="bi bi-shield-lock-fill"></i><span>Hệ Thống &amp; DB Live</span>
+        </li>
+        <li>
+            <NavLink href="QuanTriDuLieu" class="tree-link fw-bold" style="color: #FFD700 !important;" id="btnMenuQuanTriDb">
+                <span><i class="bi bi-database-fill-gear me-2"></i>Tùy Biến DB (Live CRUD)</span>
+                <span class="badge bg-danger">Studio</span>
+            </NavLink>
+        </li>
+        <li>
+            <NavLink href="TaiKhoan/DanhSach" class="tree-link">
+                <span><i class="bi bi-people-fill me-2"></i>Quản lý Tài khoản</span>
+            </NavLink>
+        </li>
+        <li>
+            <NavLink href="NhatKy" class="tree-link">
+                <span><i class="bi bi-clock-history me-2"></i>Nhật ký kiểm toán</span>
+            </NavLink>
+        </li>
+    </ul>
+</div>
+
+<div class="app-sidebar-footer d-flex align-items-center justify-content-between">
+    <div>
+        <span class="d-block fw-bold text-white">HỌC VIỆN AN NINH</span>
+        <small>Bản quyền &copy; 2026</small>
+    </div>
+    <span class="badge badge-cand-gold">Blazor .NET 8</span>
+</div>
+
+@code {
+    private bool isToChucExpanded = true;
+    private bool isDaoTaoExpanded = true;
+}

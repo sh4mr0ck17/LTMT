@@ -233,9 +233,6 @@ namespace QuanLyDaoTao.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("INTEGER");
 
-                    b.Property<bool>("CoHoatDong")
-                        .HasColumnType("INTEGER");
-
                     b.Property<string>("DiaChi")
                         .HasMaxLength(255)
                         .HasColumnType("TEXT");
@@ -270,6 +267,11 @@ namespace QuanLyDaoTao.Migrations
 
                     b.Property<string>("SoDienThoai")
                         .HasMaxLength(20)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("TrangThai")
+                        .IsRequired()
+                        .HasMaxLength(50)
                         .HasColumnType("TEXT");
 
                     b.HasKey("HocVienId");
@@ -431,42 +433,23 @@ namespace QuanLyDaoTao.Migrations
                     b.Property<int?>("BoMonId")
                         .HasColumnType("INTEGER");
 
-                    b.Property<string>("ChucDanhNgheNghiep")
-                        .HasMaxLength(100)
-                        .HasColumnType("TEXT");
-
                     b.Property<int?>("ChucVuId")
                         .HasColumnType("INTEGER");
 
-                    b.Property<string>("ChuyenNganh")
-                        .HasMaxLength(100)
-                        .HasColumnType("TEXT");
-
-                    b.Property<bool>("CoHoatDong")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<string>("DanToc")
-                        .HasMaxLength(50)
-                        .HasColumnType("TEXT");
-
-                    b.Property<string>("DiaChiLienHe")
+                    b.Property<string>("ChuyenMonDaoTao")
                         .HasMaxLength(255)
                         .HasColumnType("TEXT");
 
-                    b.Property<string>("DiaChiThuongTru")
+                    b.Property<string>("DiaChi")
                         .HasMaxLength(255)
                         .HasColumnType("TEXT");
 
-                    b.Property<string>("EmailCaNhan")
-                        .HasMaxLength(100)
-                        .HasColumnType("TEXT");
-
-                    b.Property<string>("EmailCongViec")
+                    b.Property<string>("Email")
                         .IsRequired()
                         .HasMaxLength(100)
                         .HasColumnType("TEXT");
 
-                    b.Property<string>("GhiChuChuyenMon")
+                    b.Property<string>("GhiChu")
                         .HasMaxLength(500)
                         .HasColumnType("TEXT");
 
@@ -484,49 +467,15 @@ namespace QuanLyDaoTao.Migrations
                         .HasMaxLength(100)
                         .HasColumnType("TEXT");
 
-                    b.Property<string>("HocHam")
-                        .HasMaxLength(50)
-                        .HasColumnType("TEXT");
-
-                    b.Property<string>("HocVi")
-                        .HasMaxLength(50)
-                        .HasColumnType("TEXT");
-
                     b.Property<int?>("KhoaId")
                         .HasColumnType("INTEGER");
-
-                    b.Property<string>("KinhNghiemCongTac")
-                        .HasMaxLength(500)
-                        .HasColumnType("TEXT");
-
-                    b.Property<string>("LinhVucChuyenMon")
-                        .HasMaxLength(200)
-                        .HasColumnType("TEXT");
-
-                    b.Property<string>("LoaiGiayTo")
-                        .IsRequired()
-                        .HasMaxLength(50)
-                        .HasColumnType("TEXT");
-
-                    b.Property<string>("LoaiHopDong")
-                        .HasMaxLength(50)
-                        .HasColumnType("TEXT");
 
                     b.Property<string>("MaNhanSu")
                         .IsRequired()
                         .HasMaxLength(50)
                         .HasColumnType("TEXT");
 
-                    b.Property<DateTime?>("NgayBatDauHopDong")
-                        .HasColumnType("TEXT");
-
-                    b.Property<DateTime?>("NgayCap")
-                        .HasColumnType("TEXT");
-
                     b.Property<DateTime?>("NgayCapNhat")
-                        .HasColumnType("TEXT");
-
-                    b.Property<DateTime?>("NgayKetThucHopDong")
                         .HasColumnType("TEXT");
 
                     b.Property<DateTime>("NgaySinh")
@@ -542,24 +491,11 @@ namespace QuanLyDaoTao.Migrations
                         .HasMaxLength(100)
                         .HasColumnType("TEXT");
 
-                    b.Property<string>("NguoiLienHeKhanCap")
-                        .HasMaxLength(100)
-                        .HasColumnType("TEXT");
-
-                    b.Property<string>("NguoiQuanLyTrucTiep")
-                        .HasMaxLength(100)
-                        .HasColumnType("TEXT");
-
                     b.Property<string>("NguoiTao")
                         .HasMaxLength(100)
                         .HasColumnType("TEXT");
 
-                    b.Property<string>("NoiCap")
-                        .HasMaxLength(100)
-                        .HasColumnType("TEXT");
-
-                    b.Property<string>("QuocTich")
-                        .IsRequired()
+                    b.Property<string>("SoCCCD")
                         .HasMaxLength(50)
                         .HasColumnType("TEXT");
 
@@ -567,24 +503,7 @@ namespace QuanLyDaoTao.Migrations
                         .HasMaxLength(20)
                         .HasColumnType("TEXT");
 
-                    b.Property<string>("SoDienThoaiKhanCap")
-                        .HasMaxLength(20)
-                        .HasColumnType("TEXT");
-
-                    b.Property<string>("SoGiayTo")
-                        .HasMaxLength(50)
-                        .HasColumnType("TEXT");
-
-                    b.Property<string>("TinhTrangHonNhan")
-                        .HasMaxLength(50)
-                        .HasColumnType("TEXT");
-
-                    b.Property<string>("TrangThaiCongTac")
-                        .IsRequired()
-                        .HasMaxLength(50)
-                        .HasColumnType("TEXT");
-
-                    b.Property<string>("TrangThaiHoSo")
+                    b.Property<string>("TrangThai")
                         .IsRequired()
                         .HasMaxLength(50)
                         .HasColumnType("TEXT");
@@ -592,21 +511,13 @@ namespace QuanLyDaoTao.Migrations
                     b.Property<int?>("TrinhDoChuyenMonId")
                         .HasColumnType("INTEGER");
 
-                    b.Property<string>("TrinhDoHocVan")
-                        .HasMaxLength(100)
-                        .HasColumnType("TEXT");
-
-                    b.Property<string>("TruongDaoTao")
-                        .HasMaxLength(150)
-                        .HasColumnType("TEXT");
-
                     b.HasKey("NhanSuId");
 
                     b.HasIndex("BoMonId");
 
                     b.HasIndex("ChucVuId");
 
-                    b.HasIndex("EmailCongViec");
+                    b.HasIndex("Email");
 
                     b.HasIndex("HoVaTen");
 
@@ -686,9 +597,9 @@ namespace QuanLyDaoTao.Migrations
                         .HasMaxLength(255)
                         .HasColumnType("TEXT");
 
-                    b.Property<string>("HocKy")
+                    b.Property<string>("HocKyNamHoc")
                         .IsRequired()
-                        .HasMaxLength(20)
+                        .HasMaxLength(50)
                         .HasColumnType("TEXT");
 
                     b.Property<bool>("LaChuNhiem")
@@ -704,17 +615,6 @@ namespace QuanLyDaoTao.Migrations
 
                     b.Property<int>("MonHocId")
                         .HasColumnType("INTEGER");
-
-                    b.Property<string>("NamHoc")
-                        .IsRequired()
-                        .HasMaxLength(20)
-                        .HasColumnType("TEXT");
-
-                    b.Property<DateTime?>("NgayBatDau")
-                        .HasColumnType("TEXT");
-
-                    b.Property<DateTime?>("NgayKetThuc")
-                        .HasColumnType("TEXT");
 
                     b.Property<DateTime>("NgayTao")
                         .HasColumnType("TEXT");
@@ -736,7 +636,7 @@ namespace QuanLyDaoTao.Migrations
 
                     b.HasIndex("MonHocId");
 
-                    b.HasIndex("NhanSuId", "MonHocId", "LopHocId", "HocKy", "NamHoc");
+                    b.HasIndex("NhanSuId", "MonHocId", "LopHocId", "HocKyNamHoc");
 
                     b.ToTable("PhanCongGiangDays");
                 });

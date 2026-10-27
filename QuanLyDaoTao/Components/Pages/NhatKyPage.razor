@@ -1,0 +1,75 @@
+@page "/NhatKy"
+@inject INhatKyDichVu NhatKyDichVu
+
+<PageTitle>Nhật ký kiểm toán - C500</PageTitle>
+
+<div class="container-fluid px-4 py-3" id="pnlNhatKy">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <div>
+            <h4 class="mb-1 text-primary fw-bold" id="lblTieuDe">
+                <i class="bi bi-clock-history me-2"></i>Nhật Ký Kiểm Toán Hệ Thống (C500)
+            </h4>
+            <span class="text-muted small">Lịch sử ghi nhận thao tác của người dùng, nhập/xuất Excel và bảo mật</span>
+        </div>
+    </div>
+
+    <!-- Bảng nhật ký -->
+    <div class="card shadow-sm border-0" id="pnlBangDuLieu">
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover table-striped align-middle mb-0" id="dgvDanhSachNhatKy">
+                    <thead class="table-light">
+                        <tr>
+                            <th class="ps-3" style="width: 50px;">#</th>
+                            <th style="width: 170px;">Thời Điểm</th>
+                            <th>Người Thực Hiện</th>
+                            <th>Hành Động</th>
+                            <th>Bảng Dữ Liệu</th>
+                            <th>Khóa Bản Ghi</th>
+                            <th>Chi Tiết Thay Đổi</th>
+                            <th class="text-center" style="width: 120px;">Kết Quả</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @if (danhSachNhatKy == null || danhSachNhatKy.Count == 0)
+                        {
+                            <tr><td colspan="8" class="text-center py-4 text-muted">Không tìm thấy nhật ký kiểm toán nào</td></tr>
+                        }
+                        else
+                        {
+                            int stt = 1;
+                            foreach (var nk in danhSachNhatKy)
+                            {
+                                <tr>
+                                    <td class="ps-3 fw-bold text-muted">@(stt++)</td>
+                                    <td class="font-monospace small">@nk.ThoiDiem.ToString("dd/MM/yyyy HH:mm:ss")</td>
+                                    <td class="fw-semibold">@nk.NguoiThucHien</td>
+                                    <td>
+                                        <span class="badge bg-primary">@nk.HanhDong</span>
+                                    </td>
+                                    <td><code>@nk.BangDuLieu</code></td>
+                                    <td><span class="badge bg-light text-dark border">@(nk.KhoaBanGhi ?? "-")</span></td>
+                                    <td class="small text-truncate" style="max-width: 320px;">
+                                        @(nk.GiaTriMoi ?? nk.GiaTriCu ?? "-")
+                                    </td>
+                                    <td class="text-center">
+                                        <span class="badge bg-success">@nk.KetQua</span>
+                                    </td>
+                                </tr>
+                            }
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    private List<NhatKyHeThong>? danhSachNhatKy;
+
+    protected override async Task OnInitializedAsync()
+    {
+        danhSachNhatKy = await NhatKyDichVu.LayDanhSachNhatKyAsync(null, null, 100);
+    }
+}

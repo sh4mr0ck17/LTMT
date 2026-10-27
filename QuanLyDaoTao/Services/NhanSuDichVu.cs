@@ -65,7 +65,7 @@ public class NhanSuDichVu : INhanSuDichVu
         if (!string.IsNullOrWhiteSpace(trangThai))
         {
             var trangThaiChuan = trangThai.Trim();
-            truyVan = truyVan.Where(ns => ns.TrangThaiCongTac == trangThaiChuan);
+            truyVan = truyVan.Where(ns => ns.TrangThai == trangThaiChuan);
         }
 
         if (!string.IsNullOrWhiteSpace(tuKhoa))
@@ -74,14 +74,14 @@ public class NhanSuDichVu : INhanSuDichVu
             truyVan = truyVan.Where(ns =>
                 ns.MaNhanSu.Contains(tuKhoaChuan) ||
                 ns.HoVaTen.Contains(tuKhoaChuan) ||
-                ns.EmailCongViec.Contains(tuKhoaChuan) ||
+                ns.Email.Contains(tuKhoaChuan) ||
                 (ns.SoDienThoai != null && ns.SoDienThoai.Contains(tuKhoaChuan)) ||
-                (ns.ChucDanhNgheNghiep != null && ns.ChucDanhNgheNghiep.Contains(tuKhoaChuan)));
+                (ns.ChucVu != null && ns.ChucVu.TenChucVu.Contains(tuKhoaChuan)));
         }
 
         if (coHoatDong.HasValue)
         {
-            truyVan = truyVan.Where(ns => ns.CoHoatDong == coHoatDong.Value);
+            truyVan = truyVan.Where(ns => coHoatDong.Value ? (ns.TrangThai != "Đã khóa" && ns.TrangThai != "Đã nghỉ việc") : (ns.TrangThai == "Đã khóa" || ns.TrangThai == "Đã nghỉ việc"));
         }
 
         return await truyVan.OrderBy(ns => ns.MaNhanSu).ToListAsync(cancellationToken);
@@ -137,7 +137,7 @@ public class NhanSuDichVu : INhanSuDichVu
         }
 
         // Kiểm tra email công việc trùng
-        var emailTonTai = await _coSoDuLieu.NhanSus.AnyAsync(ns => ns.EmailCongViec == nhanSu.EmailCongViec.Trim(), cancellationToken);
+        var emailTonTai = await _coSoDuLieu.NhanSus.AnyAsync(ns => ns.Email == nhanSu.Email.Trim(), cancellationToken);
         if (emailTonTai)
         {
             throw new InvalidOperationException($"Email công việc '{nhanSu.EmailCongViec}' đã được sử dụng bởi nhân sự khác.");
@@ -202,7 +202,7 @@ public class NhanSuDichVu : INhanSuDichVu
             throw new InvalidOperationException($"Mã nhân sự '{nhanSu.MaNhanSu}' đã tồn tại ở bản ghi khác.");
         }
 
-        var emailTonTai = await _coSoDuLieu.NhanSus.AnyAsync(ns => ns.EmailCongViec == nhanSu.EmailCongViec.Trim() && ns.NhanSuId != nhanSu.NhanSuId, cancellationToken);
+        var emailTonTai = await _coSoDuLieu.NhanSus.AnyAsync(ns => ns.Email == nhanSu.Email.Trim() && ns.NhanSuId != nhanSu.NhanSuId, cancellationToken);
         if (emailTonTai)
         {
             throw new InvalidOperationException($"Email công việc '{nhanSu.EmailCongViec}' đã được sử dụng bởi nhân sự khác.");

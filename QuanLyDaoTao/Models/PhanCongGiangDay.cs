@@ -1,9 +1,10 @@
 using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace QuanLyDaoTao.Models;
 
 /// <summary>
-/// Thực thể đại diện cho Phân công giảng dạy giữa Nhân sự, Môn học và Lớp học.
+/// Thực thể đại diện cho Phân công giảng dạy giữa Nhân sự, Môn học và Lớp học (Đã gộp tinh gọn).
 /// </summary>
 public class PhanCongGiangDay
 {
@@ -53,18 +54,11 @@ public class PhanCongGiangDay
     public virtual LopHoc? LopHoc { get; set; }
 
     /// <summary>
-    /// Học kỳ giảng dạy (ví dụ: Học kỳ 1, Học kỳ 2, Học kỳ hè).
+    /// Học kỳ và Năm học giảng dạy (Gộp từ Học kỳ, Năm học, Ngày bắt đầu, Ngày kết thúc - VD: HK1 (2026-2027)).
     /// </summary>
-    [Required(ErrorMessage = "Học kỳ là bắt buộc.")]
-    [StringLength(20, ErrorMessage = "Học kỳ không được vượt quá 20 ký tự.")]
-    public string HocKy { get; set; } = "Học kỳ 1";
-
-    /// <summary>
-    /// Năm học giảng dạy (ví dụ: 2026-2027).
-    /// </summary>
-    [Required(ErrorMessage = "Năm học là bắt buộc.")]
-    [StringLength(20, ErrorMessage = "Năm học không được vượt quá 20 ký tự.")]
-    public string NamHoc { get; set; } = "2026-2027";
+    [Required(ErrorMessage = "Học kỳ và năm học là bắt buộc.")]
+    [StringLength(50, ErrorMessage = "Học kỳ năm học không được vượt quá 50 ký tự.")]
+    public string HocKyNamHoc { get; set; } = "HK1 (2026-2027)";
 
     /// <summary>
     /// Vai trò giảng dạy (Giảng viên chính, Trợ giảng, Hướng dẫn thực hành).
@@ -78,17 +72,7 @@ public class PhanCongGiangDay
     public bool LaChuNhiem { get; set; } = false;
 
     /// <summary>
-    /// Ngày bắt đầu phân công.
-    /// </summary>
-    public DateTime? NgayBatDau { get; set; }
-
-    /// <summary>
-    /// Ngày kết thúc phân công.
-    /// </summary>
-    public DateTime? NgayKetThuc { get; set; }
-
-    /// <summary>
-    /// Ghi chú phân công giảng dạy.
+    /// Ghi chú phân công giảng dạy (Phòng học, ca dạy, lưu ý).
     /// </summary>
     [StringLength(255, ErrorMessage = "Ghi chú không được vượt quá 255 ký tự.")]
     public string? GhiChu { get; set; }
@@ -97,4 +81,49 @@ public class PhanCongGiangDay
     /// Ngày tạo bản ghi phân công.
     /// </summary>
     public DateTime NgayTao { get; set; } = DateTime.UtcNow;
+
+    // =========================================================================
+    // CÁC THUỘC TÍNH ÁNH XẠ CHUYỂN TIẾP (TƯƠNG THÍCH HOÀN TOÀN)
+    // =========================================================================
+
+    /// <summary>
+    /// Thuộc tính tương thích Học kỳ.
+    /// </summary>
+    [NotMapped]
+    public string HocKy
+    {
+        get => HocKyNamHoc.Contains('(') ? HocKyNamHoc.Split('(')[0].Trim() : HocKyNamHoc;
+        set => HocKyNamHoc = string.IsNullOrWhiteSpace(value) ? HocKyNamHoc : $"{value} ({NamHoc})";
+    }
+
+    /// <summary>
+    /// Thuộc tính tương thích Năm học.
+    /// </summary>
+    [NotMapped]
+    public string NamHoc
+    {
+        get
+        {
+            if (HocKyNamHoc.Contains('(') && HocKyNamHoc.Contains(')'))
+            {
+                int start = HocKyNamHoc.IndexOf('(') + 1;
+                int end = HocKyNamHoc.IndexOf(')');
+                return HocKyNamHoc.Substring(start, end - start).Trim();
+            }
+            return "2026-2027";
+        }
+        set => HocKyNamHoc = string.IsNullOrWhiteSpace(value) ? HocKyNamHoc : $"{HocKy} ({value})";
+    }
+
+    /// <summary>
+    /// Thuộc tính tương thích Ngày bắt đầu.
+    /// </summary>
+    [NotMapped]
+    public DateTime? NgayBatDau { get; set; }
+
+    /// <summary>
+    /// Thuộc tính tương thích Ngày kết thúc.
+    /// </summary>
+    [NotMapped]
+    public DateTime? NgayKetThuc { get; set; }
 }

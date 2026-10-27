@@ -1,0 +1,221 @@
+@page "/LopHoc"
+@inject ILopHocDichVu LopHocDichVu
+@inject IKhoaDichVu KhoaDichVu
+@inject NavigationManager Navigation
+
+<PageTitle>Quản lý Lớp học - Học Viện An Ninh Nhân Dân</PageTitle>
+
+<div class="container-fluid px-4 py-3" id="pnlDanhSachLop">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <div>
+            <h4 class="mb-1 text-primary fw-bold" id="lblTieuDe">
+                <i class="bi bi-people me-2"></i>Quản Lý Lớp Học Đào Tạo
+            </h4>
+            <span class="text-muted small">Danh sách các lớp học, niên khóa và tỷ lệ lấp đầy sĩ số đào tạo</span>
+        </div>
+        <div class="d-flex gap-2">
+            <a href="Excel/TaiTepMau?module=LopHoc" class="btn btn-outline-secondary" id="btnTaiMauExcel">
+                <i class="bi bi-download me-1"></i>Tải Mẫu Excel
+            </a>
+            <a href="Excel/XuatDuLieu?module=LopHoc" class="btn btn-outline-success" id="btnXuatExcel">
+                <i class="bi bi-file-earmark-excel me-1"></i>Xuất Excel
+            </a>
+            <a href="Excel/NhapExcel?module=LopHoc" class="btn btn-success" id="btnNhapExcel">
+                <i class="bi bi-file-earmark-arrow-up me-1"></i>Nhập Excel
+            </a>
+            <a href="LopHoc/ThemMoi" class="btn btn-primary" id="btnThemLop">
+                <i class="bi bi-plus-circle-fill me-1"></i>Thêm Mới Lớp Học
+            </a>
+        </div>
+    </div>
+
+    <!-- Bộ lọc & Tìm kiếm -->
+    <div class="card shadow-sm border-0 mb-4" id="pnlBoLoc">
+        <div class="card-body">
+            <div class="row g-3 align-items-center" id="frmTimKiem">
+                <div class="col-md-4">
+                    <div class="input-group">
+                        <span class="input-group-text"><i class="bi bi-search"></i></span>
+                        <input type="text" class="form-control" id="txtTimKiem" 
+                               placeholder="Tìm mã hoặc tên lớp..." 
+                               @bind="tuKhoa" @bind:event="oninput" @onkeyup="LocDuLieu" />
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <select class="form-select" id="cboChonKhoa" @onchange="OnKhoaChanged">
+                        <option value="">-- Tất cả Khoa --</option>
+                        @if (danhSachKhoa != null)
+                        {
+                            @foreach (var k in danhSachKhoa)
+                            {
+                                <option value="@k.KhoaId">@k.TenKhoa</option>
+                            }
+                        }
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <select class="form-select" id="cboNienKhoa" @onchange="OnNienKhoaChanged">
+                        <option value="">-- Tất cả Niên khóa --</option>
+                        @if (danhSachNienKhoa != null)
+                        {
+                            @foreach (var nk in danhSachNienKhoa)
+                            {
+                                <option value="@nk">@nk</option>
+                            }
+                        }
+                    </select>
+                </div>
+                <div class="col-md-2 d-flex gap-2">
+                    <button type="button" class="btn btn-primary w-100" id="btnTimKiem" @onclick="LocDuLieu">Lọc</button>
+                    <button type="button" class="btn btn-outline-secondary" id="btnLamMoi" @onclick="LamMoi"><i class="bi bi-arrow-clockwise"></i></button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bảng danh sách Lớp học -->
+    <div class="card shadow-sm border-0" id="pnlBangDuLieu">
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover table-striped align-middle mb-0" id="dgvDanhSachLop">
+                    <thead class="table-light">
+                        <tr>
+                            <th class="ps-3" style="width: 50px;">#</th>
+                            <th style="width: 140px;">Mã Lớp</th>
+                            <th>Tên Lớp</th>
+                            <th>Niên Khóa</th>
+                            <th>Khoa Quản Lý</th>
+                            <th class="text-center" style="width: 130px;">Học Viên / Sĩ Số</th>
+                            <th class="text-center" style="width: 120px;">Trạng Thái</th>
+                            <th class="text-center" style="width: 160px;">Thao Tác</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @if (danhSachHienThi == null || danhSachHienThi.Count == 0)
+                        {
+                            <tr>
+                                <td colspan="8" class="text-center py-4 text-muted">
+                                    <i class="bi bi-inbox fs-2 d-block mb-2"></i>Không tìm thấy lớp học nào trong hệ thống
+                                </td>
+                            </tr>
+                        }
+                        else
+                        {
+                            int stt = 1;
+                            foreach (var lop in danhSachHienThi)
+                            {
+                                int soHocVien = lop.HocViens?.Count ?? 0;
+                                <tr>
+                                    <td class="ps-3 fw-bold text-muted">@(stt++)</td>
+                                    <td><span class="badge bg-primary bg-opacity-10 text-primary fw-bold font-monospace fs-6">@lop.MaLop</span></td>
+                                    <td>
+                                        <a href="LopHoc/ChiTiet/@lop.LopHocId" class="fw-semibold text-decoration-none text-dark">@lop.TenLop</a>
+                                    </td>
+                                    <td><span class="badge bg-light text-dark border">@lop.NienKhoa</span></td>
+                                    <td><span class="badge bg-light text-dark border">@(lop.Khoa?.TenKhoa ?? "-")</span></td>
+                                    <td class="text-center">
+                                        <span class="badge @(soHocVien >= lop.SoLuongToiDa ? "bg-danger" : "bg-success")">
+                                            @soHocVien / @lop.SoLuongToiDa
+                                        </span>
+                                    </td>
+                                    <td class="text-center">
+                                        <span class="badge @(lop.CoHoatDong ? "bg-success" : "bg-secondary")">
+                                            @(lop.CoHoatDong ? "Hoạt động" : "Đã khóa")
+                                        </span>
+                                    </td>
+                                    <td class="text-center">
+                                        <div class="btn-group btn-group-sm" role="group">
+                                            <a href="LopHoc/ChiTiet/@lop.LopHocId" class="btn btn-outline-info" title="Xem chi tiết" id="btnXem_@lop.LopHocId">
+                                                <i class="bi bi-eye"></i>
+                                            </a>
+                                            <a href="LopHoc/ChinhSua/@lop.LopHocId" class="btn btn-outline-primary" title="Chỉnh sửa" id="btnSua_@lop.LopHocId">
+                                                <i class="bi bi-pencil"></i>
+                                            </a>
+                                            <button type="button" class="btn btn-outline-danger" title="Xóa lớp học" id="btnXoa_@lop.LopHocId"
+                                                    @onclick="() => XoaLop(lop.LopHocId)">
+                                                <i class="bi bi-trash"></i>
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                            }
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    private List<LopHoc>? danhSachGoc;
+    private List<LopHoc>? danhSachHienThi;
+    private List<Khoa>? danhSachKhoa;
+    private List<string>? danhSachNienKhoa;
+    private string tuKhoa = "";
+    private int? khoaIdLoc = null;
+    private string? nienKhoaLoc = null;
+
+    protected override async Task OnInitializedAsync()
+    {
+        danhSachKhoa = await KhoaDichVu.LayDanhSachAsync();
+        danhSachNienKhoa = await LopHocDichVu.LayDanhSachNienKhoaAsync();
+        await LoadData();
+    }
+
+    private async Task LoadData()
+    {
+        danhSachGoc = await LopHocDichVu.LayDanhSachAsync();
+        LocDuLieu();
+    }
+
+    private void LocDuLieu()
+    {
+        if (danhSachGoc == null) return;
+        danhSachHienThi = danhSachGoc.Where(l =>
+            (string.IsNullOrWhiteSpace(tuKhoa) || l.MaLop.Contains(tuKhoa, StringComparison.OrdinalIgnoreCase) || l.TenLop.Contains(tuKhoa, StringComparison.OrdinalIgnoreCase)) &&
+            (!khoaIdLoc.HasValue || l.KhoaId == khoaIdLoc.Value) &&
+            (string.IsNullOrWhiteSpace(nienKhoaLoc) || l.NienKhoa == nienKhoaLoc)
+        ).ToList();
+    }
+
+    private void OnKhoaChanged(ChangeEventArgs e)
+    {
+        var val = e.Value?.ToString();
+        if (int.TryParse(val, out int kid) && kid > 0)
+        {
+            khoaIdLoc = kid;
+        }
+        else
+        {
+            khoaIdLoc = null;
+        }
+        LocDuLieu();
+    }
+
+    private void OnNienKhoaChanged(ChangeEventArgs e)
+    {
+        nienKhoaLoc = e.Value?.ToString();
+        LocDuLieu();
+    }
+
+    private void LamMoi()
+    {
+        tuKhoa = "";
+        khoaIdLoc = null;
+        nienKhoaLoc = null;
+        LocDuLieu();
+    }
+
+    private async Task XoaLop(int id)
+    {
+        try
+        {
+            await LopHocDichVu.XoaLopHocAsync(id);
+            await LoadData();
+        }
+        catch
+        {
+        }
+    }
+}

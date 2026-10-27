@@ -1,160 +1,73 @@
 using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace QuanLyDaoTao.Models;
 
 /// <summary>
-/// Thực thể đại diện cho Hồ sơ nhân sự / Cán bộ / Giảng viên trong hệ thống đào tạo.
+/// Thực thể đại diện cho Hồ sơ cán bộ / giảng viên trong hệ thống đào tạo (Đã gộp tinh gọn).
 /// </summary>
 public class NhanSu
 {
-    // ==========================================
-    // NHÓM A: ĐỊNH DANH NỘI BỘ
-    // ==========================================
-
     /// <summary>
     /// Khóa chính định danh nội bộ.
     /// </summary>
     public int NhanSuId { get; set; }
 
     /// <summary>
-    /// Mã nhân sự nghiệp vụ duy nhất.
+    /// Mã cán bộ / giảng viên nghiệp vụ duy nhất.
     /// </summary>
     [Required(ErrorMessage = "Mã nhân sự là bắt buộc.")]
     [StringLength(50, ErrorMessage = "Mã nhân sự không được vượt quá 50 ký tự.")]
     public string MaNhanSu { get; set; } = string.Empty;
 
     /// <summary>
-    /// Trạng thái hồ sơ nhân sự (Đang xử lý, Hoàn tất, Lưu trữ).
-    /// </summary>
-    [StringLength(50, ErrorMessage = "Trạng thái hồ sơ không được vượt quá 50 ký tự.")]
-    public string TrangThaiHoSo { get; set; } = "Hoàn tất";
-
-    /// <summary>
-    /// Đường dẫn ảnh đại diện tùy chọn.
-    /// </summary>
-    [StringLength(500, ErrorMessage = "Đường dẫn ảnh không được vượt quá 500 ký tự.")]
-    public string? HinhAnh { get; set; }
-
-    // ==========================================
-    // NHÓM B: THÔNG TIN CÁ NHÂN
-    // ==========================================
-
-    /// <summary>
-    /// Họ và tên nhân sự.
+    /// Họ và tên cán bộ đầy đủ.
     /// </summary>
     [Required(ErrorMessage = "Họ và tên là bắt buộc.")]
     [StringLength(100, ErrorMessage = "Họ và tên không được vượt quá 100 ký tự.")]
     public string HoVaTen { get; set; } = string.Empty;
 
     /// <summary>
-    /// Ngày sinh.
+    /// Ngày tháng năm sinh.
     /// </summary>
     [Required(ErrorMessage = "Ngày sinh là bắt buộc.")]
     public DateTime NgaySinh { get; set; }
 
     /// <summary>
-    /// Giới tính.
+    /// Giới tính (Nam, Nữ, Khác).
     /// </summary>
     [Required(ErrorMessage = "Giới tính là bắt buộc.")]
     [StringLength(20, ErrorMessage = "Giới tính không được vượt quá 20 ký tự.")]
     public string GioiTinh { get; set; } = "Nam";
 
     /// <summary>
-    /// Quốc tịch.
+    /// Số định danh cá nhân / Thẻ CCCD (Gộp từ Số giấy tờ, Loại giấy tờ, Nơi cấp, Ngày cấp).
     /// </summary>
-    [StringLength(50, ErrorMessage = "Quốc tịch không được vượt quá 50 ký tự.")]
-    public string QuocTich { get; set; } = "Việt Nam";
+    [StringLength(50, ErrorMessage = "Số CCCD không được vượt quá 50 ký tự.")]
+    public string? SoCCCD { get; set; }
 
     /// <summary>
-    /// Dân tộc.
-    /// </summary>
-    [StringLength(50, ErrorMessage = "Dân tộc không được vượt quá 50 ký tự.")]
-    public string? DanToc { get; set; } = "Kinh";
-
-    /// <summary>
-    /// Tình trạng hôn nhân.
-    /// </summary>
-    [StringLength(50, ErrorMessage = "Tình trạng hôn nhân không được vượt quá 50 ký tự.")]
-    public string? TinhTrangHonNhan { get; set; }
-
-    // ==========================================
-    // NHÓM C: ĐỊNH DANH VÀ LIÊN HỆ
-    // ==========================================
-
-    /// <summary>
-    /// Loại giấy tờ định danh (CCCD, Hộ chiếu).
-    /// </summary>
-    [StringLength(50, ErrorMessage = "Loại giấy tờ không được vượt quá 50 ký tự.")]
-    public string LoaiGiayTo { get; set; } = "CCCD";
-
-    /// <summary>
-    /// Số CCCD hoặc Hộ chiếu.
-    /// </summary>
-    [StringLength(50, ErrorMessage = "Số giấy tờ không được vượt quá 50 ký tự.")]
-    public string? SoGiayTo { get; set; }
-
-    /// <summary>
-    /// Ngày cấp giấy tờ định danh.
-    /// </summary>
-    public DateTime? NgayCap { get; set; }
-
-    /// <summary>
-    /// Nơi cấp giấy tờ định danh.
-    /// </summary>
-    [StringLength(100, ErrorMessage = "Nơi cấp không được vượt quá 100 ký tự.")]
-    public string? NoiCap { get; set; }
-
-    /// <summary>
-    /// Số điện thoại liên lạc.
+    /// Số điện thoại liên lạc chính thức.
     /// </summary>
     [StringLength(20, ErrorMessage = "Số điện thoại không được vượt quá 20 ký tự.")]
     public string? SoDienThoai { get; set; }
 
     /// <summary>
-    /// Email cơ quan / công việc (Bắt buộc).
+    /// Địa chỉ Email liên hệ và công vụ (Bắt buộc & Duy nhất - Gộp từ Email công việc và Email cá nhân).
     /// </summary>
-    [Required(ErrorMessage = "Email công việc là bắt buộc.")]
-    [EmailAddress(ErrorMessage = "Email công việc không hợp lệ.")]
-    [StringLength(100, ErrorMessage = "Email công việc không được vượt quá 100 ký tự.")]
-    public string EmailCongViec { get; set; } = string.Empty;
+    [Required(ErrorMessage = "Email là bắt buộc.")]
+    [EmailAddress(ErrorMessage = "Email không hợp lệ.")]
+    [StringLength(100, ErrorMessage = "Email không được vượt quá 100 ký tự.")]
+    public string Email { get; set; } = string.Empty;
 
     /// <summary>
-    /// Email cá nhân tùy chọn.
+    /// Địa chỉ cư trú (Gộp từ Địa chỉ thường trú và Địa chỉ liên hệ).
     /// </summary>
-    [EmailAddress(ErrorMessage = "Email cá nhân không hợp lệ.")]
-    [StringLength(100, ErrorMessage = "Email cá nhân không được vượt quá 100 ký tự.")]
-    public string? EmailCaNhan { get; set; }
+    [StringLength(255, ErrorMessage = "Địa chỉ không được vượt quá 255 ký tự.")]
+    public string? DiaChi { get; set; }
 
     /// <summary>
-    /// Địa chỉ thường trú theo hộ khẩu.
-    /// </summary>
-    [StringLength(255, ErrorMessage = "Địa chỉ thường trú không được vượt quá 255 ký tự.")]
-    public string? DiaChiThuongTru { get; set; }
-
-    /// <summary>
-    /// Địa chỉ liên hệ hiện tại.
-    /// </summary>
-    [StringLength(255, ErrorMessage = "Địa chỉ liên hệ không được vượt quá 255 ký tự.")]
-    public string? DiaChiLienHe { get; set; }
-
-    /// <summary>
-    /// Họ tên người liên hệ khẩn cấp.
-    /// </summary>
-    [StringLength(100, ErrorMessage = "Người liên hệ khẩn cấp không được vượt quá 100 ký tự.")]
-    public string? NguoiLienHeKhanCap { get; set; }
-
-    /// <summary>
-    /// Số điện thoại liên hệ khẩn cấp.
-    /// </summary>
-    [StringLength(20, ErrorMessage = "Số điện thoại khẩn cấp không được vượt quá 20 ký tự.")]
-    public string? SoDienThoaiKhanCap { get; set; }
-
-    // ==========================================
-    // NHÓM D: THÔNG TIN CÔNG TÁC
-    // ==========================================
-
-    /// <summary>
-    /// Khóa ngoại liên kết tới Khoa.
+    /// Khóa ngoại liên kết tới Khoa trực thuộc.
     /// </summary>
     public int? KhoaId { get; set; }
 
@@ -164,7 +77,7 @@ public class NhanSu
     public virtual Khoa? Khoa { get; set; }
 
     /// <summary>
-    /// Khóa ngoại liên kết tới Bộ môn.
+    /// Khóa ngoại liên kết tới Bộ môn trực thuộc.
     /// </summary>
     public int? BoMonId { get; set; }
 
@@ -174,7 +87,7 @@ public class NhanSu
     public virtual BoMon? BoMon { get; set; }
 
     /// <summary>
-    /// Khóa ngoại liên kết tới Chức vụ.
+    /// Khóa ngoại liên kết tới Chức vụ công tác.
     /// </summary>
     public int? ChucVuId { get; set; }
 
@@ -184,50 +97,7 @@ public class NhanSu
     public virtual ChucVu? ChucVu { get; set; }
 
     /// <summary>
-    /// Chức danh nghề nghiệp (Giảng viên, Giảng viên chính, Chuyên viên).
-    /// </summary>
-    [StringLength(100, ErrorMessage = "Chức danh nghề nghiệp không được vượt quá 100 ký tự.")]
-    public string? ChucDanhNgheNghiep { get; set; }
-
-    /// <summary>
-    /// Họ tên người quản lý trực tiếp.
-    /// </summary>
-    [StringLength(100, ErrorMessage = "Người quản lý trực tiếp không được vượt quá 100 ký tự.")]
-    public string? NguoiQuanLyTrucTiep { get; set; }
-
-    /// <summary>
-    /// Ngày bắt đầu vào làm việc.
-    /// </summary>
-    public DateTime? NgayVaoLam { get; set; }
-
-    /// <summary>
-    /// Loại hợp đồng làm việc (Hợp đồng không xác định thời hạn, Có xác định thời hạn, Thử việc).
-    /// </summary>
-    [StringLength(50, ErrorMessage = "Loại hợp đồng không được vượt quá 50 ký tự.")]
-    public string? LoaiHopDong { get; set; } = "Chính thức";
-
-    /// <summary>
-    /// Ngày bắt đầu hợp đồng hiện tại.
-    /// </summary>
-    public DateTime? NgayBatDauHopDong { get; set; }
-
-    /// <summary>
-    /// Ngày kết thúc hợp đồng hiện tại (nếu có).
-    /// </summary>
-    public DateTime? NgayKetThucHopDong { get; set; }
-
-    /// <summary>
-    /// Trạng thái công tác (Đang làm việc, Tạm nghỉ, Đã nghỉ việc, Nghỉ thai sản).
-    /// </summary>
-    [StringLength(50, ErrorMessage = "Trạng thái công tác không được vượt quá 50 ký tự.")]
-    public string TrangThaiCongTac { get; set; } = "Đang làm việc";
-
-    // ==========================================
-    // NHÓM E: TRÌNH ĐỘ VÀ CHUYÊN MÔN
-    // ==========================================
-
-    /// <summary>
-    /// Khóa ngoại liên kết tới Trình độ chuyên môn.
+    /// Khóa ngoại liên kết tới Trình độ chuyên môn chuẩn.
     /// </summary>
     public int? TrinhDoChuyenMonId { get; set; }
 
@@ -237,64 +107,36 @@ public class NhanSu
     public virtual TrinhDoChuyenMon? TrinhDoChuyenMon { get; set; }
 
     /// <summary>
-    /// Trình độ học vấn cao nhất (Đại học, Thạc sĩ, Tiến sĩ).
+    /// Tóm tắt chuyên môn đào tạo (Gộp từ Chuyên ngành, Trường đào tạo, Học vị, Học hàm, Lĩnh vực nghiên cứu).
     /// </summary>
-    [StringLength(100, ErrorMessage = "Trình độ học vấn không được vượt quá 100 ký tự.")]
-    public string? TrinhDoHocVan { get; set; }
+    [StringLength(255, ErrorMessage = "Chuyên môn đào tạo không được vượt quá 255 ký tự.")]
+    public string? ChuyenMonDaoTao { get; set; }
 
     /// <summary>
-    /// Chuyên ngành đào tạo.
+    /// Ngày bắt đầu vào làm việc chính thức tại đơn vị.
     /// </summary>
-    [StringLength(100, ErrorMessage = "Chuyên ngành không được vượt quá 100 ký tự.")]
-    public string? ChuyenNganh { get; set; }
+    public DateTime? NgayVaoLam { get; set; }
 
     /// <summary>
-    /// Trường tốt nghiệp / cơ sở đào tạo.
+    /// Trạng thái hồ sơ &amp; công tác (Đang làm việc, Tạm nghỉ, Đã nghỉ việc, Đã khóa - Gộp từ 3 cờ trạng thái).
     /// </summary>
-    [StringLength(150, ErrorMessage = "Trường đào tạo không được vượt quá 150 ký tự.")]
-    public string? TruongDaoTao { get; set; }
+    [StringLength(50, ErrorMessage = "Trạng thái không được vượt quá 50 ký tự.")]
+    public string TrangThai { get; set; } = "Đang làm việc";
 
     /// <summary>
-    /// Học vị (Cử nhân, Kỹ sư, Thạc sĩ, Tiến sĩ).
+    /// Ghi chú đa năng (Gộp từ Kinh nghiệm công tác, Ghi chú chuyên môn, Người liên hệ khẩn cấp).
     /// </summary>
-    [StringLength(50, ErrorMessage = "Học vị không được vượt quá 50 ký tự.")]
-    public string? HocVi { get; set; }
+    [StringLength(500, ErrorMessage = "Ghi chú không được vượt quá 500 ký tự.")]
+    public string? GhiChu { get; set; }
 
     /// <summary>
-    /// Học hàm (Giáo sư, Phó giáo sư).
+    /// Đường dẫn ảnh đại diện tùy chọn.
     /// </summary>
-    [StringLength(50, ErrorMessage = "Học hàm không được vượt quá 50 ký tự.")]
-    public string? HocHam { get; set; }
+    [StringLength(500)]
+    public string? HinhAnh { get; set; }
 
     /// <summary>
-    /// Lĩnh vực chuyên môn nghiên cứu và giảng dạy.
-    /// </summary>
-    [StringLength(200, ErrorMessage = "Lĩnh vực chuyên môn không được vượt quá 200 ký tự.")]
-    public string? LinhVucChuyenMon { get; set; }
-
-    /// <summary>
-    /// Kinh nghiệm công tác.
-    /// </summary>
-    [StringLength(500, ErrorMessage = "Kinh nghiệm công tác không được vượt quá 500 ký tự.")]
-    public string? KinhNghiemCongTac { get; set; }
-
-    /// <summary>
-    /// Ghi chú chuyên môn bổ sung.
-    /// </summary>
-    [StringLength(500, ErrorMessage = "Ghi chú chuyên môn không được vượt quá 500 ký tự.")]
-    public string? GhiChuChuyenMon { get; set; }
-
-    // ==========================================
-    // NHÓM F: QUẢN TRỊ HỒ SƠ & FLAGS
-    // ==========================================
-
-    /// <summary>
-    /// Trạng thái hoạt động trong hệ thống.
-    /// </summary>
-    public bool CoHoatDong { get; set; } = true;
-
-    /// <summary>
-    /// Thời điểm tạo bản ghi.
+    /// Thời điểm khởi tạo bản ghi.
     /// </summary>
     public DateTime NgayTao { get; set; } = DateTime.UtcNow;
 
@@ -304,19 +146,250 @@ public class NhanSu
     public DateTime? NgayCapNhat { get; set; }
 
     /// <summary>
-    /// Tài khoản hoặc người tạo bản ghi.
+    /// Người tạo bản ghi.
     /// </summary>
-    [StringLength(100, ErrorMessage = "Người tạo không được vượt quá 100 ký tự.")]
+    [StringLength(100)]
     public string? NguoiTao { get; set; }
 
     /// <summary>
-    /// Tài khoản hoặc người cập nhật bản ghi gần nhất.
+    /// Người cập nhật bản ghi.
     /// </summary>
-    [StringLength(100, ErrorMessage = "Người cập nhật không được vượt quá 100 ký tự.")]
+    [StringLength(100)]
     public string? NguoiCapNhat { get; set; }
 
     /// <summary>
-    /// Danh sách phân công giảng dạy của nhân sự.
+    /// Danh sách phân công giảng dạy của cán bộ.
     /// </summary>
     public virtual ICollection<PhanCongGiangDay> PhanCongGiangDays { get; set; } = new List<PhanCongGiangDay>();
+
+    // =========================================================================
+    // CÁC THUỘC TÍNH ÁNH XẠ CHUYỂN TIẾP (TƯƠNG THÍCH HOÀN TOÀN KHÔNG BỊ BREAK)
+    // =========================================================================
+
+    /// <summary>
+    /// Trạng thái hoạt động suy diễn từ trạng thái tổng hợp.
+    /// </summary>
+    [NotMapped]
+    public bool CoHoatDong
+    {
+        get => !string.Equals(TrangThai, "Đã khóa", StringComparison.OrdinalIgnoreCase) &&
+               !string.Equals(TrangThai, "Đã nghỉ việc", StringComparison.OrdinalIgnoreCase);
+        set => TrangThai = value ? (TrangThai == "Đã khóa" ? "Đang làm việc" : TrangThai) : "Đã khóa";
+    }
+
+    /// <summary>
+    /// Ánh xạ tương thích với Email công việc.
+    /// </summary>
+    [NotMapped]
+    public string EmailCongViec
+    {
+        get => Email;
+        set => Email = value;
+    }
+
+    /// <summary>
+    /// Ánh xạ tương thích với Trạng thái công tác.
+    /// </summary>
+    [NotMapped]
+    public string TrangThaiCongTac
+    {
+        get => TrangThai;
+        set => TrangThai = value;
+    }
+
+    /// <summary>
+    /// Ánh xạ tương thích với Trạng thái hồ sơ.
+    /// </summary>
+    [NotMapped]
+    public string TrangThaiHoSo
+    {
+        get => TrangThai;
+        set => TrangThai = value;
+    }
+
+    /// <summary>
+    /// Ánh xạ tương thích với Số giấy tờ định danh.
+    /// </summary>
+    [NotMapped]
+    public string? SoGiayTo
+    {
+        get => SoCCCD;
+        set => SoCCCD = value;
+    }
+
+    /// <summary>
+    /// Ánh xạ tương thích với Địa chỉ thường trú.
+    /// </summary>
+    [NotMapped]
+    public string? DiaChiThuongTru
+    {
+        get => DiaChi;
+        set => DiaChi = value;
+    }
+
+    /// <summary>
+    /// Ánh xạ tương thích với Địa chỉ liên hệ.
+    /// </summary>
+    [NotMapped]
+    public string? DiaChiLienHe
+    {
+        get => DiaChi;
+        set => DiaChi = value;
+    }
+
+    /// <summary>
+    /// Ánh xạ tương thích với Chuyên ngành.
+    /// </summary>
+    [NotMapped]
+    public string? ChuyenNganh
+    {
+        get => ChuyenMonDaoTao;
+        set => ChuyenMonDaoTao = value;
+    }
+
+    /// <summary>
+    /// Ánh xạ tương thích với Trường đào tạo.
+    /// </summary>
+    [NotMapped]
+    public string? TruongDaoTao
+    {
+        get => ChuyenMonDaoTao;
+        set => ChuyenMonDaoTao = value;
+    }
+
+    /// <summary>
+    /// Thuộc tính tương thích Chức danh nghề nghiệp.
+    /// </summary>
+    [NotMapped]
+    public string? ChucDanhNgheNghiep { get; set; }
+
+    /// <summary>
+    /// Thuộc tính tương thích Người quản lý trực tiếp.
+    /// </summary>
+    [NotMapped]
+    public string? NguoiQuanLyTrucTiep { get; set; }
+
+    /// <summary>
+    /// Thuộc tính tương thích Tình trạng hôn nhân.
+    /// </summary>
+    [NotMapped]
+    public string? TinhTrangHonNhan { get; set; }
+
+    /// <summary>
+    /// Thuộc tính tương thích Loại giấy tờ.
+    /// </summary>
+    [NotMapped]
+    public string? LoaiGiayTo { get; set; } = "CCCD";
+
+    /// <summary>
+    /// Thuộc tính tương thích Ngày cấp giấy tờ.
+    /// </summary>
+    [NotMapped]
+    public DateTime? NgayCap { get; set; }
+
+    /// <summary>
+    /// Thuộc tính tương thích Nơi cấp giấy tờ.
+    /// </summary>
+    [NotMapped]
+    public string? NoiCap { get; set; }
+
+    /// <summary>
+    /// Thuộc tính tương thích Email cá nhân.
+    /// </summary>
+    [NotMapped]
+    public string? EmailCaNhan { get; set; }
+
+    /// <summary>
+    /// Thuộc tính tương thích Người liên hệ khẩn cấp.
+    /// </summary>
+    [NotMapped]
+    public string? NguoiLienHeKhanCap { get; set; }
+
+    /// <summary>
+    /// Thuộc tính tương thích SĐT khẩn cấp.
+    /// </summary>
+    [NotMapped]
+    public string? SoDienThoaiKhanCap { get; set; }
+
+    /// <summary>
+    /// Thuộc tính tương thích Ngày bắt đầu hợp đồng.
+    /// </summary>
+    [NotMapped]
+    public DateTime? NgayBatDauHopDong { get; set; }
+
+    /// <summary>
+    /// Thuộc tính tương thích Ngày kết thúc hợp đồng.
+    /// </summary>
+    [NotMapped]
+    public DateTime? NgayKetThucHopDong { get; set; }
+
+    /// <summary>
+    /// Thuộc tính tương thích Trình độ học vấn.
+    /// </summary>
+    [NotMapped]
+    public string? TrinhDoHocVan { get; set; }
+
+    /// <summary>
+    /// Thuộc tính tương thích Lĩnh vực chuyên môn.
+    /// </summary>
+    [NotMapped]
+    public string? LinhVucChuyenMon { get; set; }
+
+    /// <summary>
+    /// Ánh xạ tương thích với Học vị.
+    /// </summary>
+    [NotMapped]
+    public string? HocVi
+    {
+        get => ChuyenMonDaoTao;
+        set => ChuyenMonDaoTao = value;
+    }
+
+    /// <summary>
+    /// Ánh xạ tương thích với Học hàm.
+    /// </summary>
+    [NotMapped]
+    public string? HocHam
+    {
+        get => ChuyenMonDaoTao;
+        set => ChuyenMonDaoTao = value;
+    }
+
+    /// <summary>
+    /// Ánh xạ tương thích với Kinh nghiệm công tác.
+    /// </summary>
+    [NotMapped]
+    public string? KinhNghiemCongTac
+    {
+        get => GhiChu;
+        set => GhiChu = value;
+    }
+
+    /// <summary>
+    /// Ánh xạ tương thích với Ghi chú chuyên môn.
+    /// </summary>
+    [NotMapped]
+    public string? GhiChuChuyenMon
+    {
+        get => GhiChu;
+        set => GhiChu = value;
+    }
+
+    /// <summary>
+    /// Ánh xạ tương thích với Quốc tịch.
+    /// </summary>
+    [NotMapped]
+    public string QuocTich { get; set; } = "Việt Nam";
+
+    /// <summary>
+    /// Ánh xạ tương thích với Dân tộc.
+    /// </summary>
+    [NotMapped]
+    public string? DanToc { get; set; } = "Kinh";
+
+    /// <summary>
+    /// Ánh xạ tương thích với Loại hợp đồng.
+    /// </summary>
+    [NotMapped]
+    public string? LoaiHopDong { get; set; } = "Chính thức";
 }

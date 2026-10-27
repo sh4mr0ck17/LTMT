@@ -1,0 +1,26 @@
+version: '3.8'
+
+services:
+  quanlydaotao-app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: c500_quanlydaotao_app
+    restart: unless-stopped
+    ports:
+      - "5219:5219"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Production
+      - ASPNETCORE_URLS=http://+:5219
+      - ConnectionStrings__DefaultConnection=Data Source=/app/data/QuanLyDaoTao.db
+      - Jwt__SecretKey=HocVienAnNinhNhanDanC500_QuanLyDaoTao_SuperSecretKey_2026_SecureToken
+      - Jwt__Issuer=QuanLyDaoTao.Api
+      - Jwt__Audience=QuanLyDaoTao.Clients
+    volumes:
+      - ./data:/app/data
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5219/healthz"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 15s

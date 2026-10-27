@@ -315,35 +315,34 @@ public class QuanTriDuLieuDichVu : IQuanTriDuLieuDichVu
                             new() { GiaTri = "Khác", NhanHienThi = "Khác" }
                         }
                     },
-                    new MoTaCotDuLieu { MaCot = "EmailCongViec", TenHienThi = "Email Công Việc", KieuDuLieu = "VanBan", LaBatBuoc = true },
+                    new MoTaCotDuLieu { MaCot = "SoCCCD", TenHienThi = "Số CCCD (12 số)", KieuDuLieu = "VanBan" },
                     new MoTaCotDuLieu { MaCot = "SoDienThoai", TenHienThi = "Số Điện Thoại", KieuDuLieu = "VanBan" },
-                    new MoTaCotDuLieu { MaCot = "SoGiayTo", TenHienThi = "Số CCCD/Hộ Chiếu", KieuDuLieu = "VanBan" },
+                    new MoTaCotDuLieu { MaCot = "Email", TenHienThi = "Email Công Vụ", KieuDuLieu = "VanBan", LaBatBuoc = true },
+                    new MoTaCotDuLieu { MaCot = "DiaChi", TenHienThi = "Địa Chỉ Cư Trú", KieuDuLieu = "VanBan" },
                     new MoTaCotDuLieu { MaCot = "KhoaId", TenHienThi = "Khoa", KieuDuLieu = "KhoaNgoai", DanhSachLuaChon = luaChonKhoa },
                     new MoTaCotDuLieu { MaCot = "BoMonId", TenHienThi = "Bộ Môn", KieuDuLieu = "KhoaNgoai", DanhSachLuaChon = luaChonBoMon },
                     new MoTaCotDuLieu { MaCot = "ChucVuId", TenHienThi = "Chức Vụ", KieuDuLieu = "KhoaNgoai", DanhSachLuaChon = luaChonChucVu },
                     new MoTaCotDuLieu { MaCot = "TrinhDoChuyenMonId", TenHienThi = "Trình Độ", KieuDuLieu = "KhoaNgoai", DanhSachLuaChon = luaChonTrinhDo },
-                    new MoTaCotDuLieu { MaCot = "ChucDanhNgheNghiep", TenHienThi = "Chức Danh", KieuDuLieu = "VanBan" },
-                    new MoTaCotDuLieu { MaCot = "HocVi", TenHienThi = "Học Vị", KieuDuLieu = "VanBan" },
-                    new MoTaCotDuLieu { MaCot = "HocHam", TenHienThi = "Học Hàm", KieuDuLieu = "VanBan" },
-                    new MoTaCotDuLieu { MaCot = "ChuyenNganh", TenHienThi = "Chuyên Ngành", KieuDuLieu = "VanBan" },
-                    new MoTaCotDuLieu { MaCot = "TruongDaoTao", TenHienThi = "Trường Đào Tạo", KieuDuLieu = "VanBan" },
+                    new MoTaCotDuLieu { MaCot = "ChuyenMonDaoTao", TenHienThi = "Chuyên Môn & Trường ĐT", KieuDuLieu = "VanBan" },
+                    new MoTaCotDuLieu { MaCot = "NgayVaoLam", TenHienThi = "Ngày Vào Làm", KieuDuLieu = "NgayThang" },
                     new MoTaCotDuLieu
                     {
-                        MaCot = "TrangThaiCongTac",
-                        TenHienThi = "Trạng Thái Công Tác",
+                        MaCot = "TrangThai",
+                        TenHienThi = "Trạng Thái",
                         KieuDuLieu = "DanhSach",
                         DanhSachLuaChon = new()
                         {
                             new() { GiaTri = "Đang làm việc", NhanHienThi = "Đang làm việc" },
                             new() { GiaTri = "Tạm nghỉ", NhanHienThi = "Tạm nghỉ" },
-                            new() { GiaTri = "Đã nghỉ việc", NhanHienThi = "Đã nghỉ việc" }
+                            new() { GiaTri = "Đã nghỉ việc", NhanHienThi = "Đã nghỉ việc" },
+                            new() { GiaTri = "Đã khóa", NhanHienThi = "Đã khóa" }
                         }
                     },
-                    new MoTaCotDuLieu { MaCot = "CoHoatDong", TenHienThi = "Kích Hoạt", KieuDuLieu = "Logic" }
+                    new MoTaCotDuLieu { MaCot = "GhiChu", TenHienThi = "Ghi Chú Đa Năng", KieuDuLieu = "VanBan" }
                 });
 
                 var dsNhanSu = await _coSoDuLieu.NhanSus.AsNoTracking()
-                    .Where(n => tkChuan == null || n.MaNhanSu.Contains(tkChuan) || n.HoVaTen.Contains(tkChuan) || n.EmailCongViec.Contains(tkChuan))
+                    .Where(n => tkChuan == null || n.MaNhanSu.Contains(tkChuan) || n.HoVaTen.Contains(tkChuan) || n.Email.Contains(tkChuan))
                     .OrderBy(n => n.MaNhanSu)
                     .ToListAsync(cancellationToken);
 
@@ -356,20 +355,18 @@ public class QuanTriDuLieuDichVu : IQuanTriDuLieuDichVu
                         ["HoVaTen"] = n.HoVaTen,
                         ["NgaySinh"] = n.NgaySinh.ToString("yyyy-MM-dd"),
                         ["GioiTinh"] = n.GioiTinh,
-                        ["EmailCongViec"] = n.EmailCongViec,
+                        ["SoCCCD"] = n.SoCCCD,
                         ["SoDienThoai"] = n.SoDienThoai,
-                        ["SoGiayTo"] = n.SoGiayTo,
+                        ["Email"] = n.Email,
+                        ["DiaChi"] = n.DiaChi,
                         ["KhoaId"] = n.KhoaId?.ToString() ?? "",
                         ["BoMonId"] = n.BoMonId?.ToString() ?? "",
                         ["ChucVuId"] = n.ChucVuId?.ToString() ?? "",
                         ["TrinhDoChuyenMonId"] = n.TrinhDoChuyenMonId?.ToString() ?? "",
-                        ["ChucDanhNgheNghiep"] = n.ChucDanhNgheNghiep,
-                        ["HocVi"] = n.HocVi,
-                        ["HocHam"] = n.HocHam,
-                        ["ChuyenNganh"] = n.ChuyenNganh,
-                        ["TruongDaoTao"] = n.TruongDaoTao,
-                        ["TrangThaiCongTac"] = n.TrangThaiCongTac,
-                        ["CoHoatDong"] = n.CoHoatDong ? "true" : "false"
+                        ["ChuyenMonDaoTao"] = n.ChuyenMonDaoTao,
+                        ["NgayVaoLam"] = n.NgayVaoLam?.ToString("yyyy-MM-dd") ?? "",
+                        ["TrangThai"] = n.TrangThai,
+                        ["GhiChu"] = n.GhiChu
                     });
                 }
                 break;

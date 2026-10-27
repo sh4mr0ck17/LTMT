@@ -185,7 +185,7 @@ public class QuanLyDaoTaoDbContext : IdentityDbContext<TaiKhoan, VaiTro, string>
             entity.HasKey(ns => ns.NhanSuId);
             entity.HasIndex(ns => ns.MaNhanSu).IsUnique();
             entity.HasIndex(ns => ns.HoVaTen);
-            entity.HasIndex(ns => ns.EmailCongViec);
+            entity.HasIndex(ns => ns.Email);
             entity.HasIndex(ns => ns.KhoaId);
             entity.HasIndex(ns => ns.BoMonId);
             entity.HasIndex(ns => ns.ChucVuId);
@@ -218,7 +218,7 @@ public class QuanLyDaoTaoDbContext : IdentityDbContext<TaiKhoan, VaiTro, string>
         {
             entity.HasKey(pc => pc.PhanCongId);
             entity.HasIndex(pc => pc.MaPhanCong).IsUnique();
-            entity.HasIndex(pc => new { pc.NhanSuId, pc.MonHocId, pc.LopHocId, pc.HocKy, pc.NamHoc });
+            entity.HasIndex(pc => new { pc.NhanSuId, pc.MonHocId, pc.LopHocId, pc.HocKyNamHoc });
 
             entity.HasOne(pc => pc.NhanSu)
                   .WithMany(ns => ns.PhanCongGiangDays)

@@ -1,0 +1,894 @@
+@page "/NhanSu"
+@inject INhanSuDichVu NhanSuDichVu
+@inject IKhoaDichVu KhoaDichVu
+@inject IBoMonDichVu BoMonDichVu
+@inject IChucVuDichVu ChucVuDichVu
+@inject ITrinhDoChuyenMonDichVu TrinhDoDichVu
+@inject IQuanTriDuLieuDichVu QuanTriDuLieuDichVu
+@inject NavigationManager Navigation
+@inject IJSRuntime JSRuntime
+
+<PageTitle>Hồ sơ Cán bộ & Giảng viên - Học Viện An Ninh Nhân Dân</PageTitle>
+
+<div class="container-fluid px-4 py-3" id="pnlDanhSachNhanSu">
+    <!-- Header Banner Thống Nhất C500 -->
+    <div class="cand-banner-header p-3 mb-3 d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3">
+        <div class="d-flex align-items-center">
+            <img src="images/logo_badge.png" alt="Logo C500" class="logo-cand-nav me-3" />
+            <div>
+                <div class="d-flex align-items-center gap-2 mb-1">
+                    <span class="badge badge-cand-gold">HỌC VIỆN AN NINH NHÂN DÂN • C500</span>
+                    <span class="badge badge-cand-red">HỒ SƠ CÁN BỘ &amp; GIẢNG VIÊN</span>
+                </div>
+                <h4 class="mb-0 fw-bold text-white" id="lblTieuDe">
+                    <i class="bi bi-person-lines-fill me-2"></i>QUẢN LÝ HỒ SƠ CÁN BỘ &amp; GIẢNG VIÊN
+                </h4>
+                <small style="color: #F2F0A5;">Danh sách cán bộ toàn viện • Đồng bộ trường tùy chỉnh thời gian thực từ Live CRUD • Lọc đa chiều theo từng trường</small>
+            </div>
+        </div>
+        <div class="d-flex flex-wrap gap-2">
+            <a href="Excel/TaiTepMau?module=NhanSu" class="btn btn-outline-light btn-sm" id="btnTaiMauExcel">
+                <i class="bi bi-download me-1"></i>Tải Mẫu Excel
+            </a>
+            <a href="Excel/XuatDuLieu?module=NhanSu" class="btn btn-sm btn-outline-warning text-dark fw-bold" style="background-color: #FFD700;" id="btnXuatExcel">
+                <i class="bi bi-file-earmark-excel me-1"></i>Xuất Excel
+            </a>
+            <a href="Excel/NhapExcel?module=NhanSu" class="btn btn-sm btn-success fw-bold" id="btnNhapExcel">
+                <i class="bi bi-file-earmark-arrow-up me-1"></i>Nhập Excel
+            </a>
+            <button type="button" class="btn btn-sm btn-light text-primary fw-bold shadow-sm" id="btnThemNhanSu" @onclick="ThemCanBoMoi">
+                <i class="bi bi-person-plus-fill me-1"></i>Thêm Mới Cán Bộ
+            </button>
+        </div>
+    </div>
+
+    <!-- Thanh Tìm Kiếm Gọn Gàng & Nút Mở Dialog Bộ Lọc/Sắp Xếp (Clean Toolbar) -->
+    <div class="card shadow-sm border-0 mb-3" id="pnlThanhCongCuClean">
+        <div class="card-body py-2 px-3">
+            <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-2">
+                <!-- Ô tìm kiếm tức thì đa trường (quét cả các trường tùy chỉnh như Chứng chỉ...) -->
+                <div class="input-group input-group-sm flex-grow-1" style="max-width: 540px;">
+                    <span class="input-group-text bg-white border-end-0"><i class="bi bi-search text-primary"></i></span>
+                    <input type="text" class="form-control border-start-0" id="txtTimKiemNhanSu"
+                           placeholder="Tìm theo Mã, Họ tên, CCCD, Email, SĐT, Chứng chỉ, Chuyên môn..."
+                           @bind="tuKhoa" @bind:event="oninput" @onkeyup="LocVaSapXep" />
+                    @if (!string.IsNullOrWhiteSpace(tuKhoa))
+                    {
+                        <button type="button" class="btn btn-outline-secondary" @onclick="XoaTuKhoa"><i class="bi bi-x"></i></button>
+                    }
+                </div>
+
+                <!-- Cụm nút mở Dialog Lọc & Sắp xếp + Đặt lại -->
+                <div class="d-flex align-items-center gap-2">
+                    <button type="button" class="btn btn-sm @(DemSoTieuChiLoc() > 0 ? "btn-warning text-dark fw-bold shadow-sm" : "btn-outline-primary fw-semibold")"
+                            id="btnMoDialogLoc" @onclick="() => showFilterDialog = true">
+                        <i class="bi bi-funnel-fill me-1"></i>Bộ Lọc &amp; Sắp Xếp
+                        @if (DemSoTieuChiLoc() > 0)
+                        {
+                            <span class="badge bg-danger text-white ms-1">@DemSoTieuChiLoc()</span>
+                        }
+                    </button>
+
+                    <button type="button" class="btn btn-sm btn-outline-success fw-bold" id="btnLamMoiNhanSu" @onclick="LamMoi" title="Tải lại dữ liệu và đồng bộ trường tùy chỉnh">
+                        <i class="bi bi-arrow-clockwise me-1"></i>Làm Mới
+                    </button>
+
+                    @if (CoBoLocDangHoatDong())
+                    {
+                        <button type="button" class="btn btn-sm btn-outline-secondary" id="btnDatLaiTatCa" @onclick="XoaTatCaBoLoc" title="Đặt lại tất cả bộ lọc">
+                            <i class="bi bi-x-circle me-1"></i>Xóa Lọc
+                        </button>
+                    }
+                </div>
+            </div>
+
+            <!-- Dòng hiển thị số lượng & các Chip Tags tiêu chí đang lọc (nếu có) -->
+            <div class="d-flex flex-wrap justify-content-between align-items-center mt-2 pt-2 border-top">
+                <div class="small text-muted">
+                    Tìm thấy <strong class="text-primary fs-6">@(danhSachHienThi?.Count ?? 0)</strong> / <strong>@(danhSachGoc?.Count ?? 0)</strong> cán bộ &amp; giảng viên
+                    @if (dsTruongTuyChinh != null && dsTruongTuyChinh.Count > 0)
+                    {
+                        <span class="badge bg-info text-dark ms-2"><i class="bi bi-stars me-1 text-warning"></i>@dsTruongTuyChinh.Count trường tùy chỉnh</span>
+                    }
+                    @if (!string.IsNullOrEmpty(truongSapXep))
+                    {
+                        <span class="ms-2">• Sắp xếp theo: <strong>@LayNhanTruongSapXep()</strong> (@(chieuSapXepTang ? "A-Z" : "Z-A"))</span>
+                    }
+                </div>
+
+                @if (CoBoLocDangHoatDong())
+                {
+                    <div class="d-flex gap-1 flex-wrap align-items-center">
+                        <span class="small text-muted me-1">Tiêu chí:</span>
+                        @if (khoaIdLoc.HasValue)
+                        {
+                            <span class="badge bg-primary d-inline-flex align-items-center gap-1">
+                                Khoa: @(danhSachKhoa?.FirstOrDefault(k => k.KhoaId == khoaIdLoc)?.TenKhoa)
+                                <i class="bi bi-x-circle cursor-pointer" @onclick="() => { khoaIdLoc = null; OnKhoaChanged(new ChangeEventArgs { Value = null }); }"></i>
+                            </span>
+                        }
+                        @if (boMonIdLoc.HasValue)
+                        {
+                            <span class="badge bg-info text-dark d-inline-flex align-items-center gap-1">
+                                Bộ môn: @(danhSachBoMonGoc?.FirstOrDefault(b => b.BoMonId == boMonIdLoc)?.TenBoMon)
+                                <i class="bi bi-x-circle cursor-pointer" @onclick="() => { boMonIdLoc = null; LocVaSapXep(); }"></i>
+                            </span>
+                        }
+                        @if (chucVuIdLoc.HasValue)
+                        {
+                            <span class="badge bg-warning text-dark d-inline-flex align-items-center gap-1">
+                                Chức vụ: @(danhSachChucVu?.FirstOrDefault(c => c.ChucVuId == chucVuIdLoc)?.TenChucVu)
+                                <i class="bi bi-x-circle cursor-pointer" @onclick="() => { chucVuIdLoc = null; LocVaSapXep(); }"></i>
+                            </span>
+                        }
+                        @if (trinhDoIdLoc.HasValue)
+                        {
+                            <span class="badge bg-success d-inline-flex align-items-center gap-1">
+                                Trình độ: @(danhSachTrinhDo?.FirstOrDefault(t => t.TrinhDoChuyenMonId == trinhDoIdLoc)?.TenTrinhDo)
+                                <i class="bi bi-x-circle cursor-pointer" @onclick="() => { trinhDoIdLoc = null; LocVaSapXep(); }"></i>
+                            </span>
+                        }
+                        @if (!string.IsNullOrWhiteSpace(trangThaiLoc))
+                        {
+                            <span class="badge bg-dark d-inline-flex align-items-center gap-1">
+                                Trạng thái: @trangThaiLoc
+                                <i class="bi bi-x-circle cursor-pointer" @onclick='() => { trangThaiLoc = null; LocVaSapXep(); }'></i>
+                            </span>
+                        }
+                        @if (!string.IsNullOrWhiteSpace(gioiTinhLoc))
+                        {
+                            <span class="badge bg-secondary d-inline-flex align-items-center gap-1">
+                                Giới tính: @gioiTinhLoc
+                                <i class="bi bi-x-circle cursor-pointer" @onclick='() => { gioiTinhLoc = null; LocVaSapXep(); }'></i>
+                            </span>
+                        }
+                        @if (!string.IsNullOrWhiteSpace(coPhanCongLoc))
+                        {
+                            <span class="badge bg-info text-dark d-inline-flex align-items-center gap-1">
+                                Giảng dạy: @(coPhanCongLoc == "Co" ? "Đã giao" : "Chưa giao")
+                                <i class="bi bi-x-circle cursor-pointer" @onclick='() => { coPhanCongLoc = null; LocVaSapXep(); }'></i>
+                            </span>
+                        }
+                        @if (!string.IsNullOrWhiteSpace(laChuNhiemLoc))
+                        {
+                            <span class="badge bg-success d-inline-flex align-items-center gap-1">
+                                Chủ nhiệm: @(laChuNhiemLoc == "Co" ? "Kiêm GVCN" : "Không")
+                                <i class="bi bi-x-circle cursor-pointer" @onclick='() => { laChuNhiemLoc = null; LocVaSapXep(); }'></i>
+                            </span>
+                        }
+                        @foreach (var kvp in boLocCustom.Where(x => !string.IsNullOrWhiteSpace(x.Value)))
+                        {
+                            var tenTruong = dsTruongTuyChinh?.FirstOrDefault(t => t.MaTruong == kvp.Key)?.TenHienThi ?? kvp.Key;
+                            <span class="badge bg-info text-dark d-inline-flex align-items-center gap-1">
+                                @tenTruong: @kvp.Value
+                                <i class="bi bi-x-circle cursor-pointer" @onclick="() => { boLocCustom.Remove(kvp.Key); LocVaSapXep(); }"></i>
+                            </span>
+                        }
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+
+    <!-- Bảng Danh Sách Cán Bộ Trực Quan, Tự Động Render Cột Tùy Chỉnh (Dynamic Columns) -->
+    <div class="card shadow-sm border-0" id="pnlBangDuLieu">
+        <div class="card-body p-0">
+            <div class="table-responsive" style="max-height: 72vh;">
+                <table class="table table-hover table-striped align-middle mb-0" id="dgvDanhSachNhanSu">
+                    <thead class="table-light sticky-top" style="z-index: 5;">
+                        <tr>
+                            <th class="ps-3" style="width: 50px;">#</th>
+                            <th style="width: 135px; cursor: pointer;" @onclick='() => ChonCotSapXep("MaNhanSu")'>
+                                Mã Cán Bộ <i class="bi @LayIconSapXep("MaNhanSu") text-muted"></i>
+                            </th>
+                            <th style="cursor: pointer;" @onclick='() => ChonCotSapXep("HoVaTen")'>
+                                Họ và Tên <i class="bi @LayIconSapXep("HoVaTen") text-muted"></i>
+                            </th>
+                            <th style="cursor: pointer;" @onclick='() => ChonCotSapXep("ChucVu")'>
+                                Chức Vụ <i class="bi @LayIconSapXep("ChucVu") text-muted"></i>
+                            </th>
+                            <th style="cursor: pointer;" @onclick='() => ChonCotSapXep("Khoa")'>
+                                Khoa / Bộ Môn <i class="bi @LayIconSapXep("Khoa") text-muted"></i>
+                            </th>
+                            <th>Trình Độ / Chuyên Môn</th>
+                            <th>Email Công Vụ</th>
+                            <th>Số Điện Thoại</th>
+
+                            <!-- CÁC CỘT TÙY CHỈNH ĐƯỢC LOAD ĐỘNG TỪ DATABASE (VÍ DỤ: CHỨNG CHỈ, CẤP BẬC...) -->
+                            @if (dsTruongTuyChinh != null)
+                            {
+                                @foreach (var cotCustom in dsTruongTuyChinh)
+                                {
+                                    <th style="min-width: 140px; cursor: pointer;" @onclick='() => ChonCotSapXep("Custom_" + cotCustom.MaTruong)'>
+                                        <span class="text-primary fw-bold"><i class="bi bi-stars text-warning me-1"></i>@cotCustom.TenHienThi</span>
+                                        <i class="bi @LayIconSapXep("Custom_" + cotCustom.MaTruong) text-muted ms-1"></i>
+                                    </th>
+                                }
+                            }
+
+                            <th class="text-center" style="width: 120px;">Giảng Dạy</th>
+                            <th class="text-center" style="width: 120px; cursor: pointer;" @onclick='() => ChonCotSapXep("TrangThai")'>
+                                Trạng Thái <i class="bi @LayIconSapXep("TrangThai") text-muted"></i>
+                            </th>
+                            <th class="text-center" style="width: 140px;">Thao Tác</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @if (danhSachHienThi == null || danhSachHienThi.Count == 0)
+                        {
+                            <tr>
+                                <td colspan="@(10 + (dsTruongTuyChinh?.Count ?? 0))" class="text-center py-5 text-muted">
+                                    <i class="bi bi-inbox fs-2 d-block mb-2"></i>Không tìm thấy cán bộ / giảng viên nào khớp với bộ lọc hiện tại.
+                                </td>
+                            </tr>
+                        }
+                        else
+                        {
+                            int stt = 1;
+                            foreach (var ns in danhSachHienThi)
+                            {
+                                bool isGvcn = ns.PhanCongGiangDays?.Any(p => p.LaChuNhiem) ?? false;
+                                int soLopDay = ns.PhanCongGiangDays?.Count ?? 0;
+                                string pkStr = ns.NhanSuId.ToString();
+
+                                <tr>
+                                    <td class="ps-3 fw-bold text-muted">@(stt++)</td>
+                                    <td><span class="badge bg-primary bg-opacity-10 text-primary fw-bold font-monospace fs-6">@ns.MaNhanSu</span></td>
+                                    <td>
+                                        <a href="NhanSu/ChiTiet/@ns.NhanSuId" class="fw-semibold text-decoration-none text-dark">@ns.HoVaTen</a>
+                                        <div class="text-muted small">@ns.GioiTinh • @ns.NgaySinh.ToString("dd/MM/yyyy")</div>
+                                    </td>
+                                    <td><span class="badge bg-light text-dark border">@(ns.ChucVu?.TenChucVu ?? "Cán bộ")</span></td>
+                                    <td>
+                                        <div class="fw-semibold">@(ns.Khoa?.TenKhoa ?? "-")</div>
+                                        @if (ns.BoMon != null)
+                                        {
+                                            <small class="text-muted"><i class="bi bi-arrow-return-right me-1"></i>@ns.BoMon.TenBoMon</small>
+                                        }
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-info text-dark">@(ns.TrinhDoChuyenMon?.TenTrinhDo ?? "-")</span>
+                                        @if (!string.IsNullOrEmpty(ns.ChuyenMonDaoTao))
+                                        {
+                                            <div class="text-muted small text-truncate" style="max-width: 200px;">@ns.ChuyenMonDaoTao</div>
+                                        }
+                                    </td>
+                                    <td><a href="mailto:@ns.Email" class="text-decoration-none">@ns.Email</a></td>
+                                    <td>@(ns.SoDienThoai ?? "-")</td>
+
+                                    <!-- HIỂN THỊ VÀ SỬA NHANH TRỰC TIẾP GIÁ TRỊ TRƯỜNG TÙY CHỈNH (VÍ DỤ: CHỨNG CHỈ IELTS, HSK...) -->
+                                    @if (dsTruongTuyChinh != null)
+                                    {
+                                        @foreach (var cotCustom in dsTruongTuyChinh)
+                                        {
+                                            string valCustom = LayGiaTriCustom(pkStr, cotCustom.MaTruong);
+                                            string fieldKey = "Custom_" + cotCustom.MaTruong;
+
+                                            <td>
+                                                @if (editingPk == pkStr && editingField == fieldKey)
+                                                {
+                                                    <div class="input-group input-group-sm">
+                                                        <input type="text" class="form-control form-control-sm"
+                                                               value="@valCustom"
+                                                               @onchange="(e) => LuuNhanhCustom(pkStr, cotCustom.MaTruong, e.Value?.ToString())"
+                                                               @onblur="() => { editingPk = null; editingField = null; }" autofocus />
+                                                    </div>
+                                                }
+                                                else
+                                                {
+                                                    <span class="badge bg-light text-dark border p-1 cursor-pointer"
+                                                          @onclick="() => { editingPk = pkStr; editingField = fieldKey; }"
+                                                          title="Bấm để sửa nhanh trực tiếp">
+                                                        @(string.IsNullOrEmpty(valCustom) ? "(Trống)" : valCustom)
+                                                        <i class="bi bi-pencil-fill ms-1 text-primary small"></i>
+                                                    </span>
+                                                }
+                                            </td>
+                                        }
+                                    }
+
+                                    <td class="text-center">
+                                        @if (soLopDay > 0)
+                                        {
+                                            <span class="badge bg-primary me-1">@soLopDay môn/lớp</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="badge bg-secondary">Chưa giao</span>
+                                        }
+                                        @if (isGvcn)
+                                        {
+                                            <span class="badge bg-success d-block mt-1">GVCN</span>
+                                        }
+                                    </td>
+                                    <td class="text-center">
+                                        @{
+                                            var sttClass = ns.TrangThai switch
+                                            {
+                                                "Đang làm việc" => "bg-success",
+                                                "Tạm nghỉ" => "bg-warning text-dark",
+                                                _ => "bg-secondary"
+                                            };
+                                        }
+                                        <span class="badge @sttClass">@ns.TrangThai</span>
+                                    </td>
+                                    <td class="text-center">
+                                        <div class="btn-group btn-group-sm">
+                                            <a href="NhanSu/ChiTiet/@ns.NhanSuId" class="btn btn-outline-info" title="Xem hồ sơ" id="btnXem_@ns.NhanSuId">
+                                                <i class="bi bi-eye"></i>
+                                            </a>
+                                            <a href="NhanSu/ChinhSua/@ns.NhanSuId" class="btn btn-outline-primary" title="Chỉnh sửa" id="btnSua_@ns.NhanSuId">
+                                                <i class="bi bi-pencil"></i>
+                                            </a>
+                                            <button type="button" class="btn btn-outline-danger" title="Xóa cán bộ" id="btnXoa_@ns.NhanSuId"
+                                                    @onclick="() => XoaNhanSu(ns.NhanSuId, ns.HoVaTen)">
+                                                <i class="bi bi-trash"></i>
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                            }
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ==========================================================================
+     MODAL DIALOG: BỘ LỌC & SẮP XẾP NÂNG CAO (KÈM TOÀN BỘ TRƯỜNG TÙY CHỈNH)
+     ========================================================================== -->
+@if (showFilterDialog)
+{
+    <div class="modal fade show d-block" tabindex="-1" style="background: rgba(0,0,0,0.55); z-index: 1060;">
+        <div class="modal-dialog modal-lg modal-dialog-scrollable">
+            <div class="modal-content border-0 shadow">
+                <div class="modal-header text-white" style="background: linear-gradient(135deg, #013E10, #047920); border-bottom: 3px solid #FFD700;">
+                    <h5 class="modal-title fw-bold">
+                        <i class="bi bi-funnel-fill me-2"></i>Bộ Lọc &amp; Sắp Xếp Hồ Sơ Cán Bộ Theo Từng Trường
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" @onclick="() => showFilterDialog = false"></button>
+                </div>
+                <div class="modal-body p-4 bg-light">
+                    <!-- PHẦN 1: TÙY CHỌN SẮP XẾP (SORT) -->
+                    <div class="card border-0 shadow-sm mb-4">
+                        <div class="card-header bg-white py-2 border-bottom">
+                            <h6 class="mb-0 text-primary fw-bold"><i class="bi bi-sort-alpha-down me-2"></i>1. Tùy Chọn Sắp Xếp (Sort)</h6>
+                        </div>
+                        <div class="card-body p-3">
+                            <div class="row g-3">
+                                <div class="col-md-7">
+                                    <label class="form-label small fw-bold">Sắp xếp theo trường</label>
+                                    <select class="form-select form-select-sm" @bind="truongSapXep">
+                                        <option value="HoVaTen">Họ và tên cán bộ</option>
+                                        <option value="MaNhanSu">Mã cán bộ</option>
+                                        <option value="NgaySinh">Ngày tháng năm sinh (Độ tuổi)</option>
+                                        <option value="Khoa">Khoa đào tạo</option>
+                                        <option value="ChucVu">Chức vụ công tác</option>
+                                        <option value="TrangThai">Trạng thái công tác</option>
+                                        @if (dsTruongTuyChinh != null)
+                                        {
+                                            @foreach (var c in dsTruongTuyChinh)
+                                            {
+                                                <option value="@("Custom_" + c.MaTruong)">@c.TenHienThi (Trường tùy chỉnh)</option>
+                                            }
+                                        }
+                                    </select>
+                                </div>
+                                <div class="col-md-5">
+                                    <label class="form-label small fw-bold">Thứ tự sắp xếp</label>
+                                    <div class="d-flex gap-2">
+                                        <button type="button" class="btn btn-sm flex-grow-1 @(chieuSapXepTang ? "btn-primary fw-bold" : "btn-outline-secondary")"
+                                                @onclick="() => chieuSapXepTang = true">
+                                            <i class="bi bi-sort-up me-1"></i>Tăng dần (A-Z, 0-9)
+                                        </button>
+                                        <button type="button" class="btn btn-sm flex-grow-1 @(!chieuSapXepTang ? "btn-primary fw-bold" : "btn-outline-secondary")"
+                                                @onclick="() => chieuSapXepTang = false">
+                                            <i class="bi bi-sort-down me-1"></i>Giảm dần (Z-A, 9-0)
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- PHẦN 2: TIÊU CHÍ LỌC THEO TỪNG TRƯỜNG DỮ LIỆU (FILTER) -->
+                    <div class="card border-0 shadow-sm">
+                        <div class="card-header bg-white py-2 border-bottom">
+                            <h6 class="mb-0 text-primary fw-bold"><i class="bi bi-sliders me-2"></i>2. Tiêu Chí Lọc Theo Từng Trường Thông Tin</h6>
+                        </div>
+                        <div class="card-body p-3">
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <label class="form-label small fw-bold">Khoa trực thuộc</label>
+                                    <select class="form-select form-select-sm" value="@(khoaIdLoc?.ToString() ?? "")" @onchange="OnKhoaChanged">
+                                        <option value="">-- Tất cả Khoa --</option>
+                                        @if (danhSachKhoa != null)
+                                        {
+                                            @foreach (var k in danhSachKhoa)
+                                            {
+                                                <option value="@k.KhoaId">@k.TenKhoa (@k.MaKhoa)</option>
+                                            }
+                                        }
+                                    </select>
+                                </div>
+
+                                <div class="col-md-6">
+                                    <label class="form-label small fw-bold">Bộ môn</label>
+                                    <select class="form-select form-select-sm" value="@(boMonIdLoc?.ToString() ?? "")" @onchange="OnBoMonChanged">
+                                        <option value="">-- Tất cả Bộ môn --</option>
+                                        @if (danhSachBoMonHienThi != null)
+                                        {
+                                            @foreach (var bm in danhSachBoMonHienThi)
+                                            {
+                                                <option value="@bm.BoMonId">@bm.TenBoMon (@bm.MaBoMon)</option>
+                                            }
+                                        }
+                                    </select>
+                                </div>
+
+                                <div class="col-md-6">
+                                    <label class="form-label small fw-bold">Chức vụ công tác</label>
+                                    <select class="form-select form-select-sm" value="@(chucVuIdLoc?.ToString() ?? "")" @onchange="OnChucVuChanged">
+                                        <option value="">-- Tất cả Chức vụ --</option>
+                                        @if (danhSachChucVu != null)
+                                        {
+                                            @foreach (var cv in danhSachChucVu)
+                                            {
+                                                <option value="@cv.ChucVuId">@cv.TenChucVu</option>
+                                            }
+                                        }
+                                    </select>
+                                </div>
+
+                                <div class="col-md-6">
+                                    <label class="form-label small fw-bold">Trình độ chuyên môn &amp; Học vị</label>
+                                    <select class="form-select form-select-sm" value="@(trinhDoIdLoc?.ToString() ?? "")" @onchange="OnTrinhDoChanged">
+                                        <option value="">-- Tất cả Trình độ --</option>
+                                        @if (danhSachTrinhDo != null)
+                                        {
+                                            @foreach (var td in danhSachTrinhDo)
+                                            {
+                                                <option value="@td.TrinhDoChuyenMonId">@td.TenTrinhDo</option>
+                                            }
+                                        }
+                                    </select>
+                                </div>
+
+                                <div class="col-md-4">
+                                    <label class="form-label small fw-bold">Trạng thái công tác</label>
+                                    <select class="form-select form-select-sm" value="@(trangThaiLoc ?? "")" @onchange="OnTrangThaiChanged">
+                                        <option value="">-- Tất cả trạng thái --</option>
+                                        <option value="Đang làm việc">Đang làm việc</option>
+                                        <option value="Tạm nghỉ">Tạm nghỉ</option>
+                                        <option value="Đã nghỉ việc">Đã nghỉ việc</option>
+                                        <option value="Đã khóa">Đã khóa</option>
+                                    </select>
+                                </div>
+
+                                <div class="col-md-4">
+                                    <label class="form-label small fw-bold">Giới tính</label>
+                                    <select class="form-select form-select-sm" value="@(gioiTinhLoc ?? "")" @onchange="OnGioiTinhChanged">
+                                        <option value="">-- Tất cả giới tính --</option>
+                                        <option value="Nam">Nam</option>
+                                        <option value="Nữ">Nữ</option>
+                                    </select>
+                                </div>
+
+                                <div class="col-md-4">
+                                    <label class="form-label small fw-bold">Phân công giảng dạy</label>
+                                    <select class="form-select form-select-sm" value="@(coPhanCongLoc ?? "")" @onchange="OnPhanCongChanged">
+                                        <option value="">-- Tất cả --</option>
+                                        <option value="Co">Đã có phân công</option>
+                                        <option value="Chua">Chưa có phân công</option>
+                                    </select>
+                                </div>
+
+                                <div class="col-md-4">
+                                    <label class="form-label small fw-bold">Chủ nhiệm lớp</label>
+                                    <select class="form-select form-select-sm" value="@(laChuNhiemLoc ?? "")" @onchange="OnChuNhiemChanged">
+                                        <option value="">-- Tất cả --</option>
+                                        <option value="Co">Kiêm Giáo viên chủ nhiệm</option>
+                                        <option value="Khong">Không kiêm GVCN</option>
+                                    </select>
+                                </div>
+
+                                <!-- CÁC Ô LỌC ĐỘNG THEO TRƯỜNG TÙY CHỈNH (VÍ DỤ: LỌC THEO CHỨNG CHỈ...) -->
+                                @if (dsTruongTuyChinh != null && dsTruongTuyChinh.Count > 0)
+                                {
+                                    <div class="col-12 mt-3 pt-2 border-top">
+                                        <h6 class="text-primary fw-bold small mb-2">
+                                            <i class="bi bi-stars text-warning me-1"></i>Lọc Theo Trường Tùy Chỉnh (Động từ Live CRUD):
+                                        </h6>
+                                    </div>
+                                    @foreach (var c in dsTruongTuyChinh)
+                                    {
+                                        <div class="col-md-6">
+                                            <label class="form-label small fw-bold">@c.TenHienThi</label>
+                                            <input type="text" class="form-control form-control-sm"
+                                                   placeholder="Nhập giá trị @c.TenHienThi cần lọc..."
+                                                   value="@(boLocCustom.TryGetValue(c.MaTruong, out var cvVal) ? cvVal : "")"
+                                                   @onchange="(e) => OnCustomFilterChanged(c.MaTruong, e.Value?.ToString())" />
+                                        </div>
+                                    }
+                                }
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer bg-white border-top">
+                    <button type="button" class="btn btn-outline-secondary" @onclick="XoaTatCaBoLoc">
+                        <i class="bi bi-arrow-clockwise me-1"></i>Đặt Lại Mặc Định
+                    </button>
+                    <button type="button" class="btn btn-primary fw-bold px-4" @onclick="ApDungBoLocVaDongModal">
+                        <i class="bi bi-check2-circle me-1"></i>Áp Dụng Bộ Lọc &amp; Sắp Xếp
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    private List<NhanSu>? danhSachGoc;
+    private List<NhanSu>? danhSachHienThi;
+
+    private List<Khoa>? danhSachKhoa;
+    private List<BoMon>? danhSachBoMonGoc;
+    private List<BoMon>? danhSachBoMonHienThi;
+    private List<ChucVu>? danhSachChucVu;
+    private List<TrinhDoChuyenMon>? danhSachTrinhDo;
+    private List<TruongTuyChinh>? dsTruongTuyChinh;
+
+    // Bộ nhớ ánh xạ giá trị trường tùy chỉnh theo ID bản ghi: mapCustomValues[pk][maTruong] = giaTri
+    private Dictionary<string, Dictionary<string, string>> mapCustomValues = new();
+    private Dictionary<string, string> boLocCustom = new();
+
+    private string? editingPk;
+    private string? editingField;
+    private bool showFilterDialog = false;
+
+    // Bộ lọc theo từng trường
+    private string tuKhoa = "";
+    private int? khoaIdLoc = null;
+    private int? boMonIdLoc = null;
+    private int? chucVuIdLoc = null;
+    private int? trinhDoIdLoc = null;
+    private string? trangThaiLoc = null;
+    private string? gioiTinhLoc = null;
+    private string? coPhanCongLoc = null;
+    private string? laChuNhiemLoc = null;
+
+    // Sắp xếp (Sort)
+    private string truongSapXep = "HoVaTen";
+    private bool chieuSapXepTang = true;
+
+    protected override async Task OnInitializedAsync()
+    {
+        danhSachKhoa = await KhoaDichVu.LayDanhSachAsync();
+        danhSachBoMonGoc = await BoMonDichVu.LayDanhSachAsync();
+        danhSachBoMonHienThi = danhSachBoMonGoc;
+        danhSachChucVu = await ChucVuDichVu.LayDanhSachAsync();
+        danhSachTrinhDo = await TrinhDoDichVu.LayDanhSachAsync();
+
+        await LoadData();
+    }
+
+    private async Task LoadData()
+    {
+        danhSachGoc = await NhanSuDichVu.LayDanhSachAsync();
+
+        // Nạp động toàn bộ định nghĩa trường tùy chỉnh của NhanSu từ Live CRUD
+        dsTruongTuyChinh = await QuanTriDuLieuDichVu.LayDanhSachTruongTuyChinhAsync("NhanSu");
+
+        // Nạp toàn bộ giá trị trường tùy chỉnh đã lưu trong DB
+        var duLieuBang = await QuanTriDuLieuDichVu.LayDuLieuBangTrucTuyenAsync("NhanSu");
+        mapCustomValues.Clear();
+
+        if (duLieuBang != null && duLieuBang.DanhSachDong != null)
+        {
+            foreach (var dong in duLieuBang.DanhSachDong)
+            {
+                var pk = dong.TryGetValue("NhanSuId", out var pVal) ? pVal ?? "" : "";
+                if (string.IsNullOrEmpty(pk)) continue;
+
+                if (!mapCustomValues.ContainsKey(pk))
+                {
+                    mapCustomValues[pk] = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+                }
+
+                if (dsTruongTuyChinh != null)
+                {
+                    foreach (var c in dsTruongTuyChinh)
+                    {
+                        var keyCustom = "Custom_" + c.MaTruong;
+                        var val = dong.TryGetValue(keyCustom, out var v) ? v ?? "" : "";
+                        mapCustomValues[pk][c.MaTruong] = val;
+                    }
+                }
+            }
+        }
+
+        LocVaSapXep();
+    }
+
+    private string LayGiaTriCustom(string pk, string maTruong)
+    {
+        if (mapCustomValues.TryGetValue(pk, out var dict) && dict.TryGetValue(maTruong, out var val))
+        {
+            return val ?? "";
+        }
+        return "";
+    }
+
+    private async Task LuuNhanhCustom(string pk, string maTruong, string? giaTriMoi)
+    {
+        try
+        {
+            await QuanTriDuLieuDichVu.CapNhatNhanhBanGhiAsync(
+                "NhanSu",
+                pk,
+                new Dictionary<string, string?> { ["Custom_" + maTruong] = giaTriMoi },
+                "Admin");
+
+            if (!mapCustomValues.ContainsKey(pk))
+            {
+                mapCustomValues[pk] = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+            }
+            mapCustomValues[pk][maTruong] = giaTriMoi ?? "";
+
+            editingPk = null;
+            editingField = null;
+            LocVaSapXep();
+        }
+        catch (Exception ex)
+        {
+            await JSRuntime.InvokeVoidAsync("alert", ex.Message);
+        }
+    }
+
+    private int DemSoTieuChiLoc()
+    {
+        int count = 0;
+        if (khoaIdLoc.HasValue) count++;
+        if (boMonIdLoc.HasValue) count++;
+        if (chucVuIdLoc.HasValue) count++;
+        if (trinhDoIdLoc.HasValue) count++;
+        if (!string.IsNullOrWhiteSpace(trangThaiLoc)) count++;
+        if (!string.IsNullOrWhiteSpace(gioiTinhLoc)) count++;
+        if (!string.IsNullOrWhiteSpace(coPhanCongLoc)) count++;
+        if (!string.IsNullOrWhiteSpace(laChuNhiemLoc)) count++;
+        count += boLocCustom.Values.Count(v => !string.IsNullOrWhiteSpace(v));
+        return count;
+    }
+
+    private bool CoBoLocDangHoatDong()
+    {
+        return DemSoTieuChiLoc() > 0 || !string.IsNullOrWhiteSpace(tuKhoa) || truongSapXep != "HoVaTen" || !chieuSapXepTang;
+    }
+
+    private void XoaTuKhoa()
+    {
+        tuKhoa = "";
+        LocVaSapXep();
+    }
+
+    private void XoaTatCaBoLoc()
+    {
+        tuKhoa = "";
+        khoaIdLoc = null;
+        boMonIdLoc = null;
+        chucVuIdLoc = null;
+        trinhDoIdLoc = null;
+        trangThaiLoc = null;
+        gioiTinhLoc = null;
+        coPhanCongLoc = null;
+        laChuNhiemLoc = null;
+        boLocCustom.Clear();
+        truongSapXep = "HoVaTen";
+        chieuSapXepTang = true;
+        danhSachBoMonHienThi = danhSachBoMonGoc;
+        LocVaSapXep();
+    }
+
+    private void LocVaSapXep()
+    {
+        if (danhSachGoc == null) return;
+
+        // 1. Lọc theo từng trường (gồm cả các trường tùy chỉnh)
+        var ketQua = danhSachGoc.Where(n =>
+            // Tìm kiếm tức thì quét qua tất cả trường chuẩn + toàn bộ trường tùy chỉnh (như Chứng chỉ...)
+            (string.IsNullOrWhiteSpace(tuKhoa) ||
+             n.MaNhanSu.Contains(tuKhoa, StringComparison.OrdinalIgnoreCase) ||
+             n.HoVaTen.Contains(tuKhoa, StringComparison.OrdinalIgnoreCase) ||
+             n.Email.Contains(tuKhoa, StringComparison.OrdinalIgnoreCase) ||
+             (n.SoCCCD != null && n.SoCCCD.Contains(tuKhoa, StringComparison.OrdinalIgnoreCase)) ||
+             (n.SoDienThoai != null && n.SoDienThoai.Contains(tuKhoa, StringComparison.OrdinalIgnoreCase)) ||
+             (n.DiaChi != null && n.DiaChi.Contains(tuKhoa, StringComparison.OrdinalIgnoreCase)) ||
+             (n.ChuyenMonDaoTao != null && n.ChuyenMonDaoTao.Contains(tuKhoa, StringComparison.OrdinalIgnoreCase)) ||
+             (n.GhiChu != null && n.GhiChu.Contains(tuKhoa, StringComparison.OrdinalIgnoreCase)) ||
+             (mapCustomValues.TryGetValue(n.NhanSuId.ToString(), out var cDict) && cDict.Values.Any(v => v != null && v.Contains(tuKhoa, StringComparison.OrdinalIgnoreCase)))) &&
+
+            (!khoaIdLoc.HasValue || n.KhoaId == khoaIdLoc.Value) &&
+            (!boMonIdLoc.HasValue || n.BoMonId == boMonIdLoc.Value) &&
+            (!chucVuIdLoc.HasValue || n.ChucVuId == chucVuIdLoc.Value) &&
+            (!trinhDoIdLoc.HasValue || n.TrinhDoChuyenMonId == trinhDoIdLoc.Value) &&
+            (string.IsNullOrWhiteSpace(trangThaiLoc) || n.TrangThai == trangThaiLoc) &&
+            (string.IsNullOrWhiteSpace(gioiTinhLoc) || string.Equals(n.GioiTinh, gioiTinhLoc, StringComparison.OrdinalIgnoreCase)) &&
+            (string.IsNullOrWhiteSpace(coPhanCongLoc) ||
+             (coPhanCongLoc == "Co" && (n.PhanCongGiangDays != null && n.PhanCongGiangDays.Count > 0)) ||
+             (coPhanCongLoc == "Chua" && (n.PhanCongGiangDays == null || n.PhanCongGiangDays.Count == 0))) &&
+            (string.IsNullOrWhiteSpace(laChuNhiemLoc) ||
+             (laChuNhiemLoc == "Co" && (n.PhanCongGiangDays != null && n.PhanCongGiangDays.Any(p => p.LaChuNhiem))) ||
+             (laChuNhiemLoc == "Khong" && (n.PhanCongGiangDays == null || !n.PhanCongGiangDays.Any(p => p.LaChuNhiem)))) &&
+
+            // Lọc theo từng trường tùy chỉnh cụ thể
+            (boLocCustom.Count == 0 || boLocCustom.All(kv =>
+                string.IsNullOrWhiteSpace(kv.Value) ||
+                (mapCustomValues.TryGetValue(n.NhanSuId.ToString(), out var cd) &&
+                 cd.TryGetValue(kv.Key, out var val) &&
+                 val != null && val.Contains(kv.Value, StringComparison.OrdinalIgnoreCase))))
+        );
+
+        // 2. Sắp xếp (Sort)
+        if (truongSapXep.StartsWith("Custom_"))
+        {
+            var code = truongSapXep.Substring(7);
+            danhSachHienThi = chieuSapXepTang
+                ? ketQua.OrderBy(x => LayGiaTriCustom(x.NhanSuId.ToString(), code)).ToList()
+                : ketQua.OrderByDescending(x => LayGiaTriCustom(x.NhanSuId.ToString(), code)).ToList();
+        }
+        else
+        {
+            danhSachHienThi = truongSapXep switch
+            {
+                "MaNhanSu" => chieuSapXepTang ? ketQua.OrderBy(x => x.MaNhanSu).ToList() : ketQua.OrderByDescending(x => x.MaNhanSu).ToList(),
+                "NgaySinh" => chieuSapXepTang ? ketQua.OrderBy(x => x.NgaySinh).ToList() : ketQua.OrderByDescending(x => x.NgaySinh).ToList(),
+                "Khoa" => chieuSapXepTang ? ketQua.OrderBy(x => x.Khoa?.TenKhoa ?? "").ToList() : ketQua.OrderByDescending(x => x.Khoa?.TenKhoa ?? "").ToList(),
+                "ChucVu" => chieuSapXepTang ? ketQua.OrderBy(x => x.ChucVu?.TenChucVu ?? "").ToList() : ketQua.OrderByDescending(x => x.ChucVu?.TenChucVu ?? "").ToList(),
+                "TrangThai" => chieuSapXepTang ? ketQua.OrderBy(x => x.TrangThai).ToList() : ketQua.OrderByDescending(x => x.TrangThai).ToList(),
+                _ => chieuSapXepTang ? ketQua.OrderBy(x => x.HoVaTen).ToList() : ketQua.OrderByDescending(x => x.HoVaTen).ToList()
+            };
+        }
+    }
+
+    private void ChonCotSapXep(string cot)
+    {
+        if (truongSapXep == cot)
+        {
+            chieuSapXepTang = !chieuSapXepTang;
+        }
+        else
+        {
+            truongSapXep = cot;
+            chieuSapXepTang = true;
+        }
+        LocVaSapXep();
+    }
+
+    private string LayIconSapXep(string cot)
+    {
+        if (truongSapXep != cot) return "bi-arrow-down-up";
+        return chieuSapXepTang ? "bi-sort-alpha-down text-primary fw-bold" : "bi-sort-alpha-up text-primary fw-bold";
+    }
+
+    private string LayNhanTruongSapXep()
+    {
+        if (truongSapXep.StartsWith("Custom_"))
+        {
+            var code = truongSapXep.Substring(7);
+            return dsTruongTuyChinh?.FirstOrDefault(t => t.MaTruong == code)?.TenHienThi ?? code;
+        }
+
+        return truongSapXep switch
+        {
+            "MaNhanSu" => "Mã cán bộ",
+            "NgaySinh" => "Ngày sinh",
+            "Khoa" => "Khoa",
+            "ChucVu" => "Chức vụ",
+            "TrangThai" => "Trạng thái",
+            _ => "Họ và tên"
+        };
+    }
+
+    private void OnCustomFilterChanged(string maTruong, string? val)
+    {
+        if (string.IsNullOrWhiteSpace(val))
+        {
+            boLocCustom.Remove(maTruong);
+        }
+        else
+        {
+            boLocCustom[maTruong] = val.Trim();
+        }
+    }
+
+    private void ApDungBoLocVaDongModal()
+    {
+        LocVaSapXep();
+        showFilterDialog = false;
+    }
+
+    private void OnKhoaChanged(ChangeEventArgs e)
+    {
+        var val = e.Value?.ToString();
+        if (int.TryParse(val, out int kid) && kid > 0)
+        {
+            khoaIdLoc = kid;
+            danhSachBoMonHienThi = danhSachBoMonGoc?.Where(b => b.KhoaId == kid).ToList();
+        }
+        else
+        {
+            khoaIdLoc = null;
+            danhSachBoMonHienThi = danhSachBoMonGoc;
+        }
+        boMonIdLoc = null;
+    }
+
+    private void OnBoMonChanged(ChangeEventArgs e)
+    {
+        var val = e.Value?.ToString();
+        boMonIdLoc = (int.TryParse(val, out int bmid) && bmid > 0) ? bmid : null;
+    }
+
+    private void OnChucVuChanged(ChangeEventArgs e)
+    {
+        var val = e.Value?.ToString();
+        chucVuIdLoc = (int.TryParse(val, out int cvid) && cvid > 0) ? cvid : null;
+    }
+
+    private void OnTrinhDoChanged(ChangeEventArgs e)
+    {
+        var val = e.Value?.ToString();
+        trinhDoIdLoc = (int.TryParse(val, out int tdid) && tdid > 0) ? tdid : null;
+    }
+
+    private void OnTrangThaiChanged(ChangeEventArgs e)
+    {
+        trangThaiLoc = e.Value?.ToString();
+    }
+
+    private void OnGioiTinhChanged(ChangeEventArgs e)
+    {
+        gioiTinhLoc = e.Value?.ToString();
+    }
+
+    private void OnPhanCongChanged(ChangeEventArgs e)
+    {
+        coPhanCongLoc = e.Value?.ToString();
+    }
+
+    private void OnChuNhiemChanged(ChangeEventArgs e)
+    {
+        laChuNhiemLoc = e.Value?.ToString();
+    }
+
+    private async Task LamMoi()
+    {
+        await LoadData();
+    }
+
+    private void ThemCanBoMoi()
+    {
+        Navigation.NavigateTo("NhanSu/ThemMoi");
+    }
+
+    private async Task XoaNhanSu(int id, string ten)
+    {
+        if (!await JSRuntime.InvokeAsync<bool>("confirm", $"Bạn có chắc chắn muốn xóa cán bộ '{ten}'?"))
+        {
+            return;
+        }
+
+        try
+        {
+            await NhanSuDichVu.XoaNhanSuAsync(id);
+            await LoadData();
+        }
+        catch (Exception ex)
+        {
+            await JSRuntime.InvokeVoidAsync("alert", ex.Message);
+        }
+    }
+}

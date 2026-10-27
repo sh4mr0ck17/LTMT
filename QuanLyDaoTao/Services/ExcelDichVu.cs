@@ -48,11 +48,97 @@ public class ExcelDichVu : IExcelDichVu
     }
 
     /// <summary>
+    /// Chuẩn hóa tên module sang tên bảng nội bộ chuẩn trong hệ thống.
+    /// </summary>
+    private static string ChuanHoaTenBangModule(string tenModule)
+    {
+        return QuanTriDuLieuDichVu.ChuanHoaTenBang(tenModule);
+    }
+
+    /// <summary>
+    /// Lấy danh sách trường tùy chỉnh đang kích hoạt cho module/bảng tương ứng (đồng bộ).
+    /// </summary>
+    private List<TruongTuyChinh> LayDanhSachTruongTuyChinh(string tenModule)
+    {
+        var bangChuan = ChuanHoaTenBangModule(tenModule);
+        try
+        {
+            return _coSoDuLieu.TruongTuyChinhs
+                .AsNoTracking()
+                .Where(t => t.TenBang == bangChuan && t.CoHoatDong)
+                .OrderBy(t => t.ThuTuHienThi)
+                .ToList();
+        }
+        catch
+        {
+            return new List<TruongTuyChinh>();
+        }
+    }
+
+    /// <summary>
+    /// Lấy danh sách trường tùy chỉnh đang kích hoạt cho module/bảng tương ứng (bất đồng bộ).
+    /// </summary>
+    private async Task<List<TruongTuyChinh>> LayDanhSachTruongTuyChinhAsync(string tenModule, CancellationToken ct = default)
+    {
+        var bangChuan = ChuanHoaTenBangModule(tenModule);
+        try
+        {
+            return await _coSoDuLieu.TruongTuyChinhs
+                .AsNoTracking()
+                .Where(t => t.TenBang == bangChuan && t.CoHoatDong)
+                .OrderBy(t => t.ThuTuHienThi)
+                .ToListAsync(ct);
+        }
+        catch
+        {
+            return new List<TruongTuyChinh>();
+        }
+    }
+
+    /// <summary>
+    /// Chuyển đổi định nghĩa trường tùy chỉnh trong DB thành đối tượng định nghĩa cột Excel.
+    /// </summary>
+    private static DinhNghiaCotExcel ChuyenDoiSangDinhNghiaCot(TruongTuyChinh c)
+    {
+        var kieu = c.KieuDuLieu?.Trim().ToLowerInvariant() switch
+        {
+            "songuyen" => KieuDuLieuExcel.SoNguyen,
+            "ngaythang" => KieuDuLieuExcel.NgayThang,
+            "logic" => KieuDuLieuExcel.Logic,
+            _ => KieuDuLieuExcel.VanBan
+        };
+
+        var viDu = !string.IsNullOrWhiteSpace(c.GiaTriMacDinh)
+            ? c.GiaTriMacDinh
+            : (kieu == KieuDuLieuExcel.NgayThang ? "20/10/2026" : (kieu == KieuDuLieuExcel.SoNguyen ? "10" : "Dữ liệu mẫu"));
+
+        return new DinhNghiaCotExcel
+        {
+            TenCot = c.TenHienThi,
+            CacTenGoiKhac = new[] { c.MaTruong, $"Custom_{c.MaTruong}", c.MaTruong.ToLowerInvariant() },
+            LaBatBuoc = c.LaBatBuoc,
+            KieuDuLieu = kieu,
+            DoDaiToiDa = 500,
+            MoTa = $"[Tùy chỉnh: {c.KieuDuLieu}] {c.TenHienThi}",
+            ViDu = viDu
+        };
+    }
+
+    /// <summary>
     /// Tạo tệp Excel mẫu chuẩn (.xlsx) có kèm dòng hướng dẫn và dữ liệu ví dụ cho module được chỉ định.
     /// </summary>
     public byte[] TaoTepMauExcel(string tenModule)
     {
         var schema = DinhNghiaSchemaExcel.LaySchema(tenModule);
+        var truongTuyChinhs = LayDanhSachTruongTuyChinh(tenModule);
+        foreach (var c in truongTuyChinhs)
+        {
+            if (!schema.Any(s => string.Equals(s.TenCot, c.TenHienThi, StringComparison.OrdinalIgnoreCase)))
+            {
+                schema.Add(ChuyenDoiSangDinhNghiaCot(c));
+            }
+        }
+
         using var workbook = new XLWorkbook();
         var tenSheet = $"Mau_{tenModule}";
         var worksheet = workbook.Worksheets.Add(tenSheet);
@@ -65,7 +151,10 @@ public class ExcelDichVu : IExcelDichVu
             cell.Value = colDef.TenCot;
             cell.Style.Font.Bold = true;
             cell.Style.Font.FontColor = XLColor.White;
-            cell.Style.Fill.BackgroundColor = XLColor.FromArgb(4, 121, 32); // Xanh lá đậm CAND (#047920)
+            bool laTruongDong = truongTuyChinhs.Any(t => string.Equals(t.TenHienThi, colDef.TenCot, StringComparison.OrdinalIgnoreCase));
+            cell.Style.Fill.BackgroundColor = laTruongDong
+                ? XLColor.FromArgb(13, 110, 253) // Màu xanh lam phân biệt trường tùy chỉnh Live CRUD
+                : XLColor.FromArgb(4, 121, 32);  // Xanh lá đậm CAND (#047920)
             cell.Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
             cell.Style.Alignment.Vertical = XLAlignmentVerticalValues.Center;
         }
@@ -132,8 +221,16 @@ public class ExcelDichVu : IExcelDichVu
             return ketQua;
         }
 
-        // 2. Mở workbook và lấy schema
+        // 2. Mở workbook và lấy schema (kết hợp trường tĩnh và trường động Live CRUD)
         var schema = DinhNghiaSchemaExcel.LaySchema(tenModule);
+        var truongTuyChinhs = await LayDanhSachTruongTuyChinhAsync(tenModule, cancellationToken);
+        foreach (var c in truongTuyChinhs)
+        {
+            if (!schema.Any(s => string.Equals(s.TenCot, c.TenHienThi, StringComparison.OrdinalIgnoreCase)))
+            {
+                schema.Add(ChuyenDoiSangDinhNghiaCot(c));
+            }
+        }
         XLWorkbook workbook;
         try
         {
@@ -668,6 +765,10 @@ public class ExcelDichVu : IExcelDichVu
             }
 
             await _coSoDuLieu.SaveChangesAsync(cancellationToken);
+
+            // Tự động lưu/cập nhật toàn bộ các trường tùy chỉnh (Dynamic Custom Fields) trong cùng một Transaction
+            await CommitTruongTuyChinhChoDongAsync(tenModule, danhSachDongHopLe, cancellationToken);
+            await _coSoDuLieu.SaveChangesAsync(cancellationToken);
             if (giaoDich != null)
             {
                 await giaoDich.CommitAsync(cancellationToken);
@@ -773,7 +874,17 @@ public class ExcelDichVu : IExcelDichVu
     /// </summary>
     public async Task<byte[]> XuatDanhSachDuLieuExcelAsync(string tenModule, CancellationToken cancellationToken = default)
     {
+        var bangChuan = ChuanHoaTenBangModule(tenModule);
         var schema = DinhNghiaSchemaExcel.LaySchema(tenModule);
+        var truongTuyChinhs = await LayDanhSachTruongTuyChinhAsync(tenModule, cancellationToken);
+        foreach (var c in truongTuyChinhs)
+        {
+            if (!schema.Any(s => string.Equals(s.TenCot, c.TenHienThi, StringComparison.OrdinalIgnoreCase)))
+            {
+                schema.Add(ChuyenDoiSangDinhNghiaCot(c));
+            }
+        }
+
         using var workbook = new XLWorkbook();
         var worksheet = workbook.Worksheets.Add($"DanhSach_{tenModule}");
 
@@ -784,8 +895,29 @@ public class ExcelDichVu : IExcelDichVu
             cell.Value = schema[col].TenCot;
             cell.Style.Font.Bold = true;
             cell.Style.Font.FontColor = XLColor.White;
-            cell.Style.Fill.BackgroundColor = XLColor.FromArgb(25, 135, 84); // Success Green
+            bool laTruongDong = truongTuyChinhs.Any(t => string.Equals(t.TenHienThi, schema[col].TenCot, StringComparison.OrdinalIgnoreCase));
+            cell.Style.Fill.BackgroundColor = laTruongDong
+                ? XLColor.FromArgb(13, 110, 253) // Màu xanh lam phân biệt trường tùy chỉnh Live CRUD
+                : XLColor.FromArgb(25, 135, 84);  // Success Green
             cell.Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
+        }
+
+        // Tải sẵn dữ liệu giá trị tùy chỉnh của bảng để nối vào dòng
+        var dsGiaTriCustom = await _coSoDuLieu.GiaTriTruongTuyChinhs
+            .AsNoTracking()
+            .Where(g => g.TenBang == bangChuan)
+            .ToListAsync(cancellationToken);
+        var mapGiaTriCustom = dsGiaTriCustom.ToDictionary(g => $"{g.TruongTuyChinhId}_{g.KhoaBanGhi}", g => g.GiaTri ?? "");
+
+        void GhiCacCotTuyChinh(int row, string khoaBanGhi, int startCol)
+        {
+            for (int i = 0; i < truongTuyChinhs.Count; i++)
+            {
+                var truong = truongTuyChinhs[i];
+                var key = $"{truong.TruongTuyChinhId}_{khoaBanGhi}";
+                var giaTri = mapGiaTriCustom.TryGetValue(key, out var val) ? val : "";
+                GhiOAnToan(worksheet.Cell(row, startCol + i), giaTri);
+            }
         }
 
         // Lấy dữ liệu và ghi từng dòng
@@ -803,6 +935,7 @@ public class ExcelDichVu : IExcelDichVu
                     GhiOAnToan(worksheet.Cell(rowIdx, 5), k.Email ?? "");
                     GhiOAnToan(worksheet.Cell(rowIdx, 6), k.DiaDiem ?? "");
                     GhiOAnToan(worksheet.Cell(rowIdx, 7), k.CoHoatDong ? "Hoạt động" : "Đã khóa");
+                    GhiCacCotTuyChinh(rowIdx, k.KhoaId.ToString(), 8);
                     rowIdx++;
                 }
                 break;
@@ -816,6 +949,7 @@ public class ExcelDichVu : IExcelDichVu
                     GhiOAnToan(worksheet.Cell(rowIdx, 3), bm.MoTa ?? "");
                     GhiOAnToan(worksheet.Cell(rowIdx, 4), bm.Khoa?.MaKhoa ?? "");
                     GhiOAnToan(worksheet.Cell(rowIdx, 5), bm.CoHoatDong ? "Hoạt động" : "Đã khóa");
+                    GhiCacCotTuyChinh(rowIdx, bm.BoMonId.ToString(), 6);
                     rowIdx++;
                 }
                 break;
@@ -830,6 +964,7 @@ public class ExcelDichVu : IExcelDichVu
                     GhiOAnToan(worksheet.Cell(rowIdx, 4), l.Khoa?.MaKhoa ?? "");
                     GhiOAnToan(worksheet.Cell(rowIdx, 5), l.SoLuongToiDa.ToString());
                     GhiOAnToan(worksheet.Cell(rowIdx, 6), l.CoHoatDong ? "Hoạt động" : "Đã khóa");
+                    GhiCacCotTuyChinh(rowIdx, l.LopHocId.ToString(), 7);
                     rowIdx++;
                 }
                 break;
@@ -847,6 +982,7 @@ public class ExcelDichVu : IExcelDichVu
                     GhiOAnToan(worksheet.Cell(rowIdx, 7), hv.DiaChi ?? "");
                     GhiOAnToan(worksheet.Cell(rowIdx, 8), hv.LopHoc?.MaLop ?? "");
                     GhiOAnToan(worksheet.Cell(rowIdx, 9), hv.CoHoatDong ? "Hoạt động" : "Đã khóa");
+                    GhiCacCotTuyChinh(rowIdx, hv.HocVienId.ToString(), 10);
                     rowIdx++;
                 }
                 break;
@@ -866,14 +1002,18 @@ public class ExcelDichVu : IExcelDichVu
                     GhiOAnToan(worksheet.Cell(rowIdx, 2), ns.HoVaTen);
                     GhiOAnToan(worksheet.Cell(rowIdx, 3), ns.NgaySinh.ToString("dd/MM/yyyy"));
                     GhiOAnToan(worksheet.Cell(rowIdx, 4), ns.GioiTinh);
-                    GhiOAnToan(worksheet.Cell(rowIdx, 5), ns.EmailCongViec);
+                    GhiOAnToan(worksheet.Cell(rowIdx, 5), ns.SoCCCD ?? "");
                     GhiOAnToan(worksheet.Cell(rowIdx, 6), ns.SoDienThoai ?? "");
-                    GhiOAnToan(worksheet.Cell(rowIdx, 7), ns.SoGiayTo ?? "");
-                    GhiOAnToan(worksheet.Cell(rowIdx, 8), ns.Khoa?.MaKhoa ?? "");
-                    GhiOAnToan(worksheet.Cell(rowIdx, 9), ns.BoMon?.MaBoMon ?? "");
-                    GhiOAnToan(worksheet.Cell(rowIdx, 10), ns.ChucVu?.MaChucVu ?? "");
-                    GhiOAnToan(worksheet.Cell(rowIdx, 11), ns.TrinhDoChuyenMon?.MaTrinhDo ?? "");
-                    GhiOAnToan(worksheet.Cell(rowIdx, 12), ns.TrangThaiCongTac);
+                    GhiOAnToan(worksheet.Cell(rowIdx, 7), ns.Email);
+                    GhiOAnToan(worksheet.Cell(rowIdx, 8), ns.DiaChi ?? "");
+                    GhiOAnToan(worksheet.Cell(rowIdx, 9), ns.Khoa?.MaKhoa ?? "");
+                    GhiOAnToan(worksheet.Cell(rowIdx, 10), ns.BoMon?.MaBoMon ?? "");
+                    GhiOAnToan(worksheet.Cell(rowIdx, 11), ns.ChucVu?.MaChucVu ?? "");
+                    GhiOAnToan(worksheet.Cell(rowIdx, 12), ns.TrinhDoChuyenMon?.MaTrinhDo ?? "");
+                    GhiOAnToan(worksheet.Cell(rowIdx, 13), ns.ChuyenMonDaoTao ?? "");
+                    GhiOAnToan(worksheet.Cell(rowIdx, 14), ns.TrangThai);
+                    GhiOAnToan(worksheet.Cell(rowIdx, 15), ns.GhiChu ?? "");
+                    GhiCacCotTuyChinh(rowIdx, ns.NhanSuId.ToString(), 16);
                     rowIdx++;
                 }
                 break;
@@ -889,6 +1029,7 @@ public class ExcelDichVu : IExcelDichVu
                     GhiOAnToan(worksheet.Cell(rowIdx, 5), mh.SoTietThucHanh.ToString());
                     GhiOAnToan(worksheet.Cell(rowIdx, 6), mh.BoMon?.MaBoMon ?? "");
                     GhiOAnToan(worksheet.Cell(rowIdx, 7), mh.CoHoatDong ? "Hoạt động" : "Đã khóa");
+                    GhiCacCotTuyChinh(rowIdx, mh.MonHocId.ToString(), 8);
                     rowIdx++;
                 }
                 break;
@@ -913,6 +1054,7 @@ public class ExcelDichVu : IExcelDichVu
                     GhiOAnToan(worksheet.Cell(rowIdx, 7), pc.VaiTroGiangDay);
                     GhiOAnToan(worksheet.Cell(rowIdx, 8), pc.LaChuNhiem ? "Có" : "Không");
                     GhiOAnToan(worksheet.Cell(rowIdx, 9), pc.GhiChu ?? "");
+                    GhiCacCotTuyChinh(rowIdx, pc.PhanCongId.ToString(), 10);
                     rowIdx++;
                 }
                 break;
@@ -1304,15 +1446,17 @@ public class ExcelDichVu : IExcelDichVu
                 HoVaTen = LayGiaTri(d, "Họ và tên", ""),
                 NgaySinh = ngaySinh,
                 GioiTinh = LayGiaTri(d, "Giới tính", "Nam"),
-                EmailCongViec = LayGiaTri(d, "Email công việc", ""),
+                Email = LayGiaTri(d, "Email", LayGiaTri(d, "Email công việc", "")),
                 SoDienThoai = LayGiaTriHoacNull(d, "Số điện thoại"),
-                SoGiayTo = LayGiaTriHoacNull(d, "Số CCCD"),
+                SoCCCD = LayGiaTriHoacNull(d, "Số CCCD"),
+                DiaChi = LayGiaTriHoacNull(d, "Địa chỉ"),
                 KhoaId = !string.IsNullOrEmpty(maKhoa) && mapKhoa.ContainsKey(maKhoa) ? mapKhoa[maKhoa] : null,
                 BoMonId = !string.IsNullOrEmpty(maBoMon) && mapBoMon.ContainsKey(maBoMon) ? mapBoMon[maBoMon] : null,
                 ChucVuId = !string.IsNullOrEmpty(maChucVu) && mapChucVu.ContainsKey(maChucVu) ? mapChucVu[maChucVu] : null,
                 TrinhDoChuyenMonId = !string.IsNullOrEmpty(maTrinhDo) && mapTrinhDo.ContainsKey(maTrinhDo) ? mapTrinhDo[maTrinhDo] : null,
-                TrangThaiCongTac = LayGiaTri(d, "Trạng thái công tác", "Đang làm việc"),
-                CoHoatDong = true,
+                ChuyenMonDaoTao = LayGiaTriHoacNull(d, "Chuyên môn đào tạo"),
+                TrangThai = LayGiaTri(d, "Trạng thái", LayGiaTri(d, "Trạng thái công tác", "Đang làm việc")),
+                GhiChu = LayGiaTriHoacNull(d, "Ghi chú"),
                 NgayTao = DateTime.UtcNow,
                 NguoiTao = nguoiThucHien
             };
@@ -1374,8 +1518,7 @@ public class ExcelDichVu : IExcelDichVu
                 NhanSuId = mapNhanSu[maNhanSu],
                 MonHocId = mapMonHoc[maMonHoc],
                 LopHocId = mapLop[maLop],
-                HocKy = LayGiaTri(d, "Học kỳ", "Học kỳ 1"),
-                NamHoc = LayGiaTri(d, "Năm học", "2026-2027"),
+                HocKyNamHoc = LayGiaTri(d, "Học kỳ năm học", $"{LayGiaTri(d, "Học kỳ", "HK1")} ({LayGiaTri(d, "Năm học", "2026-2027")})"),
                 VaiTroGiangDay = LayGiaTri(d, "Vai trò giảng dạy", "Giảng viên chính"),
                 LaChuNhiem = laChuNhiem,
                 GhiChu = LayGiaTriHoacNull(d, "Ghi chú"),
@@ -1384,5 +1527,148 @@ public class ExcelDichVu : IExcelDichVu
             entities.Add(pc);
         }
         await _coSoDuLieu.PhanCongGiangDays.AddRangeAsync(entities, ct);
+    }
+
+    private async Task CommitTruongTuyChinhChoDongAsync(
+        string tenModule,
+        List<DongDuLieuPreviewExcel> danhSachDongHopLe,
+        CancellationToken ct)
+    {
+        var bangChuan = ChuanHoaTenBangModule(tenModule);
+        var truongTuyChinhs = await LayDanhSachTruongTuyChinhAsync(tenModule, ct);
+        if (truongTuyChinhs.Count == 0)
+        {
+            return;
+        }
+
+        // Tạo bản đồ tra cứu mã nghiệp vụ -> Khóa chính trong DB
+        var mapMaSangKhoaChinh = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        switch (bangChuan)
+        {
+            case "Khoa":
+                var khoas = await _coSoDuLieu.Khoas.AsNoTracking().Select(k => new { k.MaKhoa, k.KhoaId }).ToListAsync(ct);
+                foreach (var item in khoas)
+                {
+                    mapMaSangKhoaChinh[item.MaKhoa] = item.KhoaId.ToString();
+                }
+                break;
+
+            case "BoMon":
+                var bomons = await _coSoDuLieu.BoMons.AsNoTracking().Select(b => new { b.MaBoMon, b.BoMonId }).ToListAsync(ct);
+                foreach (var item in bomons)
+                {
+                    mapMaSangKhoaChinh[item.MaBoMon] = item.BoMonId.ToString();
+                }
+                break;
+
+            case "LopHoc":
+                var lophocs = await _coSoDuLieu.LopHocs.AsNoTracking().Select(l => new { l.MaLop, l.LopHocId }).ToListAsync(ct);
+                foreach (var item in lophocs)
+                {
+                    mapMaSangKhoaChinh[item.MaLop] = item.LopHocId.ToString();
+                }
+                break;
+
+            case "HocVien":
+                var hocviens = await _coSoDuLieu.HocViens.AsNoTracking().Select(h => new { h.MaHocVien, h.HocVienId }).ToListAsync(ct);
+                foreach (var item in hocviens)
+                {
+                    mapMaSangKhoaChinh[item.MaHocVien] = item.HocVienId.ToString();
+                }
+                break;
+
+            case "NhanSu":
+                var nhansus = await _coSoDuLieu.NhanSus.AsNoTracking().Select(n => new { n.MaNhanSu, n.NhanSuId }).ToListAsync(ct);
+                foreach (var item in nhansus)
+                {
+                    mapMaSangKhoaChinh[item.MaNhanSu] = item.NhanSuId.ToString();
+                }
+                break;
+
+            case "MonHoc":
+                var monhocs = await _coSoDuLieu.MonHocs.AsNoTracking().Select(m => new { m.MaMonHoc, m.MonHocId }).ToListAsync(ct);
+                foreach (var item in monhocs)
+                {
+                    mapMaSangKhoaChinh[item.MaMonHoc] = item.MonHocId.ToString();
+                }
+                break;
+
+            case "PhanCongGiangDay":
+                var phancongs = await _coSoDuLieu.PhanCongGiangDays.AsNoTracking().Select(p => new { p.MaPhanCong, p.PhanCongId }).ToListAsync(ct);
+                foreach (var item in phancongs)
+                {
+                    mapMaSangKhoaChinh[item.MaPhanCong] = item.PhanCongId.ToString();
+                }
+                break;
+        }
+
+        // Tải các giá trị hiện có trong GiaTriTruongTuyChinhs của bảng này
+        var dsGiaTriCu = await _coSoDuLieu.GiaTriTruongTuyChinhs
+            .Where(g => g.TenBang == bangChuan)
+            .ToListAsync(ct);
+        var mapGiaTriCu = dsGiaTriCu.ToDictionary(g => $"{g.TruongTuyChinhId}_{g.KhoaBanGhi}");
+
+        foreach (var dong in danhSachDongHopLe)
+        {
+            var d = dong.DuLieuCot;
+            // Tìm mã chính của dòng
+            string maNghiepVu = bangChuan switch
+            {
+                "Khoa" => LayGiaTri(d, "Mã khoa", ""),
+                "BoMon" => LayGiaTri(d, "Mã bộ môn", ""),
+                "LopHoc" => LayGiaTri(d, "Mã lớp", ""),
+                "HocVien" => LayGiaTri(d, "Mã học viên", ""),
+                "NhanSu" => LayGiaTri(d, "Mã nhân sự", ""),
+                "MonHoc" => LayGiaTri(d, "Mã môn học", ""),
+                "PhanCongGiangDay" => LayGiaTri(d, "Mã phân công", ""),
+                _ => ""
+            };
+
+            if (string.IsNullOrWhiteSpace(maNghiepVu) || !mapMaSangKhoaChinh.TryGetValue(maNghiepVu, out var khoaBanGhi))
+            {
+                continue;
+            }
+
+            foreach (var truong in truongTuyChinhs)
+            {
+                // Kiểm tra xem dòng có dữ liệu cho trường này không (theo TenHienThi hoặc MaTruong hoặc Custom_MaTruong)
+                string? giaTri = null;
+                if (d.TryGetValue(truong.TenHienThi, out var v1) && !string.IsNullOrWhiteSpace(v1))
+                {
+                    giaTri = v1.Trim();
+                }
+                else if (d.TryGetValue(truong.MaTruong, out var v2) && !string.IsNullOrWhiteSpace(v2))
+                {
+                    giaTri = v2.Trim();
+                }
+                else if (d.TryGetValue($"Custom_{truong.MaTruong}", out var v3) && !string.IsNullOrWhiteSpace(v3))
+                {
+                    giaTri = v3.Trim();
+                }
+
+                if (giaTri != null)
+                {
+                    var keyMap = $"{truong.TruongTuyChinhId}_{khoaBanGhi}";
+                    if (mapGiaTriCu.TryGetValue(keyMap, out var entityGiaTri))
+                    {
+                        entityGiaTri.GiaTri = giaTri;
+                        entityGiaTri.NgayCapNhat = DateTime.UtcNow;
+                    }
+                    else
+                    {
+                        var giaTriMoi = new GiaTriTruongTuyChinh
+                        {
+                            TruongTuyChinhId = truong.TruongTuyChinhId,
+                            TenBang = bangChuan,
+                            KhoaBanGhi = khoaBanGhi,
+                            GiaTri = giaTri,
+                            NgayCapNhat = DateTime.UtcNow
+                        };
+                        await _coSoDuLieu.GiaTriTruongTuyChinhs.AddAsync(giaTriMoi, ct);
+                        mapGiaTriCu[keyMap] = giaTriMoi;
+                    }
+                }
+            }
+        }
     }
 }

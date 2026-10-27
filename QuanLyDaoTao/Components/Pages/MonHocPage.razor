@@ -1,0 +1,195 @@
+@page "/MonHoc"
+@inject IMonHocDichVu MonHocDichVu
+@inject IBoMonDichVu BoMonDichVu
+@inject NavigationManager Navigation
+
+<PageTitle>Quản lý Môn học - Học Viện An Ninh Nhân Dân</PageTitle>
+
+<div class="container-fluid px-4 py-3" id="pnlDanhSachMonHoc">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <div>
+            <h4 class="mb-1 text-primary fw-bold" id="lblTieuDe">
+                <i class="bi bi-journal-bookmark me-2"></i>Quản Lý Môn Học Đào Tạo
+            </h4>
+            <span class="text-muted small">Danh sách các môn học, số tín chỉ, lý thuyết và thực hành C500</span>
+        </div>
+        <div class="d-flex gap-2">
+            <a href="Excel/TaiTepMau?module=MonHoc" class="btn btn-outline-secondary" id="btnTaiMauExcel">
+                <i class="bi bi-download me-1"></i>Tải Mẫu Excel
+            </a>
+            <a href="Excel/XuatDuLieu?module=MonHoc" class="btn btn-outline-success" id="btnXuatExcel">
+                <i class="bi bi-file-earmark-excel me-1"></i>Xuất Excel
+            </a>
+            <a href="Excel/NhapExcel?module=MonHoc" class="btn btn-success" id="btnNhapExcel">
+                <i class="bi bi-file-earmark-arrow-up me-1"></i>Nhập Excel
+            </a>
+            <a href="MonHoc/ThemMoi" class="btn btn-primary" id="btnThemMonHoc">
+                <i class="bi bi-plus-circle-fill me-1"></i>Thêm Mới Môn Học
+            </a>
+        </div>
+    </div>
+
+    <!-- Bộ lọc & Tìm kiếm -->
+    <div class="card shadow-sm border-0 mb-4" id="pnlBoLoc">
+        <div class="card-body">
+            <div class="row g-3 align-items-center" id="frmTimKiem">
+                <div class="col-md-6">
+                    <div class="input-group">
+                        <span class="input-group-text"><i class="bi bi-search"></i></span>
+                        <input type="text" class="form-control" id="txtTimKiem" 
+                               placeholder="Tìm theo mã hoặc tên môn học..." 
+                               @bind="tuKhoa" @bind:event="oninput" @onkeyup="LocDuLieu" />
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <select class="form-select" id="cboChonBoMon" @onchange="OnBoMonChanged">
+                        <option value="">-- Tất cả Bộ môn --</option>
+                        @if (danhSachBoMon != null)
+                        {
+                            @foreach (var bm in danhSachBoMon)
+                            {
+                                <option value="@bm.BoMonId">@bm.TenBoMon (@bm.MaBoMon)</option>
+                            }
+                        }
+                    </select>
+                </div>
+                <div class="col-md-3 d-flex gap-2">
+                    <button type="button" class="btn btn-primary" id="btnTimKiem" @onclick="LocDuLieu">Lọc Dữ Liệu</button>
+                    <button type="button" class="btn btn-outline-secondary" id="btnLamMoi" @onclick="LamMoi">Làm Mới</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bảng danh sách Môn học -->
+    <div class="card shadow-sm border-0" id="pnlBangDuLieu">
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover table-striped align-middle mb-0" id="dgvDanhSachMonHoc">
+                    <thead class="table-light">
+                        <tr>
+                            <th class="ps-3" style="width: 50px;">#</th>
+                            <th style="width: 140px;">Mã Môn Học</th>
+                            <th>Tên Môn Học</th>
+                            <th class="text-center" style="width: 100px;">Tín Chỉ</th>
+                            <th class="text-center" style="width: 110px;">Lý Thuyết</th>
+                            <th class="text-center" style="width: 110px;">Thực Hành</th>
+                            <th>Bộ Môn Phụ Trách</th>
+                            <th class="text-center" style="width: 120px;">Trạng Thái</th>
+                            <th class="text-center" style="width: 160px;">Thao Tác</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @if (danhSachHienThi == null || danhSachHienThi.Count == 0)
+                        {
+                            <tr>
+                                <td colspan="9" class="text-center py-4 text-muted">
+                                    <i class="bi bi-inbox fs-2 d-block mb-2"></i>Không tìm thấy môn học nào trong hệ thống
+                                </td>
+                            </tr>
+                        }
+                        else
+                        {
+                            int stt = 1;
+                            foreach (var mh in danhSachHienThi)
+                            {
+                                <tr>
+                                    <td class="ps-3 fw-bold text-muted">@(stt++)</td>
+                                    <td><span class="badge bg-primary bg-opacity-10 text-primary fw-bold font-monospace fs-6">@mh.MaMonHoc</span></td>
+                                    <td>
+                                        <a href="MonHoc/ChiTiet/@mh.MonHocId" class="fw-semibold text-decoration-none text-dark">@mh.TenMonHoc</a>
+                                    </td>
+                                    <td class="text-center"><span class="badge bg-primary fs-6">@mh.SoTinChi</span></td>
+                                    <td class="text-center">@mh.SoTietLyThuyet tiết</td>
+                                    <td class="text-center">@mh.SoTietThucHanh tiết</td>
+                                    <td>@(mh.BoMon?.TenBoMon ?? "-")</td>
+                                    <td class="text-center">
+                                        <span class="badge @(mh.CoHoatDong ? "bg-success" : "bg-secondary")">
+                                            @(mh.CoHoatDong ? "Hoạt động" : "Đã khóa")
+                                        </span>
+                                    </td>
+                                    <td class="text-center">
+                                        <div class="btn-group btn-group-sm" role="group">
+                                            <a href="MonHoc/ChiTiet/@mh.MonHocId" class="btn btn-outline-info" title="Xem chi tiết" id="btnXem_@mh.MonHocId">
+                                                <i class="bi bi-eye"></i>
+                                            </a>
+                                            <a href="MonHoc/ChinhSua/@mh.MonHocId" class="btn btn-outline-primary" title="Chỉnh sửa" id="btnSua_@mh.MonHocId">
+                                                <i class="bi bi-pencil"></i>
+                                            </a>
+                                            <button type="button" class="btn btn-outline-danger" title="Xóa môn học" id="btnXoa_@mh.MonHocId"
+                                                    @onclick="() => XoaMonHoc(mh.MonHocId)">
+                                                <i class="bi bi-trash"></i>
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                            }
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    private List<MonHoc>? danhSachGoc;
+    private List<MonHoc>? danhSachHienThi;
+    private List<BoMon>? danhSachBoMon;
+    private string tuKhoa = "";
+    private int? boMonIdLoc = null;
+
+    protected override async Task OnInitializedAsync()
+    {
+        danhSachBoMon = await BoMonDichVu.LayDanhSachAsync();
+        await LoadData();
+    }
+
+    private async Task LoadData()
+    {
+        danhSachGoc = await MonHocDichVu.LayDanhSachAsync();
+        LocDuLieu();
+    }
+
+    private void LocDuLieu()
+    {
+        if (danhSachGoc == null) return;
+        danhSachHienThi = danhSachGoc.Where(m =>
+            (string.IsNullOrWhiteSpace(tuKhoa) || m.MaMonHoc.Contains(tuKhoa, StringComparison.OrdinalIgnoreCase) || m.TenMonHoc.Contains(tuKhoa, StringComparison.OrdinalIgnoreCase)) &&
+            (!boMonIdLoc.HasValue || m.BoMonId == boMonIdLoc.Value)
+        ).ToList();
+    }
+
+    private void OnBoMonChanged(ChangeEventArgs e)
+    {
+        var val = e.Value?.ToString();
+        if (int.TryParse(val, out int bmid) && bmid > 0)
+        {
+            boMonIdLoc = bmid;
+        }
+        else
+        {
+            boMonIdLoc = null;
+        }
+        LocDuLieu();
+    }
+
+    private void LamMoi()
+    {
+        tuKhoa = "";
+        boMonIdLoc = null;
+        LocDuLieu();
+    }
+
+    private async Task XoaMonHoc(int id)
+    {
+        try
+        {
+            await MonHocDichVu.XoaMonHocAsync(id);
+            await LoadData();
+        }
+        catch
+        {
+        }
+    }
+}

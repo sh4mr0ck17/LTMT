@@ -1,0 +1,130 @@
+@page "/PhanCongGiangDay"
+@inject IPhanCongGiangDayDichVu PhanCongDichVu
+@inject INhanSuDichVu NhanSuDichVu
+@inject IMonHocDichVu MonHocDichVu
+@inject ILopHocDichVu LopHocDichVu
+@inject NavigationManager Navigation
+
+<PageTitle>Phân công giảng dạy - Học Viện An Ninh Nhân Dân</PageTitle>
+
+<div class="container-fluid px-4 py-3" id="pnlDanhSachPhanCong">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <div>
+            <h4 class="mb-1 text-primary fw-bold" id="lblTieuDe">
+                <i class="bi bi-calendar-check me-2"></i>Quản Lý Phân Công Giảng Dạy
+            </h4>
+            <span class="text-muted small">Phân công giảng viên, môn học, lớp đào tạo theo học kỳ C500</span>
+        </div>
+        <div class="d-flex gap-2">
+            <a href="Excel/TaiTepMau?module=PhanCongGiangDay" class="btn btn-outline-secondary" id="btnTaiMauExcel">
+                <i class="bi bi-download me-1"></i>Tải Mẫu Excel
+            </a>
+            <a href="Excel/XuatDuLieu?module=PhanCongGiangDay" class="btn btn-outline-success" id="btnXuatExcel">
+                <i class="bi bi-file-earmark-excel me-1"></i>Xuất Excel
+            </a>
+            <a href="Excel/NhapExcel?module=PhanCongGiangDay" class="btn btn-success" id="btnNhapExcel">
+                <i class="bi bi-file-earmark-arrow-up me-1"></i>Nhập Excel
+            </a>
+            <a href="PhanCongGiangDay/ThemMoi" class="btn btn-primary" id="btnThemPhanCong">
+                <i class="bi bi-plus-circle-fill me-1"></i>Thêm Phân Công
+            </a>
+        </div>
+    </div>
+
+    <!-- Bảng danh sách Phân công -->
+    <div class="card shadow-sm border-0" id="pnlBangDuLieu">
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover table-striped align-middle mb-0" id="dgvDanhSachPhanCong">
+                    <thead class="table-light">
+                        <tr>
+                            <th class="ps-3" style="width: 50px;">#</th>
+                            <th style="width: 140px;">Mã Phân Công</th>
+                            <th>Giảng Viên Giảng Dạy</th>
+                            <th>Môn Học</th>
+                            <th>Lớp Đào Tạo</th>
+                            <th>Học Kỳ</th>
+                            <th>Năm Học</th>
+                            <th>Vai Trò</th>
+                            <th class="text-center" style="width: 110px;">Chủ Nhiệm</th>
+                            <th class="text-center" style="width: 140px;">Thao Tác</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @if (danhSachPhanCong == null || danhSachPhanCong.Count == 0)
+                        {
+                            <tr>
+                                <td colspan="10" class="text-center py-4 text-muted">
+                                    <i class="bi bi-inbox fs-2 d-block mb-2"></i>Chưa có phân công giảng dạy nào được ghi nhận
+                                </td>
+                            </tr>
+                        }
+                        else
+                        {
+                            int stt = 1;
+                            foreach (var pc in danhSachPhanCong)
+                            {
+                                <tr>
+                                    <td class="ps-3 fw-bold text-muted">@(stt++)</td>
+                                    <td><span class="badge bg-primary bg-opacity-10 text-primary font-monospace fs-6">@pc.MaPhanCong</span></td>
+                                    <td class="fw-semibold text-dark">@(pc.NhanSu?.HoVaTen ?? "-")</td>
+                                    <td><span class="badge bg-light text-dark border">@(pc.MonHoc?.TenMonHoc ?? "-")</span></td>
+                                    <td><span class="badge bg-light text-dark border">@(pc.LopHoc?.TenLop ?? "-")</span></td>
+                                    <td>@pc.HocKyNamHoc</td>
+                                    <td><span class="badge bg-light text-dark border">@pc.HocKyNamHoc</span></td>
+                                    <td><span class="badge bg-info text-dark">@pc.VaiTroGiangDay</span></td>
+                                    <td class="text-center">
+                                        @if (pc.LaChuNhiem)
+                                        {
+                                            <span class="badge bg-success">GVCN</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="text-muted">-</span>
+                                        }
+                                    </td>
+                                    <td class="text-center">
+                                        <div class="btn-group btn-group-sm">
+                                            <a href="PhanCongGiangDay/ChinhSua/@pc.PhanCongId" class="btn btn-outline-primary" id="btnSua_@pc.PhanCongId">
+                                                <i class="bi bi-pencil"></i>
+                                            </a>
+                                            <button type="button" class="btn btn-outline-danger" id="btnXoa_@pc.PhanCongId" @onclick="() => XoaPhanCong(pc.PhanCongId)">
+                                                <i class="bi bi-trash"></i>
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                            }
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    private List<PhanCongGiangDay>? danhSachPhanCong;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadData();
+    }
+
+    private async Task LoadData()
+    {
+        danhSachPhanCong = await PhanCongDichVu.LayDanhSachAsync();
+    }
+
+    private async Task XoaPhanCong(int id)
+    {
+        try
+        {
+            await PhanCongDichVu.XoaPhanCongAsync(id);
+            await LoadData();
+        }
+        catch
+        {
+        }
+    }
+}

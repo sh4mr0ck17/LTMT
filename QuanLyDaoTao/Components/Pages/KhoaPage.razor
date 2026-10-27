@@ -1,0 +1,214 @@
+@page "/Khoa"
+@inject IKhoaDichVu KhoaDichVu
+@inject NavigationManager Navigation
+
+<PageTitle>Quản lý Khoa Đào Tạo - Học Viện An Ninh Nhân Dân</PageTitle>
+
+<div class="container-fluid px-4 py-3" id="pnlDanhSachKhoa">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <div>
+            <h4 class="mb-1 text-primary fw-bold" id="lblTieuDe">
+                <i class="bi bi-bank me-2"></i>Quản Lý Khoa Đào Tạo
+            </h4>
+            <span class="text-muted small">Danh sách các khoa, bộ môn và chỉ tiêu đào tạo trực thuộc C500</span>
+        </div>
+        <div class="d-flex gap-2">
+            <a href="Excel/TaiTepMau?module=Khoa" class="btn btn-outline-secondary" id="btnTaiMauExcel">
+                <i class="bi bi-download me-1"></i>Tải Mẫu Excel
+            </a>
+            <a href="Excel/XuatDuLieu?module=Khoa" class="btn btn-outline-success" id="btnXuatExcel">
+                <i class="bi bi-file-earmark-excel me-1"></i>Xuất Excel
+            </a>
+            <a href="Excel/NhapExcel?module=Khoa" class="btn btn-success" id="btnNhapExcel">
+                <i class="bi bi-file-earmark-arrow-up me-1"></i>Nhập Excel
+            </a>
+            <button type="button" class="btn btn-primary" id="btnThemKhoa" @onclick="ThemKhoaMoi">
+                <i class="bi bi-plus-circle-fill me-1"></i>Thêm Mới Khoa
+            </button>
+        </div>
+    </div>
+
+    <!-- Bộ lọc & Tìm kiếm -->
+    <div class="card shadow-sm border-0 mb-4" id="pnlBoLoc">
+        <div class="card-body">
+            <div class="row g-3 align-items-center" id="frmTimKiem">
+                <div class="col-md-6">
+                    <div class="input-group">
+                        <span class="input-group-text"><i class="bi bi-search"></i></span>
+                        <input type="text" class="form-control" id="txtTimKiem" 
+                               placeholder="Tìm kiếm theo mã khoa, tên khoa..." 
+                               @bind="tuKhoa" @bind:event="oninput" @onkeyup="LocDuLieu" />
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <select class="form-select" id="cboLocTrangThai" @onchange="OnTrangThaiChanged">
+                        <option value="">-- Tất cả trạng thái --</option>
+                        <option value="true">Đang hoạt động</option>
+                        <option value="false">Đã khóa</option>
+                    </select>
+                </div>
+                <div class="col-md-3 d-flex gap-2">
+                    <button type="button" class="btn btn-primary" id="btnTimKiem" @onclick="LocDuLieu">
+                        <i class="bi bi-funnel me-1"></i>Tìm Kiếm
+                    </button>
+                    <button type="button" class="btn btn-outline-secondary" id="btnLamMoi" @onclick="LamMoi">
+                        <i class="bi bi-arrow-clockwise me-1"></i>Làm Mới
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bảng danh sách Khoa -->
+    <div class="card shadow-sm border-0" id="pnlBangDuLieu">
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover table-striped align-middle mb-0" id="dgvDanhSachKhoa">
+                    <thead class="table-light">
+                        <tr>
+                            <th class="ps-3" style="width: 50px;">#</th>
+                            <th style="width: 130px;">Mã Khoa</th>
+                            <th>Tên Khoa</th>
+                            <th>Số Điện Thoại</th>
+                            <th>Email</th>
+                            <th>Địa Điểm</th>
+                            <th class="text-center" style="width: 90px;">Bộ Môn</th>
+                            <th class="text-center" style="width: 90px;">Lớp Học</th>
+                            <th class="text-center" style="width: 90px;">Nhân Sự</th>
+                            <th class="text-center" style="width: 120px;">Trạng Thái</th>
+                            <th class="text-center" style="width: 170px;">Thao Tác</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @if (danhSachHienThi == null || danhSachHienThi.Count == 0)
+                        {
+                            <tr>
+                                <td colspan="11" class="text-center py-4 text-muted">
+                                    <i class="bi bi-inbox fs-2 d-block mb-2"></i>Không tìm thấy khoa nào trong hệ thống
+                                </td>
+                            </tr>
+                        }
+                        else
+                        {
+                            int stt = 1;
+                            foreach (var khoa in danhSachHienThi)
+                            {
+                                <tr>
+                                    <td class="ps-3 fw-bold text-muted">@(stt++)</td>
+                                    <td>
+                                        <span class="badge bg-primary bg-opacity-10 text-primary fw-bold font-monospace fs-6">@khoa.MaKhoa</span>
+                                    </td>
+                                    <td>
+                                        <a href="Khoa/ChiTiet/@khoa.KhoaId" class="fw-semibold text-decoration-none text-dark">
+                                            @khoa.TenKhoa
+                                        </a>
+                                        @if (!string.IsNullOrEmpty(khoa.MoTa))
+                                        {
+                                            <div class="text-muted small text-truncate" style="max-width: 320px;">@khoa.MoTa</div>
+                                        }
+                                    </td>
+                                    <td>@(khoa.SoDienThoai ?? "-")</td>
+                                    <td>@(khoa.Email ?? "-")</td>
+                                    <td>@(khoa.DiaDiem ?? "-")</td>
+                                    <td class="text-center"><span class="badge bg-secondary">@(khoa.BoMons?.Count ?? 0)</span></td>
+                                    <td class="text-center"><span class="badge bg-info text-dark">@(khoa.LopHocs?.Count ?? 0)</span></td>
+                                    <td class="text-center"><span class="badge bg-success">@(khoa.NhanSus?.Count ?? 0)</span></td>
+                                    <td class="text-center">
+                                        @if (khoa.CoHoatDong)
+                                        {
+                                            <span class="badge bg-success"><i class="bi bi-check-circle me-1"></i>Hoạt động</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="badge bg-secondary"><i class="bi bi-lock me-1"></i>Đã khóa</span>
+                                        }
+                                    </td>
+                                    <td class="text-center">
+                                        <div class="btn-group btn-group-sm" role="group">
+                                            <a href="Khoa/ChiTiet/@khoa.KhoaId" class="btn btn-outline-info" title="Xem chi tiết" id="btnXem_@khoa.KhoaId">
+                                                <i class="bi bi-eye"></i>
+                                            </a>
+                                            <a href="Khoa/ChinhSua/@khoa.KhoaId" class="btn btn-outline-primary" title="Chỉnh sửa" id="btnSua_@khoa.KhoaId">
+                                                <i class="bi bi-pencil"></i>
+                                            </a>
+                                            <button type="button" class="btn btn-outline-danger" title="Xóa khoa" id="btnXoa_@khoa.KhoaId"
+                                                    @onclick="() => XoaKhoa(khoa.KhoaId, khoa.TenKhoa)">
+                                                <i class="bi bi-trash"></i>
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                            }
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    private List<Khoa>? danhSachGoc;
+    private List<Khoa>? danhSachHienThi;
+    private string tuKhoa = "";
+    private bool? coHoatDongLoc = null;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadData();
+    }
+
+    private async Task LoadData()
+    {
+        danhSachGoc = await KhoaDichVu.LayDanhSachAsync();
+        LocDuLieu();
+    }
+
+    private void LocDuLieu()
+    {
+        if (danhSachGoc == null) return;
+        danhSachHienThi = danhSachGoc.Where(k =>
+            (string.IsNullOrWhiteSpace(tuKhoa) || k.MaKhoa.Contains(tuKhoa, StringComparison.OrdinalIgnoreCase) || k.TenKhoa.Contains(tuKhoa, StringComparison.OrdinalIgnoreCase)) &&
+            (!coHoatDongLoc.HasValue || k.CoHoatDong == coHoatDongLoc.Value)
+        ).ToList();
+    }
+
+    private void OnTrangThaiChanged(ChangeEventArgs e)
+    {
+        var val = e.Value?.ToString();
+        if (bool.TryParse(val, out bool b))
+        {
+            coHoatDongLoc = b;
+        }
+        else
+        {
+            coHoatDongLoc = null;
+        }
+        LocDuLieu();
+    }
+
+    private void LamMoi()
+    {
+        tuKhoa = "";
+        coHoatDongLoc = null;
+        LocDuLieu();
+    }
+
+    private void ThemKhoaMoi()
+    {
+        Navigation.NavigateTo("Khoa/ThemMoi");
+    }
+
+    private async Task XoaKhoa(int id, string ten)
+    {
+        try
+        {
+            await KhoaDichVu.XoaKhoaAsync(id);
+            await LoadData();
+        }
+        catch
+        {
+            // Báo lỗi ràng buộc
+        }
+    }
+}

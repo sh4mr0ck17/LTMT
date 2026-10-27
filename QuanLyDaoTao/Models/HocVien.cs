@@ -1,9 +1,10 @@
 using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace QuanLyDaoTao.Models;
 
 /// <summary>
-/// Thực thể đại diện cho Học viên tham gia đào tạo.
+/// Thực thể đại diện cho Học viên tham gia đào tạo (Đã gộp tinh gọn).
 /// </summary>
 public class HocVien
 {
@@ -70,12 +71,27 @@ public class HocVien
     public virtual LopHoc? LopHoc { get; set; }
 
     /// <summary>
-    /// Trạng thái hoạt động / theo học.
+    /// Trạng thái theo học (Đang học, Bảo lưu, Đã tốt nghiệp, Thôi học).
     /// </summary>
-    public bool CoHoatDong { get; set; } = true;
+    [StringLength(50)]
+    public string TrangThai { get; set; } = "Đang học";
 
     /// <summary>
     /// Ngày tạo bản ghi.
     /// </summary>
     public DateTime NgayTao { get; set; } = DateTime.UtcNow;
+
+    // =========================================================================
+    // CÁC THUỘC TÍNH ÁNH XẠ CHUYỂN TIẾP (TƯƠNG THÍCH HOÀN TOÀN)
+    // =========================================================================
+
+    /// <summary>
+    /// Trạng thái hoạt động suy diễn từ TrangThai.
+    /// </summary>
+    [NotMapped]
+    public bool CoHoatDong
+    {
+        get => TrangThai == "Đang học";
+        set => TrangThai = value ? "Đang học" : "Thôi học";
+    }
 }

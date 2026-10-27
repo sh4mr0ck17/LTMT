@@ -148,3 +148,16 @@ C:\Users\GIGABYTE G5 KD\Desktop\Code\LTMT3\QuanLyDaoTao\obj\Debug\net8.0\QuanLyD
 C:\Users\GIGABYTE G5 KD\Desktop\Code\LTMT3\QuanLyDaoTao\obj\Debug\net8.0\QuanLyDaoTao.genruntimeconfig.cache
 C:\Users\GIGABYTE G5 KD\Desktop\Code\LTMT3\QuanLyDaoTao\obj\Debug\net8.0\ref\QuanLyDaoTao.dll
 C:\Users\GIGABYTE G5 KD\Desktop\Code\LTMT3\QuanLyDaoTao\obj\Debug\net8.0\QuanLyDaoTao.sourcelink.json
+C:\Users\GIGABYTE G5 KD\Desktop\Code\LTMT3\QuanLyDaoTao\obj\Debug\net8.0\QuanLyDaoTao.MvcApplicationPartsAssemblyInfo.cs
+C:\Users\GIGABYTE G5 KD\Desktop\Code\LTMT3\QuanLyDaoTao\bin\Debug\net8.0\Microsoft.AspNetCore.Authentication.JwtBearer.dll
+C:\Users\GIGABYTE G5 KD\Desktop\Code\LTMT3\QuanLyDaoTao\bin\Debug\net8.0\Microsoft.IdentityModel.Abstractions.dll
+C:\Users\GIGABYTE G5 KD\Desktop\Code\LTMT3\QuanLyDaoTao\bin\Debug\net8.0\Microsoft.IdentityModel.JsonWebTokens.dll
+C:\Users\GIGABYTE G5 KD\Desktop\Code\LTMT3\QuanLyDaoTao\bin\Debug\net8.0\Microsoft.IdentityModel.Logging.dll
+C:\Users\GIGABYTE G5 KD\Desktop\Code\LTMT3\QuanLyDaoTao\bin\Debug\net8.0\Microsoft.IdentityModel.Protocols.dll
+C:\Users\GIGABYTE G5 KD\Desktop\Code\LTMT3\QuanLyDaoTao\bin\Debug\net8.0\Microsoft.IdentityModel.Protocols.OpenIdConnect.dll
+C:\Users\GIGABYTE G5 KD\Desktop\Code\LTMT3\QuanLyDaoTao\bin\Debug\net8.0\Microsoft.IdentityModel.Tokens.dll
+C:\Users\GIGABYTE G5 KD\Desktop\Code\LTMT3\QuanLyDaoTao\bin\Debug\net8.0\Microsoft.OpenApi.dll
+C:\Users\GIGABYTE G5 KD\Desktop\Code\LTMT3\QuanLyDaoTao\bin\Debug\net8.0\Swashbuckle.AspNetCore.Swagger.dll
+C:\Users\GIGABYTE G5 KD\Desktop\Code\LTMT3\QuanLyDaoTao\bin\Debug\net8.0\Swashbuckle.AspNetCore.SwaggerGen.dll
+C:\Users\GIGABYTE G5 KD\Desktop\Code\LTMT3\QuanLyDaoTao\bin\Debug\net8.0\Swashbuckle.AspNetCore.SwaggerUI.dll
+C:\Users\GIGABYTE G5 KD\Desktop\Code\LTMT3\QuanLyDaoTao\bin\Debug\net8.0\System.IdentityModel.Tokens.Jwt.dll

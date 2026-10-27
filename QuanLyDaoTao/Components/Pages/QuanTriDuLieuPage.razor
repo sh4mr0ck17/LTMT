@@ -1,0 +1,441 @@
+@page "/QuanTriDuLieu"
+@inject IQuanTriDuLieuDichVu QuanTriDuLieuDichVu
+@inject NavigationManager Navigation
+@inject IJSRuntime JSRuntime
+
+<PageTitle>Quản trị DB Trực tuyến (Live CRUD) - C500</PageTitle>
+
+<div class="container-fluid px-4 py-3" id="pnlQuanTriDuLieu">
+    <!-- Banner tiêu đề Quản trị DB trực tiếp -->
+    <div class="cand-banner-header p-3 mb-3 d-flex flex-column flex-xl-row justify-content-between align-items-xl-center gap-3">
+        <div class="d-flex align-items-center">
+            <img src="images/logo_badge.png" alt="Logo C500" class="logo-cand-nav me-3" />
+            <div>
+                <div class="d-flex align-items-center gap-2">
+                    <span class="badge badge-cand-gold">BLAZOR LIVE STUDIO</span>
+                    <span class="badge badge-cand-red">FULL DATABASE CRUD (+/- &amp; UNDO/REDO)</span>
+                </div>
+                <h4 class="mb-0 fw-bold text-white mt-1" id="lblTieuDe">
+                    <i class="bi bi-database-fill-gear me-2"></i>TRÌNH QUẢN TRỊ &amp; TÙY BIẾN DỮ LIỆU TRỰC TIẾP: @(duLieuBang?.TenHienThi?.ToUpper() ?? tenBangHienTai.ToUpper())
+                </h4>
+                <small style="color: #F2F0A5;">Thao tác trực tiếp trên giao diện Blazor: Thêm/Bớt <strong>[+] / [-]</strong>, Xóa <strong>Delete</strong>, Tùy biến cột và áp dụng thẳng xuống SQLite DB</small>
+            </div>
+        </div>
+
+        <div class="d-flex flex-wrap gap-2 align-items-center">
+            <button type="button" class="btn btn-warning fw-bold text-dark shadow-sm" id="btnThemDongPlus" @onclick="ThemDongMoi">
+                <i class="bi bi-plus-lg me-1"></i>Thêm Dòng [+]
+            </button>
+            <button type="button" class="btn btn-danger fw-bold shadow-sm" id="btnXoaDongMinus" @onclick="XoaDongCuoi" disabled="@(duLieuBang?.DanhSachDong.Count == 0)">
+                <i class="bi bi-dash-lg me-1"></i>Bớt Dòng Cuối [-]
+            </button>
+            <button type="button" class="btn btn-info fw-bold text-dark shadow-sm" id="btnMoModalTruongTuyChinh" @onclick="() => showModalCustomCols = true">
+                <i class="bi bi-columns-gap me-1"></i>+/- Cột Tùy Chỉnh (@(duLieuBang?.DanhSachTruongTuyChinh.Count ?? 0))
+            </button>
+            <button type="button" class="btn btn-success fw-bold shadow-sm" id="btnLuuTatCaThayDoi" @onclick="LuuTatCa">
+                <i class="bi bi-cloud-check-fill me-1"></i>Lưu Dữ Liệu
+            </button>
+        </div>
+    </div>
+
+    <!-- Thanh chuyển đổi giữa 11 nhóm quản lý -->
+    <div class="card shadow-sm border-0 mb-3" id="pnlChonNhomQuanLy">
+        <div class="card-body py-2 px-3">
+            <div class="d-flex flex-wrap gap-2 align-items-center">
+                <span class="fw-bold text-primary small text-uppercase me-1"><i class="bi bi-layers-fill me-1"></i>Chọn Nhóm DB:</span>
+                @if (danhSachBang != null)
+                {
+                    @foreach (var b in danhSachBang)
+                    {
+                        bool dangChon = string.Equals(b.TenBang, tenBangHienTai, StringComparison.OrdinalIgnoreCase);
+                        <button type="button" class="btn btn-sm @(dangChon ? "btn-primary fw-bold shadow-sm" : "btn-outline-primary")"
+                                @onclick="() => ChonBang(b.TenBang)">
+                            <i class="bi @b.BieuTuong me-1"></i>@b.TenHienThi
+                            <span class="badge @(dangChon ? "bg-warning text-dark" : "bg-secondary") ms-1">@b.SoBanGhi</span>
+                        </button>
+                    }
+                }
+            </div>
+        </div>
+    </div>
+
+    @if (thongBao != null)
+    {
+        <div class="alert alert-@(thongBaoThanhCong ? "success" : "danger") alert-dismissible fade show py-2" role="alert">
+            <i class="bi bi-@(thongBaoThanhCong ? "check-circle-fill" : "exclamation-triangle-fill") me-2"></i>@thongBao
+            <button type="button" class="btn-close" @onclick="() => thongBao = null"></button>
+        </div>
+    }
+
+    <!-- Bảng dữ liệu Spreadsheet Live-Editable -->
+    <div class="card shadow-sm border-0" id="pnlBangLiveCrud">
+        <div class="card-body p-0">
+            @if (isLoading)
+            {
+                <div class="text-center py-5">
+                    <div class="spinner-border text-primary" role="status"></div>
+                    <p class="text-muted mt-2">Đang tải dữ liệu nhóm @tenBangHienTai...</p>
+                </div>
+            }
+            else if (duLieuBang != null)
+            {
+                <div class="table-responsive" style="max-height: 68vh;">
+                    <table class="table table-bordered table-hover align-middle mb-0" id="dgvBangDuLieuTrucTuyen">
+                        <thead class="table-light sticky-top" style="z-index: 5;">
+                            <tr>
+                                <th class="text-center" style="width: 130px; min-width: 130px;">
+                                    <span class="small fw-bold">THAO TÁC</span>
+                                    <button type="button" class="btn btn-sm btn-success py-0 px-2 ms-1 fw-bold" @onclick="ThemDongMoi" title="Thêm dòng [+]">+</button>
+                                </th>
+                                @foreach (var cot in duLieuBang.DanhSachCot)
+                                {
+                                    <th style="min-width: @(cot.LaKhoaChinh ? "75px" : "160px");">
+                                        <div class="d-flex align-items-center justify-content-between">
+                                            <span>
+                                                @cot.TenHienThi
+                                                @if (cot.LaBatBuoc && !cot.LaKhoaChinh)
+                                                {
+                                                    <span class="text-danger">*</span>
+                                                }
+                                            </span>
+                                            @if (cot.LaTruongTuyChinh)
+                                            {
+                                                <button type="button" class="btn btn-outline-danger btn-sm py-0 px-1 fw-bold"
+                                                        @onclick="() => XoaCotTuyChinh(cot.TruongTuyChinhId ?? 0)" title="Xóa cột tùy chỉnh [-]">&minus;</button>
+                                            }
+                                        </div>
+                                    </th>
+                                }
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @if (duLieuBang.DanhSachDong.Count == 0)
+                            {
+                                <tr>
+                                    <td colspan="@(duLieuBang.DanhSachCot.Count + 1)" class="text-center py-4 text-muted">
+                                        Chưa có bản ghi nào. Bấm nút <strong>"Thêm Dòng [+]"</strong> ở góc trên để tạo bản ghi mới!
+                                    </td>
+                                </tr>
+                            }
+                            else
+                            {
+                                @for (int rIdx = 0; rIdx < duLieuBang.DanhSachDong.Count; rIdx++)
+                                {
+                                    var dong = duLieuBang.DanhSachDong[rIdx];
+                                    var pkVal = dong.TryGetValue(duLieuBang.TenKhoaChinh, out var v) ? v ?? "" : "";
+                                    int rowIndex = rIdx;
+
+                                    <tr>
+                                        <td class="text-center bg-light">
+                                            <div class="btn-group btn-group-sm">
+                                                <button type="button" class="btn btn-outline-success" @onclick="() => LuuDong(pkVal, rowIndex)" title="Lưu dòng này">
+                                                    <i class="bi bi-floppy-fill"></i>
+                                                </button>
+                                                <button type="button" class="btn btn-danger" @onclick="() => XoaDong(pkVal)" title="Xóa dòng này [-]">
+                                                    <i class="bi bi-trash"></i>
+                                                </button>
+                                            </div>
+                                        </td>
+                                        @foreach (var cot in duLieuBang.DanhSachCot)
+                                        {
+                                            var colCode = cot.MaCot;
+                                            var cellVal = dong.TryGetValue(colCode, out var cv) ? cv ?? "" : "";
+
+                                            <td>
+                                                @if (cot.LaKhoaChinh)
+                                                {
+                                                    <span class="badge bg-light text-dark border font-monospace">@cellVal</span>
+                                                }
+                                                else if (cot.KieuDuLieu == "Logic")
+                                                {
+                                                    bool isChecked = cellVal.Equals("true", StringComparison.OrdinalIgnoreCase) || cellVal == "1";
+                                                    <div class="form-check form-switch d-flex justify-content-center">
+                                                        <input type="checkbox" class="form-check-input" checked="@isChecked"
+                                                               @onchange="(e) => OnCheckboxChanged(rowIndex, colCode, e)" />
+                                                    </div>
+                                                }
+                                                else if (cot.KieuDuLieu == "KhoaNgoai" || cot.KieuDuLieu == "DanhSach")
+                                                {
+                                                    <select class="form-select form-select-sm" value="@cellVal"
+                                                            @onchange="(e) => OnInputChanged(rowIndex, colCode, e)">
+                                                        <option value="">-- Trống --</option>
+                                                        @foreach (var opt in cot.DanhSachLuaChon)
+                                                        {
+                                                            <option value="@opt.GiaTri">@opt.NhanHienThi</option>
+                                                        }
+                                                    </select>
+                                                }
+                                                else if (cot.KieuDuLieu == "NgayThang")
+                                                {
+                                                    <input type="date" class="form-control form-control-sm" value="@cellVal"
+                                                           @onchange="(e) => OnInputChanged(rowIndex, colCode, e)" />
+                                                }
+                                                else if (cot.KieuDuLieu == "SoNguyen")
+                                                {
+                                                    <input type="number" class="form-control form-control-sm" value="@cellVal"
+                                                           @onchange="(e) => OnInputChanged(rowIndex, colCode, e)" />
+                                                }
+                                                else
+                                                {
+                                                    <input type="text" class="form-control form-control-sm" value="@cellVal"
+                                                           @onchange="(e) => OnInputChanged(rowIndex, colCode, e)" />
+                                                }
+                                            </td>
+                                        }
+                                    </tr>
+                                }
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+<!-- Modal thêm cột tùy chỉnh -->
+@if (showModalCustomCols)
+{
+    <div class="modal fade show d-block" tabindex="-1" style="background: rgba(0,0,0,0.5);">
+        <div class="modal-dialog">
+            <div class="modal-content border-0 shadow">
+                <div class="modal-header bg-primary text-white">
+                    <h5 class="modal-title fw-bold">Thêm Trường (Cột) Mới Vào Bảng @tenBangHienTai</h5>
+                    <button type="button" class="btn-close btn-close-white" @onclick="() => showModalCustomCols = false"></button>
+                </div>
+                <div class="modal-body p-4">
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Mã trường (không dấu) *</label>
+                        <input type="text" class="form-control" @bind="newColCode" placeholder="VD: GhiChuNoiBo" />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Tên hiển thị cột *</label>
+                        <input type="text" class="form-control" @bind="newColName" placeholder="VD: Ghi Chú Nội Bộ" />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Kiểu dữ liệu</label>
+                        <select class="form-select" @bind="newColType">
+                            <option value="VanBan">Văn bản</option>
+                            <option value="SoNguyen">Số nguyên</option>
+                            <option value="NgayThang">Ngày tháng</option>
+                            <option value="Logic">Có / Không</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" @onclick="() => showModalCustomCols = false">Hủy</button>
+                    <button type="button" class="btn btn-primary" @onclick="ThemCotMoi">Thêm Cột</button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    private string tenBangHienTai = "Khoa";
+    private List<ThongTinBangHeThong>? danhSachBang;
+    private DuLieuBangTrucTuyen? duLieuBang;
+    private bool isLoading = true;
+    private string? thongBao;
+    private bool thongBaoThanhCong = true;
+
+    private bool showModalCustomCols = false;
+    private string newColCode = "";
+    private string newColName = "";
+    private string newColType = "VanBan";
+
+    protected override async Task OnInitializedAsync()
+    {
+        danhSachBang = await QuanTriDuLieuDichVu.LayDanhSachBangHeThongAsync();
+        await LoadTable(tenBangHienTai);
+    }
+
+    private async Task ChonBang(string bang)
+    {
+        tenBangHienTai = bang;
+        await LoadTable(bang);
+    }
+
+    private async Task LoadTable(string bang)
+    {
+        isLoading = true;
+        thongBao = null;
+        try
+        {
+            duLieuBang = await QuanTriDuLieuDichVu.LayDuLieuBangTrucTuyenAsync(bang);
+        }
+        catch (Exception ex)
+        {
+            thongBao = ex.Message;
+            thongBaoThanhCong = false;
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private void OnInputChanged(int rowIndex, string colCode, ChangeEventArgs e)
+    {
+        if (duLieuBang != null && rowIndex < duLieuBang.DanhSachDong.Count)
+        {
+            duLieuBang.DanhSachDong[rowIndex][colCode] = e.Value?.ToString();
+        }
+    }
+
+    private void OnCheckboxChanged(int rowIndex, string colCode, ChangeEventArgs e)
+    {
+        if (duLieuBang != null && rowIndex < duLieuBang.DanhSachDong.Count)
+        {
+            bool isChecked = e.Value is bool b && b;
+            duLieuBang.DanhSachDong[rowIndex][colCode] = isChecked ? "true" : "false";
+        }
+    }
+
+    private async Task LuuDong(string pk, int rowIndex)
+    {
+        if (duLieuBang == null || rowIndex >= duLieuBang.DanhSachDong.Count) return;
+        var rowData = duLieuBang.DanhSachDong[rowIndex];
+        try
+        {
+            await QuanTriDuLieuDichVu.CapNhatNhanhBanGhiAsync(tenBangHienTai, pk, rowData, "Admin");
+            thongBao = $"Đã lưu bản ghi #{pk} vào cơ sở dữ liệu thành công!";
+            thongBaoThanhCong = true;
+        }
+        catch (Exception ex)
+        {
+            thongBao = ex.Message;
+            thongBaoThanhCong = false;
+        }
+    }
+
+    private async Task LuuTatCa()
+    {
+        if (duLieuBang == null) return;
+        int saved = 0;
+        foreach (var dong in duLieuBang.DanhSachDong)
+        {
+            var pk = dong.TryGetValue(duLieuBang.TenKhoaChinh, out var v) ? v ?? "" : "";
+            if (!string.IsNullOrEmpty(pk))
+            {
+                try
+                {
+                    await QuanTriDuLieuDichVu.CapNhatNhanhBanGhiAsync(tenBangHienTai, pk, dong, "Admin");
+                    saved++;
+                }
+                catch { }
+            }
+        }
+        thongBao = $"Đã cập nhật thành công {saved} bản ghi trực tiếp lên cơ sở dữ liệu!";
+        thongBaoThanhCong = true;
+    }
+
+    private async Task ThemDongMoi()
+    {
+        var duLieuMacDinh = new Dictionary<string, string?>();
+        if (tenBangHienTai == "Khoa")
+        {
+            var rnd = new Random().Next(100, 999);
+            duLieuMacDinh["MaKhoa"] = $"K_{rnd}";
+            duLieuMacDinh["TenKhoa"] = $"Khoa Mới {rnd}";
+            duLieuMacDinh["CoHoatDong"] = "true";
+        }
+        else if (tenBangHienTai == "BoMon")
+        {
+            var rnd = new Random().Next(100, 999);
+            duLieuMacDinh["MaBoMon"] = $"BM_{rnd}";
+            duLieuMacDinh["TenBoMon"] = $"Bộ Môn Mới {rnd}";
+            var k = (await QuanTriDuLieuDichVu.LayDuLieuBangTrucTuyenAsync("Khoa")).DanhSachDong.FirstOrDefault();
+            duLieuMacDinh["KhoaId"] = k != null && k.TryGetValue("KhoaId", out var kid) ? kid : "1";
+        }
+        else
+        {
+            var rnd = new Random().Next(100, 999);
+            duLieuMacDinh["CoHoatDong"] = "true";
+        }
+
+        try
+        {
+            await QuanTriDuLieuDichVu.ThemNhanhBanGhiAsync(tenBangHienTai, duLieuMacDinh, "Admin");
+            await LoadTable(tenBangHienTai);
+            thongBao = "Đã thêm 1 dòng mới vào bảng!";
+            thongBaoThanhCong = true;
+        }
+        catch (Exception ex)
+        {
+            thongBao = ex.Message;
+            thongBaoThanhCong = false;
+        }
+    }
+
+    private async Task XoaDong(string pk)
+    {
+        try
+        {
+            await QuanTriDuLieuDichVu.XoaNhanhBanGhiAsync(tenBangHienTai, pk, "Admin");
+            await LoadTable(tenBangHienTai);
+            thongBao = $"Đã xóa bản ghi #{pk} khỏi cơ sở dữ liệu!";
+            thongBaoThanhCong = true;
+        }
+        catch (Exception ex)
+        {
+            thongBao = ex.Message;
+            thongBaoThanhCong = false;
+        }
+    }
+
+    private async Task XoaDongCuoi()
+    {
+        if (duLieuBang == null || duLieuBang.DanhSachDong.Count == 0) return;
+        var lastRow = duLieuBang.DanhSachDong.Last();
+        var pk = lastRow.TryGetValue(duLieuBang.TenKhoaChinh, out var v) ? v ?? "" : "";
+        if (!string.IsNullOrEmpty(pk))
+        {
+            await XoaDong(pk);
+        }
+    }
+
+    private async Task ThemCotMoi()
+    {
+        if (string.IsNullOrWhiteSpace(newColCode) || string.IsNullOrWhiteSpace(newColName)) return;
+        try
+        {
+            await QuanTriDuLieuDichVu.ThemTruongTuyChinhAsync(new TruongTuyChinh
+            {
+                TenBang = tenBangHienTai,
+                MaTruong = newColCode.Trim(),
+                TenHienThi = newColName.Trim(),
+                KieuDuLieu = newColType,
+                CoHoatDong = true
+            }, "Admin");
+            showModalCustomCols = false;
+            newColCode = "";
+            newColName = "";
+            await LoadTable(tenBangHienTai);
+            thongBao = "Đã tạo cột tùy chỉnh mới!";
+            thongBaoThanhCong = true;
+        }
+        catch (Exception ex)
+        {
+            thongBao = ex.Message;
+            thongBaoThanhCong = false;
+        }
+    }
+
+    private async Task XoaCotTuyChinh(int id)
+    {
+        if (id <= 0) return;
+        try
+        {
+            await QuanTriDuLieuDichVu.XoaTruongTuyChinhAsync(id, "Admin");
+            await LoadTable(tenBangHienTai);
+            thongBao = "Đã xóa cột tùy chỉnh!";
+            thongBaoThanhCong = true;
+        }
+        catch (Exception ex)
+        {
+            thongBao = ex.Message;
+            thongBaoThanhCong = false;
+        }
+    }
+}

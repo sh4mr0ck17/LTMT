@@ -1,0 +1,71 @@
+name: C500 QuanLyDaoTao CI/CD Pipeline
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+
+jobs:
+  # ==========================================
+  # GIAI ĐOẠN 1: TÍCH HỢP LIÊN TỤC (CI - BUILD & TEST)
+  # ==========================================
+  build-and-test:
+    name: "CI: Build, Inspect & Full Test Suite"
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout mã nguồn
+      uses: actions/checkout@v4
+
+    - name: Thiết lập .NET 8 SDK
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: '8.0.x'
+
+    - name: Cache NuGet packages
+      uses: actions/cache@v4
+      with:
+        path: ~/.nuget/packages
+        key: ${{ runner.os }}-nuget-${{ hashFiles('**/*.csproj') }}
+        restore-keys: |
+          ${{ runner.os }}-nuget-
+
+    - name: Khôi phục phụ thuộc (dotnet restore)
+      run: dotnet restore
+
+    - name: Kiểm tra biên dịch nghiêm ngặt (dotnet build --warnaserror)
+      run: dotnet build --configuration Release --no-restore --warnaserror
+
+    - name: Chạy toàn bộ 97+ bài kiểm thử tự động (dotnet test)
+      run: |
+        dotnet test --configuration Release --no-build --verbosity normal \
+          --collect:"XPlat Code Coverage" \
+          --results-directory ./TestResults
+
+    - name: Quét lỗ hổng bảo mật các gói thư viện (Security Scan)
+      run: dotnet list package --vulnerable --include-transitive
+
+  # ==========================================
+  # GIAI ĐOẠN 2: TRIỂN KHAI LIÊN TỤC (CD - DOCKER CONTAINER)
+  # ==========================================
+  docker-build:
+    name: "CD: Build & Validate Docker Container"
+    needs: build-and-test
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+
+    steps:
+    - name: Checkout mã nguồn
+      uses: actions/checkout@v4
+
+    - name: Thiết lập Docker Buildx
+      uses: docker/setup-buildx-action@v3
+
+    - name: Đóng gói Docker Image ứng dụng
+      uses: docker/build-push-action@v5
+      with:
+        context: .
+        file: ./Dockerfile
+        push: false
+        tags: c500-quanlydaotao:latest
