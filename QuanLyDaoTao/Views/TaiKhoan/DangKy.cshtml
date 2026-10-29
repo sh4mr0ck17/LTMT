@@ -1,0 +1,100 @@
+@model QuanLyDaoTao.ViewModels.TaiKhoan.DangKyViewModel
+@{
+    ViewData["Title"] = "Cổng đăng ký tài khoản mới";
+    Layout = "_Layout";
+}
+
+<div class="row justify-content-center mt-3 mb-5" id="pnlDangKy">
+    <div class="col-md-6 col-lg-5">
+        <div class="card shadow border-0 overflow-hidden" style="border-top: 4px solid #FFD700 !important;">
+            <div class="card-header text-white text-center py-4" style="background: linear-gradient(135deg, #013E10 0%, #047920 60%, #025917 100%); border-bottom: 3px solid #FFD700;">
+                <img src="~/images/logo_badge.png" alt="Logo Học viện An ninh Nhân dân" class="logo-cand-lg mb-3" />
+                <h5 class="mb-1 fw-bold text-uppercase" id="lblTieuDe" style="letter-spacing: 0.6px; color: #FFFFFF;">
+                    Học Viện An Ninh Nhân Dân
+                </h5>
+                <div class="small fw-semibold" style="color: #F2F0A5;">
+                    CỔNG ĐĂNG KÝ TÀI KHOẢN TRUY CẬP HỆ THỐNG (C500)
+                </div>
+            </div>
+            <div class="card-body p-4 bg-white">
+                <div class="alert alert-info py-2 px-3 small mb-3 border-0 bg-info bg-opacity-10 text-dark">
+                    <i class="bi bi-info-circle-fill text-primary me-2"></i>
+                    Đăng ký tài khoản dành cho cán bộ, giảng viên để truy cập không gian làm việc nghiệp vụ đào tạo.
+                </div>
+
+                <form asp-action="DangKy" method="post" id="frmDangKy">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" asp-for="DuongDanQuayLai" />
+
+                    <div asp-validation-summary="ModelOnly" class="alert alert-danger" id="lblThongBaoLoi" role="alert"></div>
+
+                    <div class="mb-3">
+                        <label asp-for="HoVaTen" class="form-label fw-bold text-dark">Họ và tên cán bộ <span class="text-danger">*</span></label>
+                        <div class="input-group">
+                            <span class="input-group-text bg-light text-primary"><i class="bi bi-person-fill"></i></span>
+                            <input asp-for="HoVaTen" class="form-control" id="txtHoVaTen" placeholder="Ví dụ: Nguyễn Văn A" autofocus />
+                        </div>
+                        <span asp-validation-for="HoVaTen" class="text-danger small"></span>
+                    </div>
+
+                    <div class="mb-3">
+                        <label asp-for="Email" class="form-label fw-bold text-dark">Địa chỉ Email công vụ / liên hệ <span class="text-danger">*</span></label>
+                        <div class="input-group">
+                            <span class="input-group-text bg-light text-primary"><i class="bi bi-envelope-fill"></i></span>
+                            <input asp-for="Email" class="form-control" id="txtEmail" placeholder="canbo@c500.edu.vn" />
+                        </div>
+                        <span asp-validation-for="Email" class="text-danger small"></span>
+                    </div>
+
+                    <div class="mb-3">
+                        <label asp-for="SoDienThoai" class="form-label fw-semibold text-dark">Số điện thoại liên hệ (tùy chọn)</label>
+                        <div class="input-group">
+                            <span class="input-group-text bg-light text-primary"><i class="bi bi-telephone-fill"></i></span>
+                            <input asp-for="SoDienThoai" class="form-control" id="txtSoDienThoai" placeholder="0912345678" />
+                        </div>
+                        <span asp-validation-for="SoDienThoai" class="text-danger small"></span>
+                    </div>
+
+                    <div class="row g-2 mb-3">
+                        <div class="col-md-6">
+                            <label asp-for="MatKhau" class="form-label fw-bold text-dark">Mật khẩu mới <span class="text-danger">*</span></label>
+                            <div class="input-group">
+                                <span class="input-group-text bg-light text-primary"><i class="bi bi-key-fill"></i></span>
+                                <input asp-for="MatKhau" class="form-control" id="txtMatKhau" placeholder="Ít nhất 6 ký tự" />
+                            </div>
+                            <span asp-validation-for="MatKhau" class="text-danger small"></span>
+                        </div>
+                        <div class="col-md-6">
+                            <label asp-for="XacNhanMatKhau" class="form-label fw-bold text-dark">Xác nhận mật khẩu <span class="text-danger">*</span></label>
+                            <div class="input-group">
+                                <span class="input-group-text bg-light text-primary"><i class="bi bi-shield-check"></i></span>
+                                <input asp-for="XacNhanMatKhau" class="form-control" id="txtXacNhanMatKhau" placeholder="Nhập lại mật khẩu" />
+                            </div>
+                            <span asp-validation-for="XacNhanMatKhau" class="text-danger small"></span>
+                        </div>
+                    </div>
+
+                    <div class="d-grid gap-2 mt-4">
+                        <button type="submit" class="btn btn-success btn-lg fw-bold" id="btnDangKy">
+                            <i class="bi bi-person-check-fill me-2"></i>HOÀN TẤT ĐĂNG KÝ &amp; VÀO HỆ THỐNG
+                        </button>
+                    </div>
+
+                    <div class="text-center mt-3 pt-3 border-top">
+                        <span class="text-muted small">Đã có tài khoản hệ thống?</span>
+                        <a asp-action="DangNhap" asp-route-duongDanQuayLai="@Model.DuongDanQuayLai" class="btn btn-outline-primary btn-sm w-100 mt-2 fw-semibold" id="btnChuyenSangDangNhap">
+                            <i class="bi bi-box-arrow-in-right me-1"></i>Đăng nhập bằng tài khoản hiện có
+                        </a>
+                    </div>
+                </form>
+            </div>
+            <div class="card-footer bg-light text-center py-3 text-muted small border-top">
+                <span>Hệ thống phân quyền tự động: Tài khoản đăng ký sẽ nhận quyền <strong>Cán bộ nghiệp vụ (User)</strong></span>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

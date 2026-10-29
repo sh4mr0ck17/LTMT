@@ -1,3 +1,5 @@
+@using QuanLyDaoTao.Models
+@using Microsoft.AspNetCore.Components.Authorization
 @inject NavigationManager NavigationManager
 
 <div class="app-sidebar-header">
@@ -111,26 +113,30 @@
             </a>
         </li>
 
-        <!-- NHÓM 6: HỆ THỐNG & TÙY BIẾN DB (ADMINISTRATOR) -->
-        <li class="tree-category mt-2">
-            <i class="bi bi-shield-lock-fill"></i><span>Hệ Thống &amp; DB Live</span>
-        </li>
-        <li>
-            <NavLink href="QuanTriDuLieu" class="tree-link fw-bold" style="color: #FFD700 !important;" id="btnMenuQuanTriDb">
-                <span><i class="bi bi-database-fill-gear me-2"></i>Tùy Biến DB (Live CRUD)</span>
-                <span class="badge bg-danger">Studio</span>
-            </NavLink>
-        </li>
-        <li>
-            <NavLink href="TaiKhoan/DanhSach" class="tree-link">
-                <span><i class="bi bi-people-fill me-2"></i>Quản lý Tài khoản</span>
-            </NavLink>
-        </li>
-        <li>
-            <NavLink href="NhatKy" class="tree-link">
-                <span><i class="bi bi-clock-history me-2"></i>Nhật ký kiểm toán</span>
-            </NavLink>
-        </li>
+        <AuthorizeView Roles="@VaiTroMacDinh.QuanTriVien">
+            <Authorized>
+                <!-- NHÓM 6: HỆ THỐNG & TÙY BIẾN DB (ADMINISTRATOR) -->
+                <li class="tree-category mt-2">
+                    <i class="bi bi-shield-lock-fill"></i><span>Hệ Thống &amp; DB Live</span>
+                </li>
+                <li>
+                    <NavLink href="QuanTriDuLieu" class="tree-link fw-bold" style="color: #FFD700 !important;" id="btnMenuQuanTriDb">
+                        <span><i class="bi bi-database-fill-gear me-2"></i>Tùy Biến DB (Live CRUD)</span>
+                        <span class="badge bg-danger">Studio</span>
+                    </NavLink>
+                </li>
+                <li>
+                    <NavLink href="TaiKhoan/DanhSach" class="tree-link">
+                        <span><i class="bi bi-people-fill me-2"></i>Quản lý Tài khoản</span>
+                    </NavLink>
+                </li>
+                <li>
+                    <NavLink href="NhatKy" class="tree-link">
+                        <span><i class="bi bi-clock-history me-2"></i>Nhật ký kiểm toán</span>
+                    </NavLink>
+                </li>
+            </Authorized>
+        </AuthorizeView>
     </ul>
 </div>
 

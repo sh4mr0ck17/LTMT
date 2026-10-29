@@ -27,45 +27,60 @@ public static class DuLieuKhoiTao
         await context.Database.MigrateAsync();
 
         // 1. Khởi tạo danh sách các vai trò
-        string[] danhSachVaiTro = { VaiTroMacDinh.QuanTriVien, VaiTroMacDinh.QuanLyDaoTao, VaiTroMacDinh.NguoiXem };
+        string[] danhSachVaiTro = { VaiTroMacDinh.QuanTriVien, VaiTroMacDinh.QuanLyDaoTao, VaiTroMacDinh.NguoiXem, VaiTroMacDinh.NguoiDung };
         foreach (var tenVaiTro in danhSachVaiTro)
         {
-            if (!await quanLyVaiTro.RoleExistsAsync(tenVaiTro))
+            try
             {
-                var vaiTroMoi = new VaiTro(tenVaiTro)
+                if (!await quanLyVaiTro.RoleExistsAsync(tenVaiTro))
                 {
-                    MoTa = tenVaiTro switch
+                    var vaiTroMoi = new VaiTro(tenVaiTro)
                     {
-                        VaiTroMacDinh.QuanTriVien => "Quản trị viên toàn quyền hệ thống",
-                        VaiTroMacDinh.QuanLyDaoTao => "Quản lý đào tạo và hồ sơ dữ liệu",
-                        _ => "Người xem thông tin được cấp phép"
-                    },
-                    NgayTao = DateTime.UtcNow
-                };
-                await quanLyVaiTro.CreateAsync(vaiTroMoi);
+                        MoTa = tenVaiTro switch
+                        {
+                            VaiTroMacDinh.QuanTriVien => "Quản trị viên toàn quyền hệ thống",
+                            VaiTroMacDinh.QuanLyDaoTao => "Quản lý đào tạo và hồ sơ dữ liệu",
+                            VaiTroMacDinh.NguoiDung => "Người dùng nghiệp vụ thông thường",
+                            _ => "Người xem thông tin được cấp phép"
+                        },
+                        NgayTao = DateTime.UtcNow
+                    };
+                    await quanLyVaiTro.CreateAsync(vaiTroMoi);
+                }
+            }
+            catch (DbUpdateException)
+            {
+                // Bỏ qua nếu luồng song song khác đã khởi tạo vai trò này
             }
         }
 
         // 2. Khởi tạo tài khoản Quản trị viên mặc định
         const string emailAdmin = "admin@quanlydaotao.local";
-        var taiKhoanAdmin = await quanLyNguoiDung.FindByEmailAsync(emailAdmin);
-        if (taiKhoanAdmin == null)
+        try
         {
-            taiKhoanAdmin = new TaiKhoan
+            var taiKhoanAdmin = await quanLyNguoiDung.FindByEmailAsync(emailAdmin);
+            if (taiKhoanAdmin == null)
             {
-                UserName = emailAdmin,
-                Email = emailAdmin,
-                EmailConfirmed = true,
-                HoVaTen = "Quản trị viên Hệ thống",
-                CoHoatDong = true,
-                NgayTao = DateTime.UtcNow
-            };
+                taiKhoanAdmin = new TaiKhoan
+                {
+                    UserName = emailAdmin,
+                    Email = emailAdmin,
+                    EmailConfirmed = true,
+                    HoVaTen = "Quản trị viên Hệ thống",
+                    CoHoatDong = true,
+                    NgayTao = DateTime.UtcNow
+                };
 
-            var ketQuaTao = await quanLyNguoiDung.CreateAsync(taiKhoanAdmin, "Admin@123456");
-            if (ketQuaTao.Succeeded)
-            {
-                await quanLyNguoiDung.AddToRoleAsync(taiKhoanAdmin, VaiTroMacDinh.QuanTriVien);
+                var ketQuaTao = await quanLyNguoiDung.CreateAsync(taiKhoanAdmin, "Admin@123456");
+                if (ketQuaTao.Succeeded)
+                {
+                    await quanLyNguoiDung.AddToRoleAsync(taiKhoanAdmin, VaiTroMacDinh.QuanTriVien);
+                }
             }
+        }
+        catch (DbUpdateException)
+        {
+            // Bỏ qua nếu luồng song song khác đã tạo tài khoản này
         }
 
         // 3. Khởi tạo chức vụ mẫu

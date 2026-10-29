@@ -127,11 +127,34 @@ public class TaiKhoanController : Controller
     }
 
     /// <summary>
-    /// Xử lý đăng xuất tài khoản khỏi hệ thống.
+    /// Chức năng đăng ký công khai đã bị khóa theo chính sách bảo mật nội bộ C500.
+    /// Tài khoản chỉ do Quản trị viên cấp phát trực tiếp trong Admin Workspace (/TaiKhoan/TaoMoi).
+    /// </summary>
+    [HttpGet]
+    [AllowAnonymous]
+    public IActionResult DangKy(string? duongDanQuayLai = null)
+    {
+        TempData["ThongBaoLoi"] = "Chức năng đăng ký tự do đã bị khóa theo quy định C500. Tài khoản chỉ do Quản trị viên cấp phát trong Admin Workspace.";
+        return RedirectToAction("DangNhap", "TaiKhoan", new { duongDanQuayLai });
+    }
+
+    /// <summary>
+    /// Chặn việc gửi yêu cầu đăng ký tự do từ bên ngoài.
     /// </summary>
     [HttpPost]
-    [Authorize]
-    [ValidateAntiForgeryToken]
+    [AllowAnonymous]
+    public IActionResult DangKy(DangKyViewModel moHinh)
+    {
+        TempData["ThongBaoLoi"] = "Chức năng đăng ký tự do đã bị khóa theo quy định C500. Tài khoản chỉ do Quản trị viên cấp phát trong Admin Workspace.";
+        return RedirectToAction("DangNhap", "TaiKhoan");
+    }
+
+    /// <summary>
+    /// Xử lý đăng xuất tài khoản khỏi hệ thống.
+    /// </summary>
+    [HttpGet]
+    [HttpPost]
+    [AllowAnonymous]
     public async Task<IActionResult> DangXuat()
     {
         var tenNguoiDung = User.Identity?.Name ?? "Ẩn danh";

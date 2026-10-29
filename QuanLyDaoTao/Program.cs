@@ -28,6 +28,7 @@ builder.Services.AddIdentity<TaiKhoan, VaiTro>(options =>
 })
 .AddEntityFrameworkStores<QuanLyDaoTaoDbContext>()
 .AddDefaultTokenProviders();
+builder.Services.AddCascadingAuthenticationState();
 
 // Cấu hình Cookie xác thực cho giao diện Web/Blazor
 builder.Services.ConfigureApplicationCookie(options =>
@@ -60,6 +61,7 @@ builder.Services.AddAuthentication()
             ClockSkew = TimeSpan.Zero
         };
     });
+
 
 // Đăng ký dịch vụ Kiểm tra sức khỏe hệ thống (Health Check)
 builder.Services.AddHealthChecks();
@@ -162,7 +164,7 @@ app.UseAuthorization();
 app.UseAntiforgery();
 
 // Endpoint kiểm tra sức khỏe hệ thống (Health Check) phục vụ CI/CD & Monitoring
-app.MapHealthChecks("/healthz");
+app.MapHealthChecks("/healthz").AllowAnonymous();
 
 // Endpoint Blazor Razor Components
 app.MapRazorComponents<QuanLyDaoTao.Components.App>()

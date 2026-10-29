@@ -1,22 +1,44 @@
-<Router AppAssembly="@typeof(Program).Assembly">
-    <Found Context="routeData">
-        <RouteView RouteData="@routeData" DefaultLayout="@typeof(Layout.MainLayout)" />
-        <FocusOnNavigate RouteData="@routeData" Selector="h1,h2,h3,h4,h5" />
-    </Found>
-    <NotFound>
-        <LayoutView Layout="@typeof(Layout.MainLayout)">
-            <div class="container py-5 text-center">
-                <div class="card shadow-sm border-0 mx-auto p-5" style="max-width: 500px;">
-                    <i class="bi bi-exclamation-triangle text-warning fs-1 mb-3"></i>
-                    <h3 class="text-danger fw-bold">Không tìm thấy trang</h3>
-                    <p class="text-muted">Đường dẫn bạn yêu cầu không tồn tại trong hệ thống đào tạo C500.</p>
-                    <div>
-                        <a href="" class="btn btn-primary fw-bold px-4">
-                            <i class="bi bi-house me-1"></i>Về Bảng Điều Khiển
-                        </a>
+<CascadingAuthenticationState>
+    <Router AppAssembly="@typeof(Program).Assembly">
+        <Found Context="routeData">
+            <AuthorizeRouteView RouteData="@routeData" DefaultLayout="@typeof(Layout.MainLayout)">
+                <NotAuthorized>
+                    <LayoutView Layout="@typeof(Layout.MainLayout)">
+                        <div class="container py-5 text-center" id="pnlTuChoiTruyCap">
+                            <div class="card shadow-sm border-0 mx-auto p-5" style="max-width: 550px; border-top: 4px solid #dc3545 !important;">
+                                <i class="bi bi-shield-x text-danger fs-1 mb-3"></i>
+                                <h4 class="text-danger fw-bold">Từ Chối Quyền Truy Cập (403 Forbidden)</h4>
+                                <p class="text-muted">Khu vực Quản trị Dữ liệu Trực tuyến (Live CRUD) yêu cầu đặc quyền <strong>Quản trị viên (Admin)</strong>.</p>
+                                <div class="d-flex justify-content-center gap-2 mt-3">
+                                    <a href="" class="btn btn-primary fw-bold px-3">
+                                        <i class="bi bi-house me-1"></i>Về Bảng Điều Khiển
+                                    </a>
+                                    <a href="TaiKhoan/DangNhap" class="btn btn-outline-danger fw-bold px-3">
+                                        <i class="bi bi-box-arrow-in-right me-1"></i>Đăng Nhập Quản Trị
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </LayoutView>
+                </NotAuthorized>
+            </AuthorizeRouteView>
+            <FocusOnNavigate RouteData="@routeData" Selector="h1,h2,h3,h4,h5" />
+        </Found>
+        <NotFound>
+            <LayoutView Layout="@typeof(Layout.MainLayout)">
+                <div class="container py-5 text-center">
+                    <div class="card shadow-sm border-0 mx-auto p-5" style="max-width: 500px;">
+                        <i class="bi bi-exclamation-triangle text-warning fs-1 mb-3"></i>
+                        <h3 class="text-danger fw-bold">Không tìm thấy trang</h3>
+                        <p class="text-muted">Đường dẫn bạn yêu cầu không tồn tại trong hệ thống đào tạo C500.</p>
+                        <div>
+                            <a href="" class="btn btn-primary fw-bold px-4">
+                                <i class="bi bi-house me-1"></i>Về Bảng Điều Khiển
+                            </a>
+                        </div>
                     </div>
                 </div>
-            </div>
-        </LayoutView>
-    </NotFound>
-</Router>
+            </LayoutView>
+        </NotFound>
+    </Router>
+</CascadingAuthenticationState>

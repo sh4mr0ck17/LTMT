@@ -19,4 +19,9 @@ public static class VaiTroMacDinh
     /// Vai trò Người xem - chỉ có quyền xem danh sách và chi tiết báo cáo.
     /// </summary>
     public const string NguoiXem = "Viewer";
+
+    /// <summary>
+    /// Vai trò Người dùng thông thường - có quyền xem, sửa, nhập/xuất dữ liệu nghiệp vụ, không có quyền Live CRUD.
+    /// </summary>
+    public const string NguoiDung = "User";
 }
