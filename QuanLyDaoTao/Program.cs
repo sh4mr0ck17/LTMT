@@ -7,6 +7,7 @@ using Microsoft.OpenApi.Models;
 using QuanLyDaoTao.Data;
 using QuanLyDaoTao.Models;
 using QuanLyDaoTao.Services;
+using Radzen;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -125,6 +126,7 @@ builder.Services.AddScoped<IQuanTriDuLieuDichVu, QuanTriDuLieuDichVu>();
 // Đăng ký Blazor Server & Razor Components .NET 8
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
+builder.Services.AddRadzenComponents();
 
 // Đăng ký MVC Controllers & API Controllers
 builder.Services.AddControllersWithViews()

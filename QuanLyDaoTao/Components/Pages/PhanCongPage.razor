@@ -16,18 +16,22 @@
             <span class="text-muted small">Phân công giảng viên, môn học, lớp đào tạo theo học kỳ C500</span>
         </div>
         <div class="d-flex gap-2">
-            <a href="Excel/TaiTepMau?module=PhanCongGiangDay" class="btn btn-outline-secondary" id="btnTaiMauExcel">
-                <i class="bi bi-download me-1"></i>Tải Mẫu Excel
-            </a>
-            <a href="Excel/XuatDuLieu?module=PhanCongGiangDay" class="btn btn-outline-success" id="btnXuatExcel">
+            <a href="Excel/XuatDuLieu?module=PhanCongGiangDay" class="btn btn-outline-primary" id="btnXuatExcel">
                 <i class="bi bi-file-earmark-excel me-1"></i>Xuất Excel
             </a>
-            <a href="Excel/NhapExcel?module=PhanCongGiangDay" class="btn btn-success" id="btnNhapExcel">
-                <i class="bi bi-file-earmark-arrow-up me-1"></i>Nhập Excel
-            </a>
-            <a href="PhanCongGiangDay/ThemMoi" class="btn btn-primary" id="btnThemPhanCong">
-                <i class="bi bi-plus-circle-fill me-1"></i>Thêm Phân Công
-            </a>
+            <AuthorizeView Roles="Superadmin,Admin,DataManager,CanBo">
+                <Authorized>
+                    <a href="Excel/TaiTepMau?module=PhanCongGiangDay" class="btn btn-outline-secondary" id="btnTaiMauExcel">
+                        <i class="bi bi-download me-1"></i>Tải Mẫu Excel
+                    </a>
+                    <a href="Excel/NhapExcel?module=PhanCongGiangDay" class="btn btn-success" id="btnNhapExcel">
+                        <i class="bi bi-file-earmark-arrow-up me-1"></i>Nhập Excel
+                    </a>
+                    <a href="PhanCongGiangDay/ThemMoi" class="btn btn-primary" id="btnThemPhanCong">
+                        <i class="bi bi-plus-circle-fill me-1"></i>Thêm Phân Công
+                    </a>
+                </Authorized>
+            </AuthorizeView>
         </div>
     </div>
 
@@ -84,14 +88,21 @@
                                         }
                                     </td>
                                     <td class="text-center">
-                                        <div class="btn-group btn-group-sm">
-                                            <a href="PhanCongGiangDay/ChinhSua/@pc.PhanCongId" class="btn btn-outline-primary" id="btnSua_@pc.PhanCongId">
-                                                <i class="bi bi-pencil"></i>
-                                            </a>
-                                            <button type="button" class="btn btn-outline-danger" id="btnXoa_@pc.PhanCongId" @onclick="() => XoaPhanCong(pc.PhanCongId)">
-                                                <i class="bi bi-trash"></i>
-                                            </button>
-                                        </div>
+                                        <AuthorizeView Roles="Superadmin,Admin,DataManager,CanBo">
+                                            <Authorized>
+                                                <div class="btn-group btn-group-sm">
+                                                    <a href="PhanCongGiangDay/ChinhSua/@pc.PhanCongId" class="btn btn-outline-primary" id="btnSua_@pc.PhanCongId">
+                                                        <i class="bi bi-pencil"></i>
+                                                    </a>
+                                                    <button type="button" class="btn btn-outline-danger" id="btnXoa_@pc.PhanCongId" @onclick="() => XoaPhanCong(pc.PhanCongId)">
+                                                        <i class="bi bi-trash"></i>
+                                                    </button>
+                                                </div>
+                                            </Authorized>
+                                            <NotAuthorized>
+                                                <span class="text-muted small">Chỉ xem</span>
+                                            </NotAuthorized>
+                                        </AuthorizeView>
                                     </td>
                                 </tr>
                             }

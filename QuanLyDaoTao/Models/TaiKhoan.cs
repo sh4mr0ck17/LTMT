@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Identity;
 using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace QuanLyDaoTao.Models;
 
@@ -30,4 +31,10 @@ public class TaiKhoan : IdentityUser
     /// Ngày khởi tạo tài khoản.
     /// </summary>
     public DateTime NgayTao { get; set; } = DateTime.UtcNow;
+
+    /// <summary>
+    /// Đường dẫn ảnh đại diện (Avatar mặt người) của chủ tài khoản.
+    /// </summary>
+    [NotMapped]
+    public string? AnhDaiDien { get; set; }
 }

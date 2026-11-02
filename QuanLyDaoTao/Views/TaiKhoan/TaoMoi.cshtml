@@ -1,67 +1,106 @@
 @model QuanLyDaoTao.ViewModels.TaiKhoan.TaoTaiKhoanViewModel
+@using QuanLyDaoTao.Models
 @{
-    ViewData["Title"] = "Tạo mới tài khoản người dùng";
+    ViewData["Title"] = "Cấp phát Tài khoản Giáo viên / Cán bộ & Cá nhân hóa Workspace";
     Layout = "_Layout";
     var danhSachVaiTro = ViewBag.DanhSachVaiTro as List<string> ?? new List<string>();
+    var danhSachNhanSu = ViewBag.DanhSachNhanSu as List<NhanSu> ?? new List<NhanSu>();
 }
 
-<div class="container py-3" id="pnlTaoTaiKhoan">
+<div class="container py-4" id="pnlTaoTaiKhoan">
     <div class="row justify-content-center">
-        <div class="col-md-7">
-            <div class="card shadow-sm border-0">
-                <div class="card-header bg-white py-3 border-bottom">
-                    <h5 class="mb-0 text-primary" id="lblTieuDe">
-                        <i class="bi bi-person-plus-fill me-2"></i>Tạo Tài Khoản Người Dùng Mới
-                    </h5>
+        <div class="col-lg-8">
+            <div class="card shadow-sm border-0" style="border-radius: 12px;">
+                <div class="card-header bg-white py-3 border-bottom d-flex justify-content-between align-items-center">
+                    <div>
+                        <h5 class="mb-0 text-primary fw-bold" id="lblTieuDe">
+                            <i class="bi bi-person-plus-fill me-2"></i>Cấp Phát Tài Khoản Giáo Viên / Cán Bộ &amp; Phân Quyền Workspace
+                        </h5>
+                        <small class="text-muted">Khởi tạo tài khoản truy cập, liên kết hồ sơ nhân sự và thiết lập không gian làm việc theo vai trò</small>
+                    </div>
+                    <a asp-action="DanhSach" class="btn btn-sm btn-outline-secondary">
+                        <i class="bi bi-arrow-left me-1"></i>Danh sách TK
+                    </a>
                 </div>
                 <div class="card-body p-4">
                     <form asp-action="TaoMoi" method="post" id="frmTaoTaiKhoan">
                         @Html.AntiForgeryToken()
                         <div asp-validation-summary="ModelOnly" class="alert alert-danger" id="lblThongBaoLoi" role="alert"></div>
 
-                        <div class="mb-3">
-                            <label asp-for="Email" class="form-label fw-bold">Địa chỉ Email đăng nhập <span class="text-danger">*</span></label>
-                            <input asp-for="Email" class="form-control" id="txtEmail" placeholder="user@quanlydaotao.local" autofocus />
-                            <span asp-validation-for="Email" class="text-danger small"></span>
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label asp-for="HoVaTen" class="form-label fw-semibold">Họ và tên Giáo viên / Cán bộ <span class="text-danger">*</span></label>
+                                <input asp-for="HoVaTen" class="form-control" id="txtHoVaTen" placeholder="Ví dụ: TS. Nguyễn Văn A" autofocus />
+                                <span asp-validation-for="HoVaTen" class="text-danger small"></span>
+                            </div>
+
+                            <div class="col-md-6">
+                                <label asp-for="Email" class="form-label fw-semibold">Địa chỉ Email công vụ (Tài khoản) <span class="text-danger">*</span></label>
+                                <input asp-for="Email" class="form-control" id="txtEmail" placeholder="giaovien@c500.edu.vn" />
+                                <span asp-validation-for="Email" class="text-danger small"></span>
+                            </div>
+
+                            <div class="col-md-6">
+                                <label asp-for="MatKhau" class="form-label fw-semibold">Mật khẩu khởi tạo <span class="text-danger">*</span></label>
+                                <input asp-for="MatKhau" class="form-control" id="txtMatKhau" placeholder="Tối thiểu 6 ký tự (VD: CanBo@123)" />
+                                <span asp-validation-for="MatKhau" class="text-danger small"></span>
+                            </div>
+
+                            <div class="col-md-6">
+                                <label asp-for="SoDienThoai" class="form-label fw-semibold">Số điện thoại liên hệ</label>
+                                <input asp-for="SoDienThoai" class="form-control" id="txtSoDienThoai" placeholder="0912345678" />
+                            </div>
+
+                            <div class="col-md-6">
+                                <label asp-for="VaiTro" class="form-label fw-semibold">Loại Tài khoản &amp; Workspace <span class="text-danger">*</span></label>
+                                <select asp-for="VaiTro" class="form-select" id="cboVaiTro">
+                                    <option value="@VaiTroMacDinh.GiaoVien">Giáo viên / Giảng viên (Giảng viên Workspace)</option>
+                                    <option value="@VaiTroMacDinh.CanBo">Cán bộ Khoa / Phòng (Cán bộ Workspace)</option>
+                                    <option value="@VaiTroMacDinh.NguoiDung">User thường (Read-Only Workspace - Chỉ xem)</option>
+                                    <option value="@VaiTroMacDinh.QuanTriVien">Quản trị viên Đào tạo (Admin Workspace - Không có Live CRUD)</option>
+                                    @if (User.IsInRole(VaiTroMacDinh.SuperAdmin))
+                                    {
+                                        <option value="@VaiTroMacDinh.SuperAdmin">Superadmin (Toàn quyền + Độc quyền Live CRUD Studio)</option>
+                                    }
+                                </select>
+                                <span asp-validation-for="VaiTro" class="text-danger small"></span>
+                            </div>
+
+                            <div class="col-md-6">
+                                <label asp-for="MaNhanSuLienKet" class="form-label fw-semibold">Liên kết Hồ sơ Cán bộ / Mã Nhân sự</label>
+                                <input asp-for="MaNhanSuLienKet" class="form-control" id="txtMaNhanSuLienKet" list="dlDanhSachNhanSu" placeholder="Chọn hoặc nhập mã (VD: NS0001)..." />
+                                <datalist id="dlDanhSachNhanSu">
+                                    @foreach (var ns in danhSachNhanSu)
+                                    {
+                                        <option value="@ns.MaNhanSu">@ns.HoVaTen (@ns.Email)</option>
+                                    }
+                                </datalist>
+                                <div class="form-text small">Để trống nếu muốn hệ thống tự sinh mã cán bộ mới.</div>
+                            </div>
+
+                            <div class="col-md-12">
+                                <label asp-for="ChucDanh" class="form-label fw-semibold">Chuyên môn đào tạo / Chức danh công tác</label>
+                                <input asp-for="ChucDanh" class="form-control" id="txtChucDanh" placeholder="VD: Giảng viên chính Khoa An ninh thông tin" />
+                            </div>
+
+                            <div class="col-md-12">
+                                <div class="form-check bg-light p-3 rounded border">
+                                    <input asp-for="TuDongTaoHoSoNhanSu" class="form-check-input ms-0 me-2" id="chkTuDongTaoHoSo" />
+                                    <label asp-for="TuDongTaoHoSoNhanSu" class="form-check-label fw-semibold">
+                                        Tự động tạo đồng thời Hồ sơ Cán bộ / Giảng viên trong danh bạ Nhân sự nếu mã nhân sự chưa tồn tại
+                                    </label>
+                                </div>
+                            </div>
                         </div>
 
-                        <div class="mb-3">
-                            <label asp-for="HoVaTen" class="form-label fw-bold">Họ và tên hiển thị <span class="text-danger">*</span></label>
-                            <input asp-for="HoVaTen" class="form-control" id="txtHoVaTen" placeholder="Nguyễn Văn A" />
-                            <span asp-validation-for="HoVaTen" class="text-danger small"></span>
-                        </div>
-
-                        <div class="mb-3">
-                            <label asp-for="MatKhau" class="form-label fw-bold">Mật khẩu ban đầu <span class="text-danger">*</span></label>
-                            <input asp-for="MatKhau" class="form-control" id="txtMatKhau" placeholder="Tối thiểu 6 ký tự" />
-                            <span asp-validation-for="MatKhau" class="text-danger small"></span>
-                        </div>
-
-                        <div class="mb-3">
-                            <label asp-for="VaiTro" class="form-label fw-bold">Vai trò phân quyền <span class="text-danger">*</span></label>
-                            <select asp-for="VaiTro" class="form-select" id="cboVaiTro">
-                                <option value="">-- Chọn vai trò phân quyền --</option>
-                                @foreach (var role in danhSachVaiTro)
-                                {
-                                    <option value="@role">@role</option>
-                                }
-                            </select>
-                            <span asp-validation-for="VaiTro" class="text-danger small"></span>
-                        </div>
-
-                        <div class="mb-4">
-                            <label asp-for="MaNhanSuLienKet" class="form-label fw-bold">Mã nhân sự liên kết (nếu có)</label>
-                            <input asp-for="MaNhanSuLienKet" class="form-control" id="txtMaNhanSuLienKet" placeholder="Ví dụ: NS0001" />
-                            <div class="form-text">Nhập mã nhân sự nếu tài khoản này dành riêng cho một cán bộ/giảng viên.</div>
-                            <span asp-validation-for="MaNhanSuLienKet" class="text-danger small"></span>
-                        </div>
+                        <hr class="my-4" />
 
                         <div class="d-flex justify-content-end gap-2">
                             <a asp-action="DanhSach" class="btn btn-outline-secondary" id="btnHuyThaoTac">
                                 <i class="bi bi-x-circle me-1"></i>Hủy Bỏ
                             </a>
-                            <button type="submit" class="btn btn-primary" id="btnLuuTaiKhoan">
-                                <i class="bi bi-save me-1"></i>Lưu Tài Khoản
+                            <button type="submit" class="btn btn-primary px-4" id="btnLuuTaiKhoan">
+                                <i class="bi bi-check2-circle me-1"></i>Cấp Phát Tài Khoản &amp; Kích Hoạt Workspace
                             </button>
                         </div>
                     </form>

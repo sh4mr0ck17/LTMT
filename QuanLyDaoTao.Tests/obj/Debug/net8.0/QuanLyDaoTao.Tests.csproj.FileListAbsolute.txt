@@ -103,7 +103,6 @@ C:\Users\GIGABYTE G5 KD\Desktop\Code\LTMT3\QuanLyDaoTao.Tests\bin\Debug\net8.0\r
 C:\Users\GIGABYTE G5 KD\Desktop\Code\LTMT3\QuanLyDaoTao.Tests\bin\Debug\net8.0\refs\Microsoft.AspNetCore.WebSockets.dll
 C:\Users\GIGABYTE G5 KD\Desktop\Code\LTMT3\QuanLyDaoTao.Tests\bin\Debug\net8.0\refs\Microsoft.AspNetCore.WebUtilities.dll
 C:\Users\GIGABYTE G5 KD\Desktop\Code\LTMT3\QuanLyDaoTao.Tests\bin\Debug\net8.0\refs\Microsoft.CSharp.dll
-C:\Users\GIGABYTE G5 KD\Desktop\Code\LTMT3\QuanLyDaoTao.Tests\bin\Debug\net8.0\refs\Microsoft.Extensions.Caching.Abstractions.dll
 C:\Users\GIGABYTE G5 KD\Desktop\Code\LTMT3\QuanLyDaoTao.Tests\bin\Debug\net8.0\refs\Microsoft.Extensions.Caching.Memory.dll
 C:\Users\GIGABYTE G5 KD\Desktop\Code\LTMT3\QuanLyDaoTao.Tests\bin\Debug\net8.0\refs\Microsoft.Extensions.Configuration.Abstractions.dll
 C:\Users\GIGABYTE G5 KD\Desktop\Code\LTMT3\QuanLyDaoTao.Tests\bin\Debug\net8.0\refs\Microsoft.Extensions.Configuration.Binder.dll
@@ -116,7 +115,6 @@ C:\Users\GIGABYTE G5 KD\Desktop\Code\LTMT3\QuanLyDaoTao.Tests\bin\Debug\net8.0\r
 C:\Users\GIGABYTE G5 KD\Desktop\Code\LTMT3\QuanLyDaoTao.Tests\bin\Debug\net8.0\refs\Microsoft.Extensions.Configuration.KeyPerFile.dll
 C:\Users\GIGABYTE G5 KD\Desktop\Code\LTMT3\QuanLyDaoTao.Tests\bin\Debug\net8.0\refs\Microsoft.Extensions.Configuration.UserSecrets.dll
 C:\Users\GIGABYTE G5 KD\Desktop\Code\LTMT3\QuanLyDaoTao.Tests\bin\Debug\net8.0\refs\Microsoft.Extensions.Configuration.Xml.dll
-C:\Users\GIGABYTE G5 KD\Desktop\Code\LTMT3\QuanLyDaoTao.Tests\bin\Debug\net8.0\refs\Microsoft.Extensions.DependencyInjection.Abstractions.dll
 C:\Users\GIGABYTE G5 KD\Desktop\Code\LTMT3\QuanLyDaoTao.Tests\bin\Debug\net8.0\refs\Microsoft.Extensions.DependencyInjection.dll
 C:\Users\GIGABYTE G5 KD\Desktop\Code\LTMT3\QuanLyDaoTao.Tests\bin\Debug\net8.0\refs\Microsoft.Extensions.Diagnostics.Abstractions.dll
 C:\Users\GIGABYTE G5 KD\Desktop\Code\LTMT3\QuanLyDaoTao.Tests\bin\Debug\net8.0\refs\Microsoft.Extensions.Diagnostics.dll
@@ -135,7 +133,6 @@ C:\Users\GIGABYTE G5 KD\Desktop\Code\LTMT3\QuanLyDaoTao.Tests\bin\Debug\net8.0\r
 C:\Users\GIGABYTE G5 KD\Desktop\Code\LTMT3\QuanLyDaoTao.Tests\bin\Debug\net8.0\refs\Microsoft.Extensions.Identity.Stores.dll
 C:\Users\GIGABYTE G5 KD\Desktop\Code\LTMT3\QuanLyDaoTao.Tests\bin\Debug\net8.0\refs\Microsoft.Extensions.Localization.Abstractions.dll
 C:\Users\GIGABYTE G5 KD\Desktop\Code\LTMT3\QuanLyDaoTao.Tests\bin\Debug\net8.0\refs\Microsoft.Extensions.Localization.dll
-C:\Users\GIGABYTE G5 KD\Desktop\Code\LTMT3\QuanLyDaoTao.Tests\bin\Debug\net8.0\refs\Microsoft.Extensions.Logging.Abstractions.dll
 C:\Users\GIGABYTE G5 KD\Desktop\Code\LTMT3\QuanLyDaoTao.Tests\bin\Debug\net8.0\refs\Microsoft.Extensions.Logging.Configuration.dll
 C:\Users\GIGABYTE G5 KD\Desktop\Code\LTMT3\QuanLyDaoTao.Tests\bin\Debug\net8.0\refs\Microsoft.Extensions.Logging.Console.dll
 C:\Users\GIGABYTE G5 KD\Desktop\Code\LTMT3\QuanLyDaoTao.Tests\bin\Debug\net8.0\refs\Microsoft.Extensions.Logging.Debug.dll
@@ -147,7 +144,6 @@ C:\Users\GIGABYTE G5 KD\Desktop\Code\LTMT3\QuanLyDaoTao.Tests\bin\Debug\net8.0\r
 C:\Users\GIGABYTE G5 KD\Desktop\Code\LTMT3\QuanLyDaoTao.Tests\bin\Debug\net8.0\refs\Microsoft.Extensions.Options.ConfigurationExtensions.dll
 C:\Users\GIGABYTE G5 KD\Desktop\Code\LTMT3\QuanLyDaoTao.Tests\bin\Debug\net8.0\refs\Microsoft.Extensions.Options.DataAnnotations.dll
 C:\Users\GIGABYTE G5 KD\Desktop\Code\LTMT3\QuanLyDaoTao.Tests\bin\Debug\net8.0\refs\Microsoft.Extensions.Options.dll
-C:\Users\GIGABYTE G5 KD\Desktop\Code\LTMT3\QuanLyDaoTao.Tests\bin\Debug\net8.0\refs\Microsoft.Extensions.Primitives.dll
 C:\Users\GIGABYTE G5 KD\Desktop\Code\LTMT3\QuanLyDaoTao.Tests\bin\Debug\net8.0\refs\Microsoft.Extensions.WebEncoders.dll
 C:\Users\GIGABYTE G5 KD\Desktop\Code\LTMT3\QuanLyDaoTao.Tests\bin\Debug\net8.0\refs\Microsoft.JSInterop.dll
 C:\Users\GIGABYTE G5 KD\Desktop\Code\LTMT3\QuanLyDaoTao.Tests\bin\Debug\net8.0\refs\Microsoft.Net.Http.Headers.dll
@@ -178,7 +174,6 @@ C:\Users\GIGABYTE G5 KD\Desktop\Code\LTMT3\QuanLyDaoTao.Tests\bin\Debug\net8.0\r
 C:\Users\GIGABYTE G5 KD\Desktop\Code\LTMT3\QuanLyDaoTao.Tests\bin\Debug\net8.0\refs\System.Data.dll
 C:\Users\GIGABYTE G5 KD\Desktop\Code\LTMT3\QuanLyDaoTao.Tests\bin\Debug\net8.0\refs\System.Diagnostics.Contracts.dll
 C:\Users\GIGABYTE G5 KD\Desktop\Code\LTMT3\QuanLyDaoTao.Tests\bin\Debug\net8.0\refs\System.Diagnostics.Debug.dll
-C:\Users\GIGABYTE G5 KD\Desktop\Code\LTMT3\QuanLyDaoTao.Tests\bin\Debug\net8.0\refs\System.Diagnostics.DiagnosticSource.dll
 C:\Users\GIGABYTE G5 KD\Desktop\Code\LTMT3\QuanLyDaoTao.Tests\bin\Debug\net8.0\refs\System.Diagnostics.EventLog.dll
 C:\Users\GIGABYTE G5 KD\Desktop\Code\LTMT3\QuanLyDaoTao.Tests\bin\Debug\net8.0\refs\System.Diagnostics.FileVersionInfo.dll
 C:\Users\GIGABYTE G5 KD\Desktop\Code\LTMT3\QuanLyDaoTao.Tests\bin\Debug\net8.0\refs\System.Diagnostics.Process.dll
@@ -208,7 +203,6 @@ C:\Users\GIGABYTE G5 KD\Desktop\Code\LTMT3\QuanLyDaoTao.Tests\bin\Debug\net8.0\r
 C:\Users\GIGABYTE G5 KD\Desktop\Code\LTMT3\QuanLyDaoTao.Tests\bin\Debug\net8.0\refs\System.IO.FileSystem.Watcher.dll
 C:\Users\GIGABYTE G5 KD\Desktop\Code\LTMT3\QuanLyDaoTao.Tests\bin\Debug\net8.0\refs\System.IO.IsolatedStorage.dll
 C:\Users\GIGABYTE G5 KD\Desktop\Code\LTMT3\QuanLyDaoTao.Tests\bin\Debug\net8.0\refs\System.IO.MemoryMappedFiles.dll
-C:\Users\GIGABYTE G5 KD\Desktop\Code\LTMT3\QuanLyDaoTao.Tests\bin\Debug\net8.0\refs\System.IO.Pipelines.dll
 C:\Users\GIGABYTE G5 KD\Desktop\Code\LTMT3\QuanLyDaoTao.Tests\bin\Debug\net8.0\refs\System.IO.Pipes.AccessControl.dll
 C:\Users\GIGABYTE G5 KD\Desktop\Code\LTMT3\QuanLyDaoTao.Tests\bin\Debug\net8.0\refs\System.IO.Pipes.dll
 C:\Users\GIGABYTE G5 KD\Desktop\Code\LTMT3\QuanLyDaoTao.Tests\bin\Debug\net8.0\refs\System.IO.UnmanagedMemoryStream.dll
@@ -287,10 +281,7 @@ C:\Users\GIGABYTE G5 KD\Desktop\Code\LTMT3\QuanLyDaoTao.Tests\bin\Debug\net8.0\r
 C:\Users\GIGABYTE G5 KD\Desktop\Code\LTMT3\QuanLyDaoTao.Tests\bin\Debug\net8.0\refs\System.Text.Encoding.CodePages.dll
 C:\Users\GIGABYTE G5 KD\Desktop\Code\LTMT3\QuanLyDaoTao.Tests\bin\Debug\net8.0\refs\System.Text.Encoding.dll
 C:\Users\GIGABYTE G5 KD\Desktop\Code\LTMT3\QuanLyDaoTao.Tests\bin\Debug\net8.0\refs\System.Text.Encoding.Extensions.dll
-C:\Users\GIGABYTE G5 KD\Desktop\Code\LTMT3\QuanLyDaoTao.Tests\bin\Debug\net8.0\refs\System.Text.Encodings.Web.dll
-C:\Users\GIGABYTE G5 KD\Desktop\Code\LTMT3\QuanLyDaoTao.Tests\bin\Debug\net8.0\refs\System.Text.Json.dll
 C:\Users\GIGABYTE G5 KD\Desktop\Code\LTMT3\QuanLyDaoTao.Tests\bin\Debug\net8.0\refs\System.Text.RegularExpressions.dll
-C:\Users\GIGABYTE G5 KD\Desktop\Code\LTMT3\QuanLyDaoTao.Tests\bin\Debug\net8.0\refs\System.Threading.Channels.dll
 C:\Users\GIGABYTE G5 KD\Desktop\Code\LTMT3\QuanLyDaoTao.Tests\bin\Debug\net8.0\refs\System.Threading.dll
 C:\Users\GIGABYTE G5 KD\Desktop\Code\LTMT3\QuanLyDaoTao.Tests\bin\Debug\net8.0\refs\System.Threading.Overlapped.dll
 C:\Users\GIGABYTE G5 KD\Desktop\Code\LTMT3\QuanLyDaoTao.Tests\bin\Debug\net8.0\refs\System.Threading.RateLimiting.dll
@@ -489,3 +480,21 @@ C:\Users\GIGABYTE G5 KD\Desktop\Code\LTMT3\QuanLyDaoTao.Tests\bin\Debug\net8.0\S
 C:\Users\GIGABYTE G5 KD\Desktop\Code\LTMT3\QuanLyDaoTao.Tests\bin\Debug\net8.0\Swashbuckle.AspNetCore.SwaggerGen.dll
 C:\Users\GIGABYTE G5 KD\Desktop\Code\LTMT3\QuanLyDaoTao.Tests\bin\Debug\net8.0\Swashbuckle.AspNetCore.SwaggerUI.dll
 C:\Users\GIGABYTE G5 KD\Desktop\Code\LTMT3\QuanLyDaoTao.Tests\bin\Debug\net8.0\System.IdentityModel.Tokens.Jwt.dll
+C:\Users\GIGABYTE G5 KD\Desktop\Code\LTMT3\QuanLyDaoTao.Tests\bin\Debug\net8.0\Microsoft.Extensions.AI.dll
+C:\Users\GIGABYTE G5 KD\Desktop\Code\LTMT3\QuanLyDaoTao.Tests\bin\Debug\net8.0\Microsoft.Extensions.AI.Abstractions.dll
+C:\Users\GIGABYTE G5 KD\Desktop\Code\LTMT3\QuanLyDaoTao.Tests\bin\Debug\net8.0\Microsoft.Extensions.Caching.Abstractions.dll
+C:\Users\GIGABYTE G5 KD\Desktop\Code\LTMT3\QuanLyDaoTao.Tests\bin\Debug\net8.0\Microsoft.Extensions.Primitives.dll
+C:\Users\GIGABYTE G5 KD\Desktop\Code\LTMT3\QuanLyDaoTao.Tests\bin\Debug\net8.0\Radzen.Blazor.dll
+C:\Users\GIGABYTE G5 KD\Desktop\Code\LTMT3\QuanLyDaoTao.Tests\bin\Debug\net8.0\System.Diagnostics.DiagnosticSource.dll
+C:\Users\GIGABYTE G5 KD\Desktop\Code\LTMT3\QuanLyDaoTao.Tests\bin\Debug\net8.0\System.IO.Pipelines.dll
+C:\Users\GIGABYTE G5 KD\Desktop\Code\LTMT3\QuanLyDaoTao.Tests\bin\Debug\net8.0\System.Numerics.Tensors.dll
+C:\Users\GIGABYTE G5 KD\Desktop\Code\LTMT3\QuanLyDaoTao.Tests\bin\Debug\net8.0\System.Text.Encodings.Web.dll
+C:\Users\GIGABYTE G5 KD\Desktop\Code\LTMT3\QuanLyDaoTao.Tests\bin\Debug\net8.0\System.Text.Json.dll
+C:\Users\GIGABYTE G5 KD\Desktop\Code\LTMT3\QuanLyDaoTao.Tests\bin\Debug\net8.0\System.Threading.Channels.dll
+C:\Users\GIGABYTE G5 KD\Desktop\Code\LTMT3\QuanLyDaoTao.Tests\bin\Debug\net8.0\de\Radzen.Blazor.resources.dll
+C:\Users\GIGABYTE G5 KD\Desktop\Code\LTMT3\QuanLyDaoTao.Tests\bin\Debug\net8.0\es\Radzen.Blazor.resources.dll
+C:\Users\GIGABYTE G5 KD\Desktop\Code\LTMT3\QuanLyDaoTao.Tests\bin\Debug\net8.0\fr\Radzen.Blazor.resources.dll
+C:\Users\GIGABYTE G5 KD\Desktop\Code\LTMT3\QuanLyDaoTao.Tests\bin\Debug\net8.0\it\Radzen.Blazor.resources.dll
+C:\Users\GIGABYTE G5 KD\Desktop\Code\LTMT3\QuanLyDaoTao.Tests\bin\Debug\net8.0\ja\Radzen.Blazor.resources.dll
+C:\Users\GIGABYTE G5 KD\Desktop\Code\LTMT3\QuanLyDaoTao.Tests\bin\Debug\net8.0\pt\Radzen.Blazor.resources.dll
+C:\Users\GIGABYTE G5 KD\Desktop\Code\LTMT3\QuanLyDaoTao.Tests\bin\Debug\net8.0\runtimes\browser\lib\net8.0\System.Text.Encodings.Web.dll

@@ -14,18 +14,22 @@
             <span class="text-muted small">Danh sách các bộ môn, chuyên ngành học thuật và nhân sự C500</span>
         </div>
         <div class="d-flex gap-2">
-            <a href="Excel/TaiTepMau?module=BoMon" class="btn btn-outline-secondary" id="btnTaiMauExcel">
-                <i class="bi bi-download me-1"></i>Tải Mẫu Excel
-            </a>
-            <a href="Excel/XuatDuLieu?module=BoMon" class="btn btn-outline-success" id="btnXuatExcel">
+            <a href="Excel/XuatDuLieu?module=BoMon" class="btn btn-outline-primary" id="btnXuatExcel">
                 <i class="bi bi-file-earmark-excel me-1"></i>Xuất Excel
             </a>
-            <a href="Excel/NhapExcel?module=BoMon" class="btn btn-success" id="btnNhapExcel">
-                <i class="bi bi-file-earmark-arrow-up me-1"></i>Nhập Excel
-            </a>
-            <a href="BoMon/ThemMoi" class="btn btn-primary" id="btnThemBoMon">
-                <i class="bi bi-plus-circle-fill me-1"></i>Thêm Mới Bộ Môn
-            </a>
+            <AuthorizeView Roles="Superadmin,Admin,DataManager,CanBo">
+                <Authorized>
+                    <a href="Excel/TaiTepMau?module=BoMon" class="btn btn-outline-secondary" id="btnTaiMauExcel">
+                        <i class="bi bi-download me-1"></i>Tải Mẫu Excel
+                    </a>
+                    <a href="Excel/NhapExcel?module=BoMon" class="btn btn-success" id="btnNhapExcel">
+                        <i class="bi bi-file-earmark-arrow-up me-1"></i>Nhập Excel
+                    </a>
+                    <a href="BoMon/ThemMoi" class="btn btn-primary" id="btnThemBoMon">
+                        <i class="bi bi-plus-circle-fill me-1"></i>Thêm Mới Bộ Môn
+                    </a>
+                </Authorized>
+            </AuthorizeView>
         </div>
     </div>
 
@@ -114,16 +118,20 @@
                                     </td>
                                     <td class="text-center">
                                         <div class="btn-group btn-group-sm" role="group">
-                                            <a href="BoMon/ChiTiet/@bm.BoMonId" class="btn btn-outline-info" title="Xem chi tiết" id="btnXem_@bm.BoMonId">
+                                            <a href="BoMon/ChiTiet/@bm.BoMonId" class="btn btn-outline-primary" title="Xem chi tiết" id="btnXem_@bm.BoMonId">
                                                 <i class="bi bi-eye"></i>
                                             </a>
-                                            <a href="BoMon/ChinhSua/@bm.BoMonId" class="btn btn-outline-primary" title="Chỉnh sửa" id="btnSua_@bm.BoMonId">
-                                                <i class="bi bi-pencil"></i>
-                                            </a>
-                                            <button type="button" class="btn btn-outline-danger" title="Xóa bộ môn" id="btnXoa_@bm.BoMonId"
-                                                    @onclick="() => XoaBoMon(bm.BoMonId)">
-                                                <i class="bi bi-trash"></i>
-                                            </button>
+                                            <AuthorizeView Roles="Superadmin,Admin,DataManager,CanBo">
+                                                <Authorized>
+                                                    <a href="BoMon/ChinhSua/@bm.BoMonId" class="btn btn-outline-primary" title="Chỉnh sửa" id="btnSua_@bm.BoMonId">
+                                                        <i class="bi bi-pencil"></i>
+                                                    </a>
+                                                    <button type="button" class="btn btn-outline-danger" title="Xóa bộ môn" id="btnXoa_@bm.BoMonId"
+                                                            @onclick="() => XoaBoMon(bm.BoMonId)">
+                                                        <i class="bi bi-trash"></i>
+                                                    </button>
+                                                </Authorized>
+                                            </AuthorizeView>
                                         </div>
                                     </td>
                                 </tr>

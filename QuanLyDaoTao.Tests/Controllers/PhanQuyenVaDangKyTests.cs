@@ -155,12 +155,36 @@ public class PhanQuyenVaDangKyTests : IClassFixture<WebApplicationFactory<Progra
         Assert.True(response.StatusCode == HttpStatusCode.Unauthorized || response.StatusCode == HttpStatusCode.Redirect);
     }
     [Fact]
-    public void VaiTroMacDinh_CoDayDuRoleNguoiDungVaAdmin()
+    public void VaiTroMacDinh_CoDayDuRoleSuperAdminGiaoVienCanBoUser()
     {
         // Assert: Các hằng số quyền chuẩn hóa
+        Assert.Equal("Superadmin", VaiTroMacDinh.SuperAdmin);
         Assert.Equal("Admin", VaiTroMacDinh.QuanTriVien);
+        Assert.Equal("GiaoVien", VaiTroMacDinh.GiaoVien);
+        Assert.Equal("CanBo", VaiTroMacDinh.CanBo);
         Assert.Equal("User", VaiTroMacDinh.NguoiDung);
         Assert.Equal("DataManager", VaiTroMacDinh.QuanLyDaoTao);
         Assert.Equal("Viewer", VaiTroMacDinh.NguoiXem);
+    }
+
+    [Fact]
+    public void LiveCrudController_ChiChoPhepDuyNhatSuperAdmin()
+    {
+        // Kiểm tra Attribute [Authorize(Roles = "Superadmin")] trên QuanTriDuLieuController và LiveCrudApiController
+        var ctrlAttr = typeof(QuanLyDaoTao.Controllers.QuanTriDuLieuController)
+            .GetCustomAttributes(typeof(Microsoft.AspNetCore.Authorization.AuthorizeAttribute), true)
+            .Cast<Microsoft.AspNetCore.Authorization.AuthorizeAttribute>()
+            .FirstOrDefault();
+
+        var apiAttr = typeof(QuanLyDaoTao.Controllers.Api.LiveCrudApiController)
+            .GetCustomAttributes(typeof(Microsoft.AspNetCore.Authorization.AuthorizeAttribute), true)
+            .Cast<Microsoft.AspNetCore.Authorization.AuthorizeAttribute>()
+            .FirstOrDefault();
+
+        Assert.NotNull(ctrlAttr);
+        Assert.Equal(VaiTroMacDinh.SuperAdmin, ctrlAttr.Roles);
+
+        Assert.NotNull(apiAttr);
+        Assert.Equal(VaiTroMacDinh.SuperAdmin, apiAttr.Roles);
     }
 }

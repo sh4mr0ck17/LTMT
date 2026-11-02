@@ -58,7 +58,7 @@ public class ExcelController : Controller
     /// </summary>
     /// <param name="module">Tên module nghiệp vụ.</param>
     [HttpGet]
-    [Authorize(Roles = $"{VaiTroMacDinh.QuanTriVien},{VaiTroMacDinh.QuanLyDaoTao},{VaiTroMacDinh.NguoiDung}")]
+    [Authorize(Roles = $"{VaiTroMacDinh.SuperAdmin},{VaiTroMacDinh.QuanTriVien},{VaiTroMacDinh.QuanLyDaoTao},{VaiTroMacDinh.CanBo},{VaiTroMacDinh.GiaoVien},{VaiTroMacDinh.NguoiDung}")]
     public IActionResult NhapExcel(string module)
     {
         if (string.IsNullOrWhiteSpace(module))
@@ -77,7 +77,7 @@ public class ExcelController : Controller
     /// <param name="module">Tên module nghiệp vụ.</param>
     /// <param name="tepExcel">Tệp Excel được tải lên từ máy khách.</param>
     [HttpPost]
-    [Authorize(Roles = $"{VaiTroMacDinh.QuanTriVien},{VaiTroMacDinh.QuanLyDaoTao},{VaiTroMacDinh.NguoiDung}")]
+    [Authorize(Roles = $"{VaiTroMacDinh.SuperAdmin},{VaiTroMacDinh.QuanTriVien},{VaiTroMacDinh.QuanLyDaoTao},{VaiTroMacDinh.CanBo},{VaiTroMacDinh.GiaoVien},{VaiTroMacDinh.NguoiDung}")]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> KiemTraTep(string module, IFormFile? tepExcel)
     {
@@ -126,7 +126,7 @@ public class ExcelController : Controller
     /// </summary>
     /// <param name="maPhien">Mã phiên xem trước (GUID).</param>
     [HttpPost]
-    [Authorize(Roles = $"{VaiTroMacDinh.QuanTriVien},{VaiTroMacDinh.QuanLyDaoTao},{VaiTroMacDinh.NguoiDung}")]
+    [Authorize(Roles = $"{VaiTroMacDinh.SuperAdmin},{VaiTroMacDinh.QuanTriVien},{VaiTroMacDinh.QuanLyDaoTao},{VaiTroMacDinh.CanBo},{VaiTroMacDinh.GiaoVien},{VaiTroMacDinh.NguoiDung}")]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> XacNhanCommit(string maPhien)
     {
@@ -134,7 +134,7 @@ public class ExcelController : Controller
         if (phien == null)
         {
             TempData["ThongBaoLoi"] = "Phiên xem trước đã hết hạn hoặc không tồn tại. Vui lòng tải lại tệp Excel.";
-            return RedirectToAction("Index", "Home");
+            return Redirect("/");
         }
 
         var danhSachHopLe = phien.KetQuaKiemTra.DanhSachDongDuLieu.Where(d => d.LaHopLe).ToList();
@@ -161,7 +161,7 @@ public class ExcelController : Controller
     /// </summary>
     /// <param name="maPhien">Mã phiên xem trước.</param>
     [HttpGet]
-    [Authorize(Roles = $"{VaiTroMacDinh.QuanTriVien},{VaiTroMacDinh.QuanLyDaoTao}")]
+    [Authorize(Roles = $"{VaiTroMacDinh.SuperAdmin},{VaiTroMacDinh.QuanTriVien},{VaiTroMacDinh.QuanLyDaoTao},{VaiTroMacDinh.CanBo},{VaiTroMacDinh.GiaoVien},{VaiTroMacDinh.NguoiDung}")]
     public IActionResult XuatBaoCaoLoi(string maPhien)
     {
         var phien = _excelDichVu.LayPhienPreview(maPhien);

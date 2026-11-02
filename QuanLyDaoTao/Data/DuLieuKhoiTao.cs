@@ -27,7 +27,16 @@ public static class DuLieuKhoiTao
         await context.Database.MigrateAsync();
 
         // 1. Khởi tạo danh sách các vai trò
-        string[] danhSachVaiTro = { VaiTroMacDinh.QuanTriVien, VaiTroMacDinh.QuanLyDaoTao, VaiTroMacDinh.NguoiXem, VaiTroMacDinh.NguoiDung };
+        string[] danhSachVaiTro =
+        {
+            VaiTroMacDinh.SuperAdmin,
+            VaiTroMacDinh.QuanTriVien,
+            VaiTroMacDinh.QuanLyDaoTao,
+            VaiTroMacDinh.GiaoVien,
+            VaiTroMacDinh.CanBo,
+            VaiTroMacDinh.NguoiDung,
+            VaiTroMacDinh.NguoiXem
+        };
         foreach (var tenVaiTro in danhSachVaiTro)
         {
             try
@@ -38,9 +47,12 @@ public static class DuLieuKhoiTao
                     {
                         MoTa = tenVaiTro switch
                         {
-                            VaiTroMacDinh.QuanTriVien => "Quản trị viên toàn quyền hệ thống",
+                            VaiTroMacDinh.SuperAdmin => "Siêu quản trị viên - độc quyền Live CRUD Database Studio",
+                            VaiTroMacDinh.QuanTriVien => "Quản trị viên đào tạo & cấp phát tài khoản",
                             VaiTroMacDinh.QuanLyDaoTao => "Quản lý đào tạo và hồ sơ dữ liệu",
-                            VaiTroMacDinh.NguoiDung => "Người dùng nghiệp vụ thông thường",
+                            VaiTroMacDinh.GiaoVien => "Giáo viên / Giảng viên giảng dạy",
+                            VaiTroMacDinh.CanBo => "Cán bộ nghiệp vụ khoa / phòng",
+                            VaiTroMacDinh.NguoiDung => "Người dùng tra cứu (Chỉ xem)",
                             _ => "Người xem thông tin được cấp phép"
                         },
                         NgayTao = DateTime.UtcNow
@@ -54,33 +66,49 @@ public static class DuLieuKhoiTao
             }
         }
 
-        // 2. Khởi tạo tài khoản Quản trị viên mặc định
-        const string emailAdmin = "admin@quanlydaotao.local";
-        try
+        // 2. Khởi tạo các tài khoản mẫu theo từng Workspace (Superadmin, Admin, GiaoVien, CanBo, User)
+        var danhSachTaiKhoanMau = new (string Email, string HoTen, string RoleChinh, string? MaNS)[]
         {
-            var taiKhoanAdmin = await quanLyNguoiDung.FindByEmailAsync(emailAdmin);
-            if (taiKhoanAdmin == null)
-            {
-                taiKhoanAdmin = new TaiKhoan
-                {
-                    UserName = emailAdmin,
-                    Email = emailAdmin,
-                    EmailConfirmed = true,
-                    HoVaTen = "Quản trị viên Hệ thống",
-                    CoHoatDong = true,
-                    NgayTao = DateTime.UtcNow
-                };
+            ("superadmin@quanlydaotao.local", "Super Administrator C500", VaiTroMacDinh.SuperAdmin, null),
+            ("admin@quanlydaotao.local", "Quản trị viên Hệ thống", VaiTroMacDinh.QuanTriVien, null),
+            ("giaovien@quanlydaotao.local", "TS. Nguyễn Minh Đức (Giảng viên)", VaiTroMacDinh.GiaoVien, "NS0001"),
+            ("canbo@quanlydaotao.local", "ThS. Trần Thị Lan (Cán bộ)", VaiTroMacDinh.CanBo, "NS0002"),
+            ("user@quanlydaotao.local", "Học viên / Người dùng Tra cứu", VaiTroMacDinh.NguoiDung, null)
+        };
 
-                var ketQuaTao = await quanLyNguoiDung.CreateAsync(taiKhoanAdmin, "Admin@123456");
-                if (ketQuaTao.Succeeded)
+        foreach (var tkMau in danhSachTaiKhoanMau)
+        {
+            try
+            {
+                var taiKhoan = await quanLyNguoiDung.FindByEmailAsync(tkMau.Email);
+                if (taiKhoan == null)
                 {
-                    await quanLyNguoiDung.AddToRoleAsync(taiKhoanAdmin, VaiTroMacDinh.QuanTriVien);
+                    taiKhoan = new TaiKhoan
+                    {
+                        UserName = tkMau.Email,
+                        Email = tkMau.Email,
+                        EmailConfirmed = true,
+                        HoVaTen = tkMau.HoTen,
+                        MaNhanSuLienKet = tkMau.MaNS,
+                        CoHoatDong = true,
+                        NgayTao = DateTime.UtcNow
+                    };
+
+                    var ketQuaTao = await quanLyNguoiDung.CreateAsync(taiKhoan, "Admin@123456");
+                    if (ketQuaTao.Succeeded)
+                    {
+                        await quanLyNguoiDung.AddToRoleAsync(taiKhoan, tkMau.RoleChinh);
+                    }
+                }
+                else if (!await quanLyNguoiDung.IsInRoleAsync(taiKhoan, tkMau.RoleChinh))
+                {
+                    await quanLyNguoiDung.AddToRoleAsync(taiKhoan, tkMau.RoleChinh);
                 }
             }
-        }
-        catch (DbUpdateException)
-        {
-            // Bỏ qua nếu luồng song song khác đã tạo tài khoản này
+            catch (DbUpdateException)
+            {
+                // Bỏ qua nếu luồng song song khác đã tạo tài khoản này
+            }
         }
 
         // 3. Khởi tạo chức vụ mẫu

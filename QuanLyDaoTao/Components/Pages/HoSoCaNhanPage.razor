@@ -1,0 +1,318 @@
+@page "/HoSoCaNhan"
+@using System.Security.Claims
+@using Microsoft.AspNetCore.Identity
+@using Microsoft.Extensions.DependencyInjection
+@inject INhanSuDichVu NhanSuDichVu
+@inject IPhanCongGiangDayDichVu PhanCongDichVu
+@inject IServiceScopeFactory ScopeFactory
+@inject NavigationManager Navigation
+
+<PageTitle>Hồ Sơ Cá Nhân (Profile) - Học Viện An Ninh Nhân Dân</PageTitle>
+
+<div class="container-fluid px-4 py-3" id="pnlHoSoCaNhan">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <div>
+            <h4 class="mb-1 text-primary fw-bold" id="lblTieuDe">
+                <i class="bi bi-person-circle me-2"></i>Hồ Sơ Tài Khoản Cá Nhân (My Profile)
+            </h4>
+            <span class="text-muted small">Quản lý thông tin định danh tài khoản, ảnh đại diện (Avatar) và hồ sơ công tác liên kết</span>
+        </div>
+        <div class="d-flex gap-2">
+            <a href="TaiKhoan/DoiMatKhau" class="btn btn-sm btn-outline-primary" id="btnDoiMatKhauProfile">
+                <i class="bi bi-key me-1"></i>Đổi Mật Khẩu
+            </a>
+            <a href="" class="btn btn-sm btn-outline-secondary">
+                <i class="bi bi-arrow-left me-1"></i>Về Workspace
+            </a>
+        </div>
+    </div>
+
+    @if (!string.IsNullOrEmpty(thongBaoThanhCong))
+    {
+        <div class="alert alert-success alert-dismissible fade show shadow-sm" role="alert" id="lblThongBaoProfile">
+            <i class="bi bi-check-circle-fill me-2"></i>@thongBaoThanhCong
+            <button type="button" class="btn-close" @onclick="() => thongBaoThanhCong = null"></button>
+        </div>
+    }
+
+    <div class="row g-4">
+        <!-- Cột trái: Thẻ định danh & Avatar mặt người -->
+        <div class="col-lg-4">
+            <div class="card shadow-sm border-0 h-100">
+                <div class="card-body p-4 text-center">
+                    <div class="mb-3 position-relative d-inline-block">
+                        <img src="@avatarUrl" alt="Avatar" style="width: 104px; height: 104px; border-radius: 50%; object-fit: cover; border: 3px solid #0b4627;" id="imgProfileAvatar" />
+                    </div>
+                    <h5 class="fw-bold text-primary mb-1">@hoVaTen</h5>
+                    <div class="text-muted small mb-2">@email</div>
+                    <div class="mb-3">
+                        <span class="badge bg-primary px-3 py-1">@vaiTroHienThi</span>
+                        @if (!string.IsNullOrEmpty(maNhanSuLienKet))
+                        {
+                            <span class="badge bg-light text-primary border font-monospace ms-1">@maNhanSuLienKet</span>
+                        }
+                    </div>
+
+                    <hr />
+
+                    <div class="text-start">
+                        <label class="form-label fw-semibold small text-muted mb-2">Chọn nhanh mẫu chân dung (Avatar):</label>
+                        <div class="d-flex justify-content-between gap-1 mb-3">
+                            @foreach (var mau in danhSachAvatarMau)
+                            {
+                                <div class="text-center p-1 rounded border @(avatarUrl == mau.Url ? "border-primary bg-light" : "")"
+                                     style="cursor: pointer; flex: 1;"
+                                     @onclick="() => avatarUrl = mau.Url">
+                                    <img src="@mau.Url" alt="@mau.Ten" style="width: 40px; height: 40px; border-radius: 50%;" class="mb-1" />
+                                    <div style="font-size: 0.65rem;" class="fw-medium">@mau.Ten</div>
+                                </div>
+                            }
+                        </div>
+                        <label class="form-label fw-semibold small">Đường dẫn ảnh chân dung tùy chỉnh:</label>
+                        <input type="text" class="form-control form-control-sm mb-2" @bind="avatarUrl" id="txtAvatarUrl" placeholder="https://..." />
+                    </div>
+
+                    @if (hoSoNhanSu != null)
+                    {
+                        <div class="bg-light rounded p-3 text-start mt-3 border">
+                            <div class="fw-bold text-primary small mb-2">
+                                <i class="bi bi-briefcase-fill me-1"></i>THÔNG TIN ĐƠN VỊ CÔNG TÁC
+                            </div>
+                            <div class="small mb-1"><strong>Mã cán bộ:</strong> <code>@hoSoNhanSu.MaNhanSu</code></div>
+                            <div class="small mb-1"><strong>Khoa:</strong> @(hoSoNhanSu.Khoa?.TenKhoa ?? "Chưa phân khoa")</div>
+                            <div class="small mb-1"><strong>Bộ môn:</strong> @(hoSoNhanSu.BoMon?.TenBoMon ?? "-")</div>
+                            <div class="small mb-1"><strong>Chức vụ:</strong> @(hoSoNhanSu.ChucVu?.TenChucVu ?? "Giảng viên / Cán bộ")</div>
+                            <div class="small"><strong>Trình độ:</strong> @(hoSoNhanSu.TrinhDoChuyenMon?.TenTrinhDo ?? "-")</div>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+
+        <!-- Cột phải: Biểu mẫu cập nhật thông tin tài khoản & hồ sơ liên kết -->
+        <div class="col-lg-8">
+            <div class="card shadow-sm border-0 mb-4">
+                <div class="card-header bg-white py-3 border-bottom">
+                    <h6 class="mb-0 text-primary fw-bold">
+                        <i class="bi bi-pencil-square me-2"></i>Cập Nhật Thông Tin Cá Nhân &amp; Liên Hệ
+                    </h6>
+                </div>
+                <div class="card-body p-4">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">Họ và tên hiển thị <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" id="txtHoVaTenProfile" @bind="hoVaTen" />
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">Địa chỉ Email đăng nhập</label>
+                            <input type="text" class="form-control bg-light" value="@email" readonly />
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">Số điện thoại liên hệ</label>
+                            <input type="text" class="form-control" id="txtSoDienThoaiProfile" @bind="soDienThoai" placeholder="0912345678" />
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">Mã nhân sự liên kết (Cán bộ / GV)</label>
+                            <input type="text" class="form-control font-monospace" id="txtMaNhanSuProfile" @bind="maNhanSuLienKet" placeholder="VD: NS0001" readonly="@(!laSuperAdmin && !laAdmin)" />
+                        </div>
+
+                        @if (hoSoNhanSu != null)
+                        {
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold">Địa chỉ cư trú / liên hệ</label>
+                                <input type="text" class="form-control" id="txtDiaChiProfile" @bind="diaChi" placeholder="Hà Nội" />
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold">Chuyên môn đào tạo</label>
+                                <input type="text" class="form-control" id="txtChuyenMonProfile" @bind="chuyenMonDaoTao" />
+                            </div>
+                        }
+                    </div>
+
+                    <div class="d-flex justify-content-end mt-4">
+                        <button type="button" class="btn btn-primary px-4" id="btnLuuProfile" @onclick="LuuThongTinProfile">
+                            <i class="bi bi-check2-circle me-1"></i>Lưu Cập Nhật Hồ Sơ
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            @if (danhSachPhanCongCuaToi.Count > 0)
+            {
+                <div class="card shadow-sm border-0">
+                    <div class="card-header bg-white py-3 border-bottom">
+                        <h6 class="mb-0 text-primary fw-bold">
+                            <i class="bi bi-calendar-check me-2"></i>Lớp Học Quản Lý &amp; Môn Giảng Dạy Liên Kết (@danhSachPhanCongCuaToi.Count)
+                        </h6>
+                    </div>
+                    <div class="card-body p-0">
+                        <div class="table-responsive">
+                            <table class="table table-hover align-middle mb-0">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th class="ps-3">Mã PC</th>
+                                        <th>Môn Học</th>
+                                        <th>Lớp Đào Tạo</th>
+                                        <th>Học Kỳ</th>
+                                        <th>Vai Trò</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var pc in danhSachPhanCongCuaToi)
+                                    {
+                                        <tr>
+                                            <td class="ps-3 font-monospace text-primary fw-semibold">@pc.MaPhanCong</td>
+                                            <td class="fw-medium">@(pc.MonHoc?.TenMonHoc ?? "-")</td>
+                                            <td><span class="badge bg-light text-dark border">@(pc.LopHoc?.TenLop ?? "-")</span></td>
+                                            <td>@pc.HocKyNamHoc</td>
+                                            <td>
+                                                <span class="badge bg-primary">@pc.VaiTroGiangDay</span>
+                                                @if (pc.LaChuNhiem)
+                                                {
+                                                    <span class="badge bg-success ms-1">GVCN</span>
+                                                }
+                                            </td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+@code {
+    [CascadingParameter]
+    private Task<AuthenticationState>? AuthStateTask { get; set; }
+
+    private string email = "";
+    private string hoVaTen = "";
+    private string? soDienThoai;
+    private string? maNhanSuLienKet;
+    private string? diaChi;
+    private string? chuyenMonDaoTao;
+    private string vaiTroHienThi = "Người dùng";
+    private string avatarUrl = MainLayout.AvatarNamGiangVien;
+    private string? thongBaoThanhCong;
+
+    private bool laSuperAdmin;
+    private bool laAdmin;
+    private NhanSu? hoSoNhanSu;
+    private List<PhanCongGiangDay> danhSachPhanCongCuaToi = new();
+
+    private readonly (string Ten, string Url)[] danhSachAvatarMau = new[]
+    {
+        ("Nam GV", MainLayout.AvatarNamGiangVien),
+        ("Nữ GV", MainLayout.AvatarNuGiangVien),
+        ("Lãnh Đạo", MainLayout.AvatarSuperAdmin),
+        ("Cán Bộ", MainLayout.AvatarCanBoTre)
+    };
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (AuthStateTask != null)
+        {
+            var authState = await AuthStateTask;
+            var user = authState.User;
+            if (user.Identity?.IsAuthenticated == true)
+            {
+                email = user.Identity.Name ?? "";
+                laSuperAdmin = user.IsInRole(VaiTroMacDinh.SuperAdmin);
+                laAdmin = user.IsInRole(VaiTroMacDinh.QuanTriVien);
+
+                if (laSuperAdmin) vaiTroHienThi = "Superadmin (Toàn quyền + Live CRUD)";
+                else if (laAdmin) vaiTroHienThi = "Quản trị viên (Admin Workspace)";
+                else if (user.IsInRole(VaiTroMacDinh.GiaoVien)) vaiTroHienThi = "Giảng viên (Giảng viên Workspace)";
+                else if (user.IsInRole(VaiTroMacDinh.CanBo)) vaiTroHienThi = "Cán bộ Quản lý (Cán bộ Workspace)";
+                else vaiTroHienThi = "Người dùng Tra cứu (User Workspace)";
+
+                using var scope = ScopeFactory.CreateScope();
+                var userManager = scope.ServiceProvider.GetRequiredService<UserManager<TaiKhoan>>();
+                var dbUser = await userManager.FindByEmailAsync(email);
+                if (dbUser != null)
+                {
+                    hoVaTen = dbUser.HoVaTen;
+                    soDienThoai = dbUser.PhoneNumber;
+                    maNhanSuLienKet = dbUser.MaNhanSuLienKet;
+
+                    var claims = await userManager.GetClaimsAsync(dbUser);
+                    var av = claims.FirstOrDefault(c => c.Type == "Avatar")?.Value;
+                    if (!string.IsNullOrWhiteSpace(av))
+                    {
+                        avatarUrl = av;
+                    }
+                }
+            }
+        }
+
+        await TaiHoSoNhanSuLienKetAsync();
+    }
+
+    private async Task TaiHoSoNhanSuLienKetAsync()
+    {
+        var dsNhanSu = await NhanSuDichVu.LayDanhSachAsync();
+        if (!string.IsNullOrWhiteSpace(maNhanSuLienKet))
+        {
+            hoSoNhanSu = dsNhanSu.FirstOrDefault(n => string.Equals(n.MaNhanSu, maNhanSuLienKet, StringComparison.OrdinalIgnoreCase));
+        }
+        if (hoSoNhanSu == null && !string.IsNullOrWhiteSpace(email))
+        {
+            hoSoNhanSu = dsNhanSu.FirstOrDefault(n => string.Equals(n.Email, email, StringComparison.OrdinalIgnoreCase));
+        }
+
+        if (hoSoNhanSu != null)
+        {
+            soDienThoai ??= hoSoNhanSu.SoDienThoai;
+            diaChi = hoSoNhanSu.DiaChi;
+            chuyenMonDaoTao = hoSoNhanSu.ChuyenMonDaoTao;
+
+            var dsPhanCong = await PhanCongDichVu.LayDanhSachAsync();
+            danhSachPhanCongCuaToi = dsPhanCong
+                .Where(p => p.NhanSuId == hoSoNhanSu.NhanSuId)
+                .ToList();
+        }
+    }
+
+    private async Task LuuThongTinProfile()
+    {
+        using var scope = ScopeFactory.CreateScope();
+        var userManager = scope.ServiceProvider.GetRequiredService<UserManager<TaiKhoan>>();
+        var dbUser = await userManager.FindByEmailAsync(email);
+        if (dbUser != null)
+        {
+            dbUser.HoVaTen = hoVaTen.Trim();
+            dbUser.PhoneNumber = soDienThoai?.Trim();
+            if (laSuperAdmin || laAdmin)
+            {
+                dbUser.MaNhanSuLienKet = maNhanSuLienKet?.Trim();
+            }
+            await userManager.UpdateAsync(dbUser);
+
+            var claims = await userManager.GetClaimsAsync(dbUser);
+            var oldAv = claims.FirstOrDefault(c => c.Type == "Avatar");
+            if (oldAv != null)
+            {
+                await userManager.RemoveClaimAsync(dbUser, oldAv);
+            }
+            if (!string.IsNullOrWhiteSpace(avatarUrl))
+            {
+                await userManager.AddClaimAsync(dbUser, new Claim("Avatar", avatarUrl.Trim()));
+            }
+        }
+
+        if (hoSoNhanSu != null)
+        {
+            hoSoNhanSu.HoVaTen = hoVaTen.Trim();
+            hoSoNhanSu.SoDienThoai = soDienThoai?.Trim();
+            hoSoNhanSu.DiaChi = diaChi?.Trim();
+            hoSoNhanSu.ChuyenMonDaoTao = chuyenMonDaoTao?.Trim();
+            await NhanSuDichVu.CapNhatNhanSuAsync(hoSoNhanSu);
+        }
+
+        await TaiHoSoNhanSuLienKetAsync();
+        thongBaoThanhCong = "Đã lưu cập nhật thông tin Hồ sơ cá nhân (Profile) thành công!";
+    }
+}

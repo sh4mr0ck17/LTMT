@@ -11,34 +11,30 @@
 <PageTitle>Hồ sơ Cán bộ & Giảng viên - Học Viện An Ninh Nhân Dân</PageTitle>
 
 <div class="container-fluid px-4 py-3" id="pnlDanhSachNhanSu">
-    <!-- Header Banner Thống Nhất C500 -->
-    <div class="cand-banner-header p-3 mb-3 d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3">
-        <div class="d-flex align-items-center">
-            <img src="images/logo_badge.png" alt="Logo C500" class="logo-cand-nav me-3" />
-            <div>
-                <div class="d-flex align-items-center gap-2 mb-1">
-                    <span class="badge badge-cand-gold">HỌC VIỆN AN NINH NHÂN DÂN • C500</span>
-                    <span class="badge badge-cand-red">HỒ SƠ CÁN BỘ &amp; GIẢNG VIÊN</span>
-                </div>
-                <h4 class="mb-0 fw-bold text-white" id="lblTieuDe">
-                    <i class="bi bi-person-lines-fill me-2"></i>QUẢN LÝ HỒ SƠ CÁN BỘ &amp; GIẢNG VIÊN
-                </h4>
-                <small style="color: #F2F0A5;">Danh sách cán bộ toàn viện • Đồng bộ trường tùy chỉnh thời gian thực từ Live CRUD • Lọc đa chiều theo từng trường</small>
-            </div>
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-3 gap-2">
+        <div>
+            <h4 class="mb-1 text-primary fw-bold" id="lblTieuDe">
+                <i class="bi bi-person-lines-fill me-2"></i>Danh Sách Cán Bộ &amp; Giảng Viên
+            </h4>
+            <span class="text-muted small">Quản lý hồ sơ cán bộ toàn viện • Lọc đa chiều &amp; đồng bộ trường động</span>
         </div>
         <div class="d-flex flex-wrap gap-2">
-            <a href="Excel/TaiTepMau?module=NhanSu" class="btn btn-outline-light btn-sm" id="btnTaiMauExcel">
-                <i class="bi bi-download me-1"></i>Tải Mẫu Excel
-            </a>
-            <a href="Excel/XuatDuLieu?module=NhanSu" class="btn btn-sm btn-outline-warning text-dark fw-bold" style="background-color: #FFD700;" id="btnXuatExcel">
+            <a href="Excel/XuatDuLieu?module=NhanSu" class="btn btn-sm btn-outline-primary" id="btnXuatExcel">
                 <i class="bi bi-file-earmark-excel me-1"></i>Xuất Excel
             </a>
-            <a href="Excel/NhapExcel?module=NhanSu" class="btn btn-sm btn-success fw-bold" id="btnNhapExcel">
-                <i class="bi bi-file-earmark-arrow-up me-1"></i>Nhập Excel
-            </a>
-            <button type="button" class="btn btn-sm btn-light text-primary fw-bold shadow-sm" id="btnThemNhanSu" @onclick="ThemCanBoMoi">
-                <i class="bi bi-person-plus-fill me-1"></i>Thêm Mới Cán Bộ
-            </button>
+            <AuthorizeView Roles="Superadmin,Admin,DataManager,CanBo,GiaoVien">
+                <Authorized>
+                    <a href="Excel/TaiTepMau?module=NhanSu" class="btn btn-outline-secondary btn-sm" id="btnTaiMauExcel">
+                        <i class="bi bi-download me-1"></i>Tải Mẫu Excel
+                    </a>
+                    <a href="Excel/NhapExcel?module=NhanSu" class="btn btn-sm btn-success" id="btnNhapExcel">
+                        <i class="bi bi-file-earmark-arrow-up me-1"></i>Nhập Excel
+                    </a>
+                    <button type="button" class="btn btn-sm btn-primary" id="btnThemNhanSu" @onclick="ThemCanBoMoi">
+                        <i class="bi bi-person-plus-fill me-1"></i>Thêm Mới Cán Bộ
+                    </button>
+                </Authorized>
+            </AuthorizeView>
         </div>
     </div>
 
@@ -276,12 +272,21 @@
                                                 }
                                                 else
                                                 {
-                                                    <span class="badge bg-light text-dark border p-1 cursor-pointer"
-                                                          @onclick="() => { editingPk = pkStr; editingField = fieldKey; }"
-                                                          title="Bấm để sửa nhanh trực tiếp">
-                                                        @(string.IsNullOrEmpty(valCustom) ? "(Trống)" : valCustom)
-                                                        <i class="bi bi-pencil-fill ms-1 text-primary small"></i>
-                                                    </span>
+                                                    <AuthorizeView Roles="Superadmin,Admin,DataManager,CanBo,GiaoVien">
+                                                        <Authorized>
+                                                            <span class="badge bg-light text-dark border p-1 cursor-pointer"
+                                                                  @onclick="() => { editingPk = pkStr; editingField = fieldKey; }"
+                                                                  title="Bấm để sửa nhanh trực tiếp">
+                                                                @(string.IsNullOrEmpty(valCustom) ? "(Trống)" : valCustom)
+                                                                <i class="bi bi-pencil-fill ms-1 text-primary small"></i>
+                                                            </span>
+                                                        </Authorized>
+                                                        <NotAuthorized>
+                                                            <span class="badge bg-light text-dark border p-1">
+                                                                @(string.IsNullOrEmpty(valCustom) ? "-" : valCustom)
+                                                            </span>
+                                                        </NotAuthorized>
+                                                    </AuthorizeView>
                                                 }
                                             </td>
                                         }
@@ -314,16 +319,20 @@
                                     </td>
                                     <td class="text-center">
                                         <div class="btn-group btn-group-sm">
-                                            <a href="NhanSu/ChiTiet/@ns.NhanSuId" class="btn btn-outline-info" title="Xem hồ sơ" id="btnXem_@ns.NhanSuId">
+                                            <a href="NhanSu/ChiTiet/@ns.NhanSuId" class="btn btn-outline-primary" title="Xem hồ sơ" id="btnXem_@ns.NhanSuId">
                                                 <i class="bi bi-eye"></i>
                                             </a>
-                                            <a href="NhanSu/ChinhSua/@ns.NhanSuId" class="btn btn-outline-primary" title="Chỉnh sửa" id="btnSua_@ns.NhanSuId">
-                                                <i class="bi bi-pencil"></i>
-                                            </a>
-                                            <button type="button" class="btn btn-outline-danger" title="Xóa cán bộ" id="btnXoa_@ns.NhanSuId"
-                                                    @onclick="() => XoaNhanSu(ns.NhanSuId, ns.HoVaTen)">
-                                                <i class="bi bi-trash"></i>
-                                            </button>
+                                            <AuthorizeView Roles="Superadmin,Admin,DataManager,CanBo,GiaoVien">
+                                                <Authorized>
+                                                    <a href="NhanSu/ChinhSua/@ns.NhanSuId" class="btn btn-outline-primary" title="Chỉnh sửa" id="btnSua_@ns.NhanSuId">
+                                                        <i class="bi bi-pencil"></i>
+                                                    </a>
+                                                    <button type="button" class="btn btn-outline-danger" title="Xóa cán bộ" id="btnXoa_@ns.NhanSuId"
+                                                            @onclick="() => XoaNhanSu(ns.NhanSuId, ns.HoVaTen)">
+                                                        <i class="bi bi-trash"></i>
+                                                    </button>
+                                                </Authorized>
+                                            </AuthorizeView>
                                         </div>
                                     </td>
                                 </tr>

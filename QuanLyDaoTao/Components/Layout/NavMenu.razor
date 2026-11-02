@@ -2,153 +2,190 @@
 @using Microsoft.AspNetCore.Components.Authorization
 @inject NavigationManager NavigationManager
 
-<div class="app-sidebar-header">
-    <a class="d-flex align-items-center text-decoration-none text-white" href="" id="lblLogo">
-        <img src="images/logo_badge.png" alt="Logo Học viện An ninh Nhân dân" class="logo-cand-nav me-2 shadow-sm" />
-        <div class="lh-sm">
-            <span class="d-block fw-bold text-white" style="font-size: 0.95rem; letter-spacing: 0.4px;">HỌC VIỆN AN NINH</span>
-            <span class="brand-subtitle" style="color: #FFD700; font-size: 0.7rem; font-weight: 700;">NHÂN DÂN • C500</span>
-        </div>
-    </a>
-</div>
+<ul class="sidebar-tree">
+    <!-- 1. Bảng Điều Khiển (Workspace Cá Nhân Hóa) -->
+    <li class="nav-item-Flyout">
+        <NavLink href="" Match="NavLinkMatch.All" class="tree-link" title="Không Gian Làm Việc">
+            <div class="d-flex align-items-center gap-2">
+                <i class="bi bi-grid-1x2-fill nav-icon"></i>
+                <span class="nav-label-text">Không Gian Làm Việc</span>
+            </div>
+        </NavLink>
+    </li>
 
-<div class="app-sidebar-body">
-    <ul class="sidebar-tree">
-        <!-- NHÓM 1: TỔNG QUAN & SƠ ĐỒ -->
-        <li class="tree-category">
-            <i class="bi bi-compass"></i><span>Tổng Quan &amp; Sơ Đồ</span>
-        </li>
-        <li>
-            <NavLink href="" Match="NavLinkMatch.All" class="tree-link">
-                <span><i class="bi bi-speedometer2 me-2"></i>Bảng Điều Khiển</span>
-                <span class="badge bg-light text-dark small py-1">Dashboard</span>
-            </NavLink>
-        </li>
-        <li>
-            <NavLink href="CayToChuc" class="tree-link">
-                <span><i class="bi bi-diagram-3-fill me-2" style="color: #FFD700;"></i>Cây Tổ Chức C500</span>
-                <span class="badge badge-cand-gold small py-1">Tree</span>
-            </NavLink>
-        </li>
+    <!-- 2. Sơ Đồ Cây Tổ Chức -->
+    <li class="nav-item-Flyout">
+        <NavLink href="CayToChuc" class="tree-link" title="Sơ Đồ Cây Tổ Chức">
+            <div class="d-flex align-items-center gap-2">
+                <i class="bi bi-diagram-3-fill nav-icon"></i>
+                <span class="nav-label-text">Cây Tổ Chức</span>
+            </div>
+        </NavLink>
+    </li>
 
-        <!-- NHÓM 2: CƠ CẤU TỔ CHỨC (Khoa & Bộ môn) -->
-        <li class="tree-category mt-2">
-            <i class="bi bi-building"></i><span>Cơ Cấu Đơn Vị</span>
-        </li>
-        <li>
-            <button type="button" class="tree-branch-header" @onclick="() => isToChucExpanded = !isToChucExpanded" aria-expanded="@(isToChucExpanded ? "true" : "false")">
-                <span><i class="bi bi-bank me-2 text-warning"></i>Khoa &amp; Bộ Môn</span>
-                <i class="bi bi-chevron-right branch-chevron"></i>
-            </button>
-            <ul class="tree-subnodes @(isToChucExpanded ? "" : "d-none")">
-                <li>
-                    <NavLink href="Khoa" class="tree-sublink">
-                        <span>Danh sách Khoa</span>
-                    </NavLink>
-                </li>
-                <li>
-                    <NavLink href="BoMon" class="tree-sublink">
-                        <span>Danh sách Bộ môn</span>
-                    </NavLink>
-                </li>
-            </ul>
-        </li>
+    <!-- 3. Cơ Cấu Đơn Vị (Hover mở cửa sổ nổi sang bên phải) -->
+    <li class="nav-item-Flyout">
+        <button type="button" class="tree-branch-header" title="Cơ Cấu Đơn Vị">
+            <div class="d-flex align-items-center gap-2">
+                <i class="bi bi-building-fill nav-icon"></i>
+                <span class="nav-label-text">Cơ Cấu Đơn Vị</span>
+            </div>
+            <i class="bi bi-chevron-right branch-chevron small"></i>
+        </button>
+        <ul class="flyout-submenu">
+            <li class="flyout-header">Cơ Cấu Đơn Vị</li>
+            <li>
+                <NavLink href="Khoa" class="tree-sublink">
+                    <i class="bi bi-bank"></i>
+                    <span>Danh sách Khoa</span>
+                </NavLink>
+            </li>
+            <li>
+                <NavLink href="BoMon" class="tree-sublink">
+                    <i class="bi bi-diagram-2"></i>
+                    <span>Danh sách Bộ môn</span>
+                </NavLink>
+            </li>
+        </ul>
+    </li>
 
-        <!-- NHÓM 3: QUẢN LÝ ĐÀO TẠO -->
-        <li class="tree-category mt-2">
-            <i class="bi bi-mortarboard-fill"></i><span>Quản Lý Đào Tạo</span>
-        </li>
-        <li>
-            <button type="button" class="tree-branch-header" @onclick="() => isDaoTaoExpanded = !isDaoTaoExpanded" aria-expanded="@(isDaoTaoExpanded ? "true" : "false")">
-                <span><i class="bi bi-people-fill me-2 text-info"></i>Lớp &amp; Học Viên</span>
-                <i class="bi bi-chevron-right branch-chevron"></i>
-            </button>
-            <ul class="tree-subnodes @(isDaoTaoExpanded ? "" : "d-none")">
-                <li>
-                    <NavLink href="LopHoc" class="tree-sublink">
-                        <span>Quản lý Lớp học</span>
-                    </NavLink>
-                </li>
-                <li>
-                    <NavLink href="HocVien" class="tree-sublink">
-                        <span>Quản lý Học viên</span>
-                    </NavLink>
-                </li>
-                <li>
-                    <NavLink href="MonHoc" class="tree-sublink">
-                        <span>Môn học &amp; Tín chỉ</span>
-                    </NavLink>
-                </li>
-                <li>
-                    <NavLink href="PhanCongGiangDay" class="tree-sublink">
-                        <span>Phân công giảng dạy</span>
-                    </NavLink>
-                </li>
-            </ul>
-        </li>
+    <!-- 4. Quản Lý Đào Tạo (Hover mở cửa sổ nổi sang bên phải) -->
+    <li class="nav-item-Flyout">
+        <button type="button" class="tree-branch-header" title="Quản Lý Đào Tạo">
+            <div class="d-flex align-items-center gap-2">
+                <i class="bi bi-mortarboard-fill nav-icon"></i>
+                <span class="nav-label-text">Quản Lý Đào Tạo</span>
+            </div>
+            <i class="bi bi-chevron-right branch-chevron small"></i>
+        </button>
+        <ul class="flyout-submenu">
+            <li class="flyout-header">Quản Lý Đào Tạo</li>
+            <li>
+                <NavLink href="LopHoc" class="tree-sublink">
+                    <i class="bi bi-people"></i>
+                    <span>Quản lý Lớp học</span>
+                </NavLink>
+            </li>
+            <li>
+                <NavLink href="HocVien" class="tree-sublink">
+                    <i class="bi bi-person-badge"></i>
+                    <span>Quản lý Học viên</span>
+                </NavLink>
+            </li>
+            <li>
+                <NavLink href="MonHoc" class="tree-sublink">
+                    <i class="bi bi-journal-bookmark"></i>
+                    <span>Môn học &amp; Tín chỉ</span>
+                </NavLink>
+            </li>
+            <li>
+                <NavLink href="PhanCongGiangDay" class="tree-sublink">
+                    <i class="bi bi-calendar-check"></i>
+                    <span>Phân công giảng dạy</span>
+                </NavLink>
+            </li>
+        </ul>
+    </li>
 
-        <!-- NHÓM 4: HỒ SƠ NHÂN SỰ -->
-        <li class="tree-category mt-2">
-            <i class="bi bi-person-workspace"></i><span>Hồ Sơ Cán Bộ &amp; GV</span>
-        </li>
-        <li>
-            <NavLink href="NhanSu" class="tree-link" Match="NavLinkMatch.Prefix">
-                <span><i class="bi bi-person-lines-fill me-2" style="color: #FFD700;"></i>Hồ Sơ Cán Bộ (Toàn Diện)</span>
-                <span class="badge badge-cand-gold small py-1">Hub</span>
-            </NavLink>
-        </li>
+    <!-- 5. Hồ Sơ Cán Bộ & Giảng Viên (Hover mở cửa sổ nổi hoặc bấm trực tiếp) -->
+    <li class="nav-item-Flyout">
+        <NavLink href="NhanSu" class="tree-link" Match="NavLinkMatch.Prefix" title="Hồ Sơ Cán Bộ & Giảng Viên">
+            <div class="d-flex align-items-center gap-2">
+                <i class="bi bi-person-vcard-fill nav-icon"></i>
+                <span class="nav-label-text">Hồ Sơ Cán Bộ &amp; GV</span>
+            </div>
+            <i class="bi bi-chevron-right branch-chevron small"></i>
+        </NavLink>
+        <ul class="flyout-submenu">
+            <li class="flyout-header">Hồ Sơ &amp; Danh Mục</li>
+            <li>
+                <NavLink href="NhanSu" class="tree-sublink" Match="NavLinkMatch.All">
+                    <i class="bi bi-person-lines-fill"></i>
+                    <span>Danh sách Cán bộ / GV</span>
+                </NavLink>
+            </li>
+            <li>
+                <NavLink href="ChucVu" class="tree-sublink">
+                    <i class="bi bi-award"></i>
+                    <span>Danh mục Chức vụ</span>
+                </NavLink>
+            </li>
+            <li>
+                <NavLink href="TrinhDoChuyenMon" class="tree-sublink">
+                    <i class="bi bi-patch-check"></i>
+                    <span>Trình độ chuyên môn</span>
+                </NavLink>
+            </li>
+        </ul>
+    </li>
 
-        <!-- NHÓM 5: TIỆN ÍCH EXCEL -->
-        <li class="tree-category mt-2">
-            <i class="bi bi-file-earmark-excel-fill"></i><span>Tiện Ích Excel</span>
-        </li>
-        <li>
-            <a href="Excel/NhapExcel?module=NhanSu" class="tree-link">
-                <span><i class="bi bi-file-earmark-arrow-up me-2 text-success"></i>Nhập Excel Nhân Sự</span>
-            </a>
-        </li>
-        <li>
-            <a href="Excel/NhapExcel?module=Khoa" class="tree-link">
-                <span><i class="bi bi-file-earmark-arrow-up me-2 text-success"></i>Nhập Excel Khoa</span>
-            </a>
-        </li>
+    <!-- 6. Quản Trị Hệ Thống (Admin & Superadmin) -->
+    <AuthorizeView Roles="@($"{VaiTroMacDinh.SuperAdmin},{VaiTroMacDinh.QuanTriVien}")">
+        <Authorized>
+            <li class="nav-item-Flyout">
+                <button type="button" class="tree-branch-header" title="Quản Trị Hệ Thống">
+                    <div class="d-flex align-items-center gap-2">
+                        <i class="bi bi-shield-lock-fill nav-icon"></i>
+                        <span class="nav-label-text">Quản Trị Hệ Thống</span>
+                    </div>
+                    <i class="bi bi-chevron-right branch-chevron small"></i>
+                </button>
+                <ul class="flyout-submenu">
+                    <li class="flyout-header">Quản Trị &amp; Tài Khoản</li>
+                    <li>
+                        <a href="TaiKhoan/TaoMoi" class="tree-sublink">
+                            <i class="bi bi-person-plus-fill"></i>
+                            <span>Tạo TK Giáo viên / Cán bộ</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="TaiKhoan/DanhSach" class="tree-sublink">
+                            <i class="bi bi-people-fill"></i>
+                            <span>Quản lý &amp; Xóa Tài khoản</span>
+                        </a>
+                    </li>
+                    <li>
+                        <NavLink href="NhatKy" class="tree-sublink">
+                            <i class="bi bi-clock-history"></i>
+                            <span>Nhật ký kiểm toán</span>
+                        </NavLink>
+                    </li>
+                </ul>
+            </li>
+        </Authorized>
+    </AuthorizeView>
 
-        <AuthorizeView Roles="@VaiTroMacDinh.QuanTriVien">
-            <Authorized>
-                <!-- NHÓM 6: HỆ THỐNG & TÙY BIẾN DB (ADMINISTRATOR) -->
-                <li class="tree-category mt-2">
-                    <i class="bi bi-shield-lock-fill"></i><span>Hệ Thống &amp; DB Live</span>
-                </li>
-                <li>
-                    <NavLink href="QuanTriDuLieu" class="tree-link fw-bold" style="color: #FFD700 !important;" id="btnMenuQuanTriDb">
-                        <span><i class="bi bi-database-fill-gear me-2"></i>Tùy Biến DB (Live CRUD)</span>
-                        <span class="badge bg-danger">Studio</span>
-                    </NavLink>
-                </li>
-                <li>
-                    <NavLink href="TaiKhoan/DanhSach" class="tree-link">
-                        <span><i class="bi bi-people-fill me-2"></i>Quản lý Tài khoản</span>
-                    </NavLink>
-                </li>
-                <li>
-                    <NavLink href="NhatKy" class="tree-link">
-                        <span><i class="bi bi-clock-history me-2"></i>Nhật ký kiểm toán</span>
-                    </NavLink>
-                </li>
-            </Authorized>
-        </AuthorizeView>
-    </ul>
-</div>
+    <!-- 7. Tùy Biến DB Live CRUD (ĐỘC QUYỀN DUY NHẤT SUPERADMIN) -->
+    <AuthorizeView Roles="@VaiTroMacDinh.SuperAdmin">
+        <Authorized>
+            <li class="nav-item-Flyout">
+                <NavLink href="QuanTriDuLieu" class="tree-link" id="btnMenuQuanTriDb" title="Live CRUD Database Studio (Superadmin)">
+                    <div class="d-flex align-items-center gap-2">
+                        <i class="bi bi-database-fill-gear nav-icon"></i>
+                        <span class="nav-label-text">Live CRUD Studio</span>
+                    </div>
+                </NavLink>
+            </li>
+        </Authorized>
+    </AuthorizeView>
 
-<div class="app-sidebar-footer d-flex align-items-center justify-content-between">
-    <div>
-        <span class="d-block fw-bold text-white">HỌC VIỆN AN NINH</span>
-        <small>Bản quyền &copy; 2026</small>
-    </div>
-    <span class="badge badge-cand-gold">Blazor .NET 8</span>
-</div>
+    <!-- 8. Hồ Sơ Cá Nhân (Profile Của Tôi) -->
+    <li class="nav-item-Flyout">
+        <NavLink href="HoSoCaNhan" class="tree-link" id="btnMenuProfile" title="Hồ Sơ Cá Nhân (Profile)">
+            <div class="d-flex align-items-center gap-2">
+                <i class="bi bi-person-circle nav-icon"></i>
+                <span class="nav-label-text">Hồ Sơ Cá Nhân</span>
+            </div>
+        </NavLink>
+    </li>
 
-@code {
-    private bool isToChucExpanded = true;
-    private bool isDaoTaoExpanded = true;
-}
+    <!-- 9. Hướng Dẫn Sử Dụng Chi Tiết -->
+    <li class="nav-item-Flyout">
+        <NavLink href="HuongDan" class="tree-link" id="btnMenuHuongDan" title="Hướng Dẫn Sử Dụng Hệ Thống">
+            <div class="d-flex align-items-center gap-2">
+                <i class="bi bi-book-half nav-icon"></i>
+                <span class="nav-label-text">Hướng Dẫn Sử Dụng</span>
+            </div>
+        </NavLink>
+    </li>
+</ul>

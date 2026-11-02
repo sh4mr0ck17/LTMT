@@ -2,6 +2,8 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using System.Security.Claims;
+using QuanLyDaoTao.Data;
 using QuanLyDaoTao.Models;
 using QuanLyDaoTao.Services;
 using QuanLyDaoTao.ViewModels.TaiKhoan;
@@ -17,15 +19,17 @@ public class TaiKhoanController : Controller
     private readonly UserManager<TaiKhoan> _userManager;
     private readonly RoleManager<VaiTro> _roleManager;
     private readonly INhatKyDichVu _nhatKyDichVu;
+    private readonly QuanLyDaoTaoDbContext? _coSoDuLieu;
 
     /// <summary>
-    /// Khởi tạo bộ điều khiển với các dịch vụ Identity và Nhật ký.
+    /// Khởi tạo bộ điều khiển với các dịch vụ Identity, Nhật ký và Cơ sở dữ liệu.
     /// </summary>
     public TaiKhoanController(
         SignInManager<TaiKhoan> signInManager,
         UserManager<TaiKhoan> userManager,
         RoleManager<VaiTro> roleManager,
-        INhatKyDichVu nhatKyDichVu)
+        INhatKyDichVu nhatKyDichVu,
+        QuanLyDaoTaoDbContext? coSoDuLieu = null)
     {
         ArgumentNullException.ThrowIfNull(signInManager);
         ArgumentNullException.ThrowIfNull(userManager);
@@ -36,6 +40,7 @@ public class TaiKhoanController : Controller
         _userManager = userManager;
         _roleManager = roleManager;
         _nhatKyDichVu = nhatKyDichVu;
+        _coSoDuLieu = coSoDuLieu;
     }
 
     /// <summary>
@@ -109,7 +114,7 @@ public class TaiKhoanController : Controller
             {
                 return Redirect(moHinh.DuongDanQuayLai);
             }
-            return RedirectToAction("Index", "Home");
+            return Redirect("/");
         }
 
         ModelState.AddModelError(string.Empty, "Email hoặc mật khẩu không chính xác.");
@@ -170,7 +175,7 @@ public class TaiKhoanController : Controller
             "Thành công",
             HttpContext.Connection.RemoteIpAddress?.ToString());
 
-        return RedirectToAction("DangNhap", "TaiKhoan");
+        return Redirect("/");
     }
 
     /// <summary>
@@ -245,7 +250,7 @@ public class TaiKhoanController : Controller
     /// Quản trị viên xem danh sách tất cả tài khoản trong hệ thống.
     /// </summary>
     [HttpGet]
-    [Authorize(Roles = VaiTroMacDinh.QuanTriVien)]
+    [Authorize(Roles = $"{VaiTroMacDinh.SuperAdmin},{VaiTroMacDinh.QuanTriVien}")]
     public async Task<IActionResult> DanhSach(string? tuKhoa = null, string? vaiTro = null)
     {
         var truyVan = _userManager.Users.AsNoTracking().AsQueryable();
@@ -296,18 +301,22 @@ public class TaiKhoanController : Controller
     /// Hiển thị biểu mẫu tạo tài khoản người dùng mới.
     /// </summary>
     [HttpGet]
-    [Authorize(Roles = VaiTroMacDinh.QuanTriVien)]
+    [Authorize(Roles = $"{VaiTroMacDinh.SuperAdmin},{VaiTroMacDinh.QuanTriVien}")]
     public async Task<IActionResult> TaoMoi()
     {
         ViewBag.DanhSachVaiTro = await _roleManager.Roles.Select(r => r.Name).ToListAsync();
-        return View(new TaoTaiKhoanViewModel());
+        if (_coSoDuLieu != null)
+        {
+            ViewBag.DanhSachNhanSu = await _coSoDuLieu.NhanSus.AsNoTracking().OrderBy(n => n.MaNhanSu).ToListAsync();
+        }
+        return View(new TaoTaiKhoanViewModel { VaiTro = VaiTroMacDinh.GiaoVien });
     }
 
     /// <summary>
-    /// Xử lý tạo mới tài khoản người dùng.
+    /// Xử lý tạo mới tài khoản Giáo viên / Cán bộ / Người dùng và cá nhân hóa Workspace.
     /// </summary>
     [HttpPost]
-    [Authorize(Roles = VaiTroMacDinh.QuanTriVien)]
+    [Authorize(Roles = $"{VaiTroMacDinh.SuperAdmin},{VaiTroMacDinh.QuanTriVien}")]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> TaoMoi(TaoTaiKhoanViewModel moHinh)
     {
@@ -315,6 +324,19 @@ public class TaiKhoanController : Controller
 
         if (!ModelState.IsValid)
         {
+            ViewBag.DanhSachVaiTro = await _roleManager.Roles.Select(r => r.Name).ToListAsync();
+            if (_coSoDuLieu != null)
+            {
+                ViewBag.DanhSachNhanSu = await _coSoDuLieu.NhanSus.AsNoTracking().OrderBy(n => n.MaNhanSu).ToListAsync();
+            }
+            return View(moHinh);
+        }
+
+        // Chỉ Superadmin mới có quyền cấp vai trò Superadmin
+        if (string.Equals(moHinh.VaiTro, VaiTroMacDinh.SuperAdmin, StringComparison.OrdinalIgnoreCase) &&
+            !User.IsInRole(VaiTroMacDinh.SuperAdmin))
+        {
+            ModelState.AddModelError("VaiTro", "Chỉ Superadmin mới có quyền cấp phát tài khoản Superadmin.");
             ViewBag.DanhSachVaiTro = await _roleManager.Roles.Select(r => r.Name).ToListAsync();
             return View(moHinh);
         }
@@ -327,13 +349,45 @@ public class TaiKhoanController : Controller
             return View(moHinh);
         }
 
+        // Tự động tạo hoặc liên kết hồ sơ Nhân sự nếu là Giáo viên / Cán bộ
+        var maNs = moHinh.MaNhanSuLienKet?.Trim();
+        if (_coSoDuLieu != null && moHinh.TuDongTaoHoSoNhanSu &&
+            (string.Equals(moHinh.VaiTro, VaiTroMacDinh.GiaoVien, StringComparison.OrdinalIgnoreCase) ||
+             string.Equals(moHinh.VaiTro, VaiTroMacDinh.CanBo, StringComparison.OrdinalIgnoreCase)))
+        {
+            if (string.IsNullOrWhiteSpace(maNs))
+            {
+                maNs = $"CB{DateTime.UtcNow:MMddHHmm}";
+            }
+
+            var nsTonTai = await _coSoDuLieu.NhanSus.FirstOrDefaultAsync(n => n.MaNhanSu == maNs);
+            if (nsTonTai == null)
+            {
+                var nsMoi = new NhanSu
+                {
+                    MaNhanSu = maNs,
+                    HoVaTen = moHinh.HoVaTen.Trim(),
+                    Email = moHinh.Email.Trim(),
+                    SoDienThoai = moHinh.SoDienThoai?.Trim(),
+                    ChuyenMonDaoTao = moHinh.ChucDanh?.Trim() ?? (moHinh.VaiTro == VaiTroMacDinh.GiaoVien ? "Giảng viên chuyên ngành" : "Cán bộ quản lý đào tạo"),
+                    NgaySinh = new DateTime(1988, 1, 1),
+                    GioiTinh = "Nam",
+                    TrangThai = "Đang làm việc",
+                    NgayVaoLam = DateTime.UtcNow
+                };
+                _coSoDuLieu.NhanSus.Add(nsMoi);
+                await _coSoDuLieu.SaveChangesAsync();
+            }
+        }
+
         var taiKhoanMoi = new TaiKhoan
         {
             UserName = moHinh.Email,
             Email = moHinh.Email,
             EmailConfirmed = true,
             HoVaTen = moHinh.HoVaTen,
-            MaNhanSuLienKet = moHinh.MaNhanSuLienKet,
+            PhoneNumber = moHinh.SoDienThoai,
+            MaNhanSuLienKet = maNs,
             CoHoatDong = true,
             NgayTao = DateTime.UtcNow
         };
@@ -341,22 +395,31 @@ public class TaiKhoanController : Controller
         var ketQua = await _userManager.CreateAsync(taiKhoanMoi, moHinh.MatKhau);
         if (ketQua.Succeeded)
         {
-            if (!string.IsNullOrEmpty(moHinh.VaiTro) && await _roleManager.RoleExistsAsync(moHinh.VaiTro))
+            if (!string.IsNullOrEmpty(moHinh.VaiTro))
             {
+                if (!await _roleManager.RoleExistsAsync(moHinh.VaiTro))
+                {
+                    await _roleManager.CreateAsync(new VaiTro(moHinh.VaiTro) { MoTa = moHinh.VaiTro });
+                }
                 await _userManager.AddToRoleAsync(taiKhoanMoi, moHinh.VaiTro);
+            }
+
+            if (!string.IsNullOrWhiteSpace(moHinh.AnhDaiDien))
+            {
+                await _userManager.AddClaimAsync(taiKhoanMoi, new Claim("Avatar", moHinh.AnhDaiDien.Trim()));
             }
 
             await _nhatKyDichVu.GhiNhatKyAsync(
                 User.Identity?.Name ?? "Quản trị viên",
-                "Tạo tài khoản mới",
+                "Tạo tài khoản Giáo viên / Cán bộ",
                 "TaiKhoan",
                 taiKhoanMoi.Id,
                 null,
-                $"Email: {taiKhoanMoi.Email}, Vai trò: {moHinh.VaiTro}",
+                $"Email: {taiKhoanMoi.Email}, Vai trò: {moHinh.VaiTro}, Mã NS: {maNs}",
                 "Thành công",
                 HttpContext.Connection.RemoteIpAddress?.ToString());
 
-            TempData["ThongBaoThanhCong"] = $"Tạo tài khoản {moHinh.Email} thành công!";
+            TempData["ThongBaoThanhCong"] = $"Đã cấp tài khoản {moHinh.Email} ({moHinh.VaiTro}) thành công!";
             return RedirectToAction(nameof(DanhSach));
         }
 
@@ -373,7 +436,7 @@ public class TaiKhoanController : Controller
     /// Khóa hoặc mở khóa trạng thái hoạt động của một tài khoản.
     /// </summary>
     [HttpPost]
-    [Authorize(Roles = VaiTroMacDinh.QuanTriVien)]
+    [Authorize(Roles = $"{VaiTroMacDinh.SuperAdmin},{VaiTroMacDinh.QuanTriVien}")]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> KhoaMoKhoa(string id)
     {
@@ -411,6 +474,63 @@ public class TaiKhoanController : Controller
             HttpContext.Connection.RemoteIpAddress?.ToString());
 
         TempData["ThongBaoThanhCong"] = $"Cập nhật trạng thái tài khoản {taiKhoan.Email} thành công!";
+        return RedirectToAction(nameof(DanhSach));
+    }
+
+    /// <summary>
+    /// Xóa vĩnh viễn một tài khoản người dùng khỏi hệ thống (Dành cho Superadmin / Admin).
+    /// </summary>
+    [HttpPost]
+    [Authorize(Roles = $"{VaiTroMacDinh.SuperAdmin},{VaiTroMacDinh.QuanTriVien}")]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> XoaTaiKhoan(string id)
+    {
+        if (string.IsNullOrWhiteSpace(id))
+        {
+            return BadRequest();
+        }
+
+        var taiKhoan = await _userManager.FindByIdAsync(id);
+        if (taiKhoan == null)
+        {
+            return NotFound();
+        }
+
+        var nguoiDungHienTai = await _userManager.GetUserAsync(User);
+        if (nguoiDungHienTai != null && nguoiDungHienTai.Id == taiKhoan.Id)
+        {
+            TempData["ThongBaoLoi"] = "Bạn không thể tự xóa tài khoản đang đăng nhập của chính mình!";
+            return RedirectToAction(nameof(DanhSach));
+        }
+
+        // Không cho phép Admin thường xóa tài khoản Superadmin
+        if (await _userManager.IsInRoleAsync(taiKhoan, VaiTroMacDinh.SuperAdmin) && !User.IsInRole(VaiTroMacDinh.SuperAdmin))
+        {
+            TempData["ThongBaoLoi"] = "Chỉ Superadmin mới có quyền xóa tài khoản cấp Superadmin!";
+            return RedirectToAction(nameof(DanhSach));
+        }
+
+        var emailXoa = taiKhoan.Email ?? taiKhoan.UserName ?? id;
+        var ketQuaXoa = await _userManager.DeleteAsync(taiKhoan);
+        if (ketQuaXoa.Succeeded)
+        {
+            await _nhatKyDichVu.GhiNhatKyAsync(
+                User.Identity?.Name ?? "Superadmin",
+                "Xóa tài khoản",
+                "TaiKhoan",
+                id,
+                $"Email: {emailXoa}",
+                "Đã xóa vĩnh viễn",
+                "Thành công",
+                HttpContext.Connection.RemoteIpAddress?.ToString());
+
+            TempData["ThongBaoThanhCong"] = $"Đã xóa vĩnh viễn tài khoản {emailXoa} khỏi hệ thống!";
+        }
+        else
+        {
+            TempData["ThongBaoLoi"] = "Không thể xóa tài khoản. Vui lòng thử lại.";
+        }
+
         return RedirectToAction(nameof(DanhSach));
     }
 }

@@ -93,7 +93,7 @@ public class YeuCauXoaHangLoatDto
 /// <summary>
 /// Bộ điều khiển Quản trị Dữ liệu Trực tuyến (Admin Live Manual CRUD &amp; Custom Schema Studio) dành riêng cho Administrator.
 /// </summary>
-[Authorize(Roles = VaiTroMacDinh.QuanTriVien)]
+[Authorize(Roles = VaiTroMacDinh.SuperAdmin)]
 public class QuanTriDuLieuController : Controller
 {
     private readonly IQuanTriDuLieuDichVu _quanTriDuLieuDichVu;

@@ -12,7 +12,7 @@ namespace QuanLyDaoTao.Controllers.Api;
 /// </summary>
 [ApiController]
 [Route("api/v1/live-crud")]
-[Authorize(Roles = VaiTroMacDinh.QuanTriVien)]
+[Authorize(Roles = VaiTroMacDinh.SuperAdmin)]
 [Produces("application/json")]
 public class LiveCrudApiController : ControllerBase
 {

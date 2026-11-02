@@ -1,4 +1,4 @@
-// C500 - Học viện An ninh Nhân dân: Script khởi tạo biểu đồ Chart.js cho Blazor & MVC
+// C500 - Học viện An ninh Nhân dân: Script khởi tạo biểu đồ Chart.js với bảng màu Xanh Lá Đậm (Dark Forest Green) & Trắng
 
 window.khoiTaoBieuDoDashboard = function (khoasJson, lopsJson) {
     if (typeof Chart === 'undefined') return;
@@ -12,14 +12,13 @@ window.khoiTaoBieuDoDashboard = function (khoasJson, lopsJson) {
         console.error("Lỗi parse JSON biểu đồ", e);
     }
 
-    const candColors = {
-        green: '#047920',
-        greenDark: '#025917',
-        gold: '#FFD700',
-        red: '#D91E18',
-        blue: '#0d6efd',
-        cyan: '#0dcaf0',
-        gray: '#6c757d'
+    const greenPalette = {
+        forestDark: '#0b4627',
+        forestMedium: '#15803d',
+        emerald: '#059669',
+        sage: '#34d399',
+        slate: '#64748b',
+        slateLight: '#cbd5e1'
     };
 
     // 1. Biểu đồ Cột: Học viên & Lớp theo Khoa
@@ -36,18 +35,18 @@ window.khoiTaoBieuDoDashboard = function (khoasJson, lopsJson) {
                     {
                         label: 'Học viên',
                         data: dsKhoa.map(k => k.SoHocVien || k.soHocVien || 0),
-                        backgroundColor: 'rgba(4, 121, 32, 0.85)',
-                        borderColor: candColors.green,
+                        backgroundColor: greenPalette.forestDark,
+                        borderColor: greenPalette.forestDark,
                         borderWidth: 1,
-                        borderRadius: 5
+                        borderRadius: 6
                     },
                     {
                         label: 'Lớp học',
                         data: dsKhoa.map(k => k.SoLop || k.soLop || 0),
-                        backgroundColor: 'rgba(255, 215, 0, 0.85)',
-                        borderColor: '#c59b08',
+                        backgroundColor: greenPalette.emerald,
+                        borderColor: greenPalette.emerald,
                         borderWidth: 1,
-                        borderRadius: 5
+                        borderRadius: 6
                     }
                 ]
             },
@@ -73,10 +72,10 @@ window.khoiTaoBieuDoDashboard = function (khoasJson, lopsJson) {
                 datasets: [{
                     data: [12, 28, 15, 10],
                     backgroundColor: [
-                        '#047920',
-                        '#0b8a28',
-                        '#FFD700',
-                        '#0dcaf0'
+                        '#0b4627',
+                        '#15803d',
+                        '#059669',
+                        '#64748b'
                     ],
                     borderWidth: 2,
                     borderColor: '#ffffff'
@@ -104,10 +103,10 @@ window.khoiTaoBieuDoDashboard = function (khoasJson, lopsJson) {
                     axis: 'y',
                     label: 'Số lượng cán bộ',
                     data: [3, 5, 8, 32, 14],
-                    backgroundColor: 'rgba(255, 193, 7, 0.85)',
-                    borderColor: '#ffc107',
+                    backgroundColor: '#15803d',
+                    borderColor: '#0b4627',
                     borderWidth: 1,
-                    borderRadius: 4
+                    borderRadius: 5
                 }]
             },
             options: {
@@ -134,18 +133,18 @@ window.khoiTaoBieuDoDashboard = function (khoasJson, lopsJson) {
                     {
                         label: 'Sĩ số thực tế',
                         data: dsLop.map(l => l.SoHocVien || l.soHocVien || 0),
-                        backgroundColor: 'rgba(13, 202, 240, 0.85)',
-                        borderColor: '#0dcaf0',
+                        backgroundColor: '#059669',
+                        borderColor: '#059669',
                         borderWidth: 1,
-                        borderRadius: 4
+                        borderRadius: 5
                     },
                     {
                         label: 'Chỉ tiêu tối đa',
                         data: dsLop.map(l => l.SoLuongToiDa || l.soLuongToiDa || 50),
-                        backgroundColor: 'rgba(108, 117, 125, 0.35)',
-                        borderColor: '#6c757d',
+                        backgroundColor: '#cbd5e1',
+                        borderColor: '#94a3b8',
                         borderWidth: 1,
-                        borderRadius: 4
+                        borderRadius: 5
                     }
                 ]
             },

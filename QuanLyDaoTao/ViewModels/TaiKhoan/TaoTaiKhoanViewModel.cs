@@ -45,4 +45,31 @@ public class TaoTaiKhoanViewModel
     [StringLength(50, ErrorMessage = "Mã nhân sự không được vượt quá 50 ký tự.")]
     [Display(Name = "Mã nhân sự liên kết")]
     public string? MaNhanSuLienKet { get; set; }
+
+    /// <summary>
+    /// Tự động khởi tạo hồ sơ Cán bộ / Giảng viên tương ứng nếu chưa có.
+    /// </summary>
+    [Display(Name = "Tự động tạo hồ sơ Cán bộ / Giảng viên")]
+    public bool TuDongTaoHoSoNhanSu { get; set; } = true;
+
+    /// <summary>
+    /// Số điện thoại liên hệ của Giáo viên / Cán bộ.
+    /// </summary>
+    [StringLength(20)]
+    [Display(Name = "Số điện thoại")]
+    public string? SoDienThoai { get; set; }
+
+    /// <summary>
+    /// Chuyên môn đào tạo hoặc chức danh công tác.
+    /// </summary>
+    [StringLength(150)]
+    [Display(Name = "Chuyên môn / Chức danh")]
+    public string? ChucDanh { get; set; }
+
+    /// <summary>
+    /// Đường dẫn ảnh đại diện (Avatar mặt người).
+    /// </summary>
+    [StringLength(2000)]
+    [Display(Name = "Ảnh đại diện (Avatar)")]
+    public string? AnhDaiDien { get; set; }
 }

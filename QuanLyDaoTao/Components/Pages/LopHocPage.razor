@@ -14,18 +14,22 @@
             <span class="text-muted small">Danh sách các lớp học, niên khóa và tỷ lệ lấp đầy sĩ số đào tạo</span>
         </div>
         <div class="d-flex gap-2">
-            <a href="Excel/TaiTepMau?module=LopHoc" class="btn btn-outline-secondary" id="btnTaiMauExcel">
-                <i class="bi bi-download me-1"></i>Tải Mẫu Excel
-            </a>
-            <a href="Excel/XuatDuLieu?module=LopHoc" class="btn btn-outline-success" id="btnXuatExcel">
+            <a href="Excel/XuatDuLieu?module=LopHoc" class="btn btn-outline-primary" id="btnXuatExcel">
                 <i class="bi bi-file-earmark-excel me-1"></i>Xuất Excel
             </a>
-            <a href="Excel/NhapExcel?module=LopHoc" class="btn btn-success" id="btnNhapExcel">
-                <i class="bi bi-file-earmark-arrow-up me-1"></i>Nhập Excel
-            </a>
-            <a href="LopHoc/ThemMoi" class="btn btn-primary" id="btnThemLop">
-                <i class="bi bi-plus-circle-fill me-1"></i>Thêm Mới Lớp Học
-            </a>
+            <AuthorizeView Roles="Superadmin,Admin,DataManager,CanBo">
+                <Authorized>
+                    <a href="Excel/TaiTepMau?module=LopHoc" class="btn btn-outline-secondary" id="btnTaiMauExcel">
+                        <i class="bi bi-download me-1"></i>Tải Mẫu Excel
+                    </a>
+                    <a href="Excel/NhapExcel?module=LopHoc" class="btn btn-success" id="btnNhapExcel">
+                        <i class="bi bi-file-earmark-arrow-up me-1"></i>Nhập Excel
+                    </a>
+                    <a href="LopHoc/ThemMoi" class="btn btn-primary" id="btnThemLop">
+                        <i class="bi bi-plus-circle-fill me-1"></i>Thêm Mới Lớp Học
+                    </a>
+                </Authorized>
+            </AuthorizeView>
         </div>
     </div>
 
@@ -125,16 +129,20 @@
                                     </td>
                                     <td class="text-center">
                                         <div class="btn-group btn-group-sm" role="group">
-                                            <a href="LopHoc/ChiTiet/@lop.LopHocId" class="btn btn-outline-info" title="Xem chi tiết" id="btnXem_@lop.LopHocId">
+                                            <a href="LopHoc/ChiTiet/@lop.LopHocId" class="btn btn-outline-primary" title="Xem chi tiết" id="btnXem_@lop.LopHocId">
                                                 <i class="bi bi-eye"></i>
                                             </a>
-                                            <a href="LopHoc/ChinhSua/@lop.LopHocId" class="btn btn-outline-primary" title="Chỉnh sửa" id="btnSua_@lop.LopHocId">
-                                                <i class="bi bi-pencil"></i>
-                                            </a>
-                                            <button type="button" class="btn btn-outline-danger" title="Xóa lớp học" id="btnXoa_@lop.LopHocId"
-                                                    @onclick="() => XoaLop(lop.LopHocId)">
-                                                <i class="bi bi-trash"></i>
-                                            </button>
+                                            <AuthorizeView Roles="Superadmin,Admin,DataManager,CanBo">
+                                                <Authorized>
+                                                    <a href="LopHoc/ChinhSua/@lop.LopHocId" class="btn btn-outline-primary" title="Chỉnh sửa" id="btnSua_@lop.LopHocId">
+                                                        <i class="bi bi-pencil"></i>
+                                                    </a>
+                                                    <button type="button" class="btn btn-outline-danger" title="Xóa lớp học" id="btnXoa_@lop.LopHocId"
+                                                            @onclick="() => XoaLop(lop.LopHocId)">
+                                                        <i class="bi bi-trash"></i>
+                                                    </button>
+                                                </Authorized>
+                                            </AuthorizeView>
                                         </div>
                                     </td>
                                 </tr>
