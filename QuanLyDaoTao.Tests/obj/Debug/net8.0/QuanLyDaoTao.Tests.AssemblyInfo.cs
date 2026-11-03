@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("QuanLyDaoTao.Tests")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+ef0f946fe3a0127b1b3c3323f68d7953a094fea0")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+a7f80472435a72dc6d773eb23f5ffb36f55445ae")]
 [assembly: System.Reflection.AssemblyProductAttribute("QuanLyDaoTao.Tests")]
 [assembly: System.Reflection.AssemblyTitleAttribute("QuanLyDaoTao.Tests")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

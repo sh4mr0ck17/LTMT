@@ -1,5 +1,7 @@
 @page "/Khoa"
 @inject IKhoaDichVu KhoaDichVu
+@inject IQuanTriDuLieuDichVu QuanTriDuLieuDichVu
+@inject IJSRuntime JSRuntime
 @inject NavigationManager Navigation
 
 <PageTitle>Quản lý Khoa Đào Tạo - Học Viện An Ninh Nhân Dân</PageTitle>
@@ -80,6 +82,18 @@
                             <th class="text-center" style="width: 90px;">Lớp Học</th>
                             <th class="text-center" style="width: 90px;">Nhân Sự</th>
                             <th class="text-center" style="width: 120px;">Trạng Thái</th>
+
+                            <!-- CÁC CỘT TÙY CHỈNH ĐỘNG TỪ LIVE CRUD STUDIO -->
+                            @if (dsTruongTuyChinh != null)
+                            {
+                                @foreach (var cot in dsTruongTuyChinh)
+                                {
+                                    <th style="min-width: 120px;">
+                                        <span class="text-primary fw-bold"><i class="bi bi-stars text-warning me-1"></i>@cot.TenHienThi</span>
+                                    </th>
+                                }
+                            }
+
                             <th class="text-center" style="width: 170px;">Thao Tác</th>
                         </tr>
                     </thead>
@@ -87,7 +101,7 @@
                         @if (danhSachHienThi == null || danhSachHienThi.Count == 0)
                         {
                             <tr>
-                                <td colspan="11" class="text-center py-4 text-muted">
+                                <td colspan="@(11 + (dsTruongTuyChinh?.Count ?? 0))" class="text-center py-4 text-muted">
                                     <i class="bi bi-inbox fs-2 d-block mb-2"></i>Không tìm thấy khoa nào trong hệ thống
                                 </td>
                             </tr>
@@ -97,6 +111,7 @@
                             int stt = 1;
                             foreach (var khoa in danhSachHienThi)
                             {
+                                string pk = khoa.KhoaId.ToString();
                                 <tr>
                                     <td class="ps-3 fw-bold text-muted">@(stt++)</td>
                                     <td>
@@ -127,6 +142,44 @@
                                             <span class="badge bg-secondary"><i class="bi bi-lock me-1"></i>Đã khóa</span>
                                         }
                                     </td>
+
+                                    <!-- HIỂN THỊ VÀ SỬA NHANH CỘT TÙY CHỈNH ĐỘNG -->
+                                    @if (dsTruongTuyChinh != null)
+                                    {
+                                        @foreach (var cot in dsTruongTuyChinh)
+                                        {
+                                            string val = LayGiaTriCustom(pk, cot.MaTruong);
+                                            string fieldKey = "Custom_" + cot.MaTruong;
+                                            <td>
+                                                @if (editingPk == pk && editingField == fieldKey)
+                                                {
+                                                    <div class="input-group input-group-sm">
+                                                        <input type="text" class="form-control form-control-sm"
+                                                               value="@val"
+                                                               @onchange="(e) => LuuNhanhCustom(pk, cot.MaTruong, e.Value?.ToString())"
+                                                               @onblur="() => { editingPk = null; editingField = null; }" autofocus />
+                                                    </div>
+                                                }
+                                                else
+                                                {
+                                                    <AuthorizeView Roles="Superadmin,Admin,DataManager,CanBo">
+                                                        <Authorized>
+                                                            <span class="badge bg-light text-dark border p-1 cursor-pointer"
+                                                                  @onclick="() => { editingPk = pk; editingField = fieldKey; }"
+                                                                  title="Bấm để sửa nhanh trực tiếp">
+                                                                @(string.IsNullOrEmpty(val) ? "(Trống)" : val)
+                                                                <i class="bi bi-pencil-fill ms-1 text-primary small"></i>
+                                                            </span>
+                                                        </Authorized>
+                                                        <NotAuthorized>
+                                                            <span class="badge bg-light text-dark border p-1">@(string.IsNullOrEmpty(val) ? "-" : val)</span>
+                                                        </NotAuthorized>
+                                                    </AuthorizeView>
+                                                }
+                                            </td>
+                                        }
+                                    }
+
                                     <td class="text-center">
                                         <div class="btn-group btn-group-sm" role="group">
                                             <a href="Khoa/ChiTiet/@khoa.KhoaId" class="btn btn-outline-primary" title="Xem chi tiết" id="btnXem_@khoa.KhoaId">
@@ -166,17 +219,87 @@
         await LoadData();
     }
 
+    private List<TruongTuyChinh>? dsTruongTuyChinh;
+    private Dictionary<string, Dictionary<string, string>> mapCustomValues = new(StringComparer.OrdinalIgnoreCase);
+    private string? editingPk;
+    private string? editingField;
+
     private async Task LoadData()
     {
         danhSachGoc = await KhoaDichVu.LayDanhSachAsync();
+        try
+        {
+            dsTruongTuyChinh = await QuanTriDuLieuDichVu.LayDanhSachTruongTuyChinhAsync("Khoa");
+            var duLieuBang = await QuanTriDuLieuDichVu.LayDuLieuBangTrucTuyenAsync("Khoa");
+            if (duLieuBang?.DanhSachDong != null)
+            {
+                foreach (var dong in duLieuBang.DanhSachDong)
+                {
+                    var pk = dong.TryGetValue("KhoaId", out var pVal) ? pVal ?? "" : "";
+                    if (string.IsNullOrEmpty(pk)) continue;
+                    if (!mapCustomValues.ContainsKey(pk)) mapCustomValues[pk] = new(StringComparer.OrdinalIgnoreCase);
+                    if (dsTruongTuyChinh != null)
+                    {
+                        foreach (var c in dsTruongTuyChinh)
+                        {
+                            var keyCustom = "Custom_" + c.MaTruong;
+                            var val = dong.TryGetValue(keyCustom, out var v) ? v ?? "" : "";
+                            mapCustomValues[pk][c.MaTruong] = val;
+                        }
+                    }
+                }
+            }
+        }
+        catch
+        {
+        }
         LocDuLieu();
+    }
+
+    private string LayGiaTriCustom(string pk, string maTruong)
+    {
+        if (mapCustomValues.TryGetValue(pk, out var dict) && dict.TryGetValue(maTruong, out var val))
+        {
+            return val ?? "";
+        }
+        return "";
+    }
+
+    private async Task LuuNhanhCustom(string pk, string maTruong, string? giaTriMoi)
+    {
+        if (string.IsNullOrWhiteSpace(pk)) return;
+        try
+        {
+            await QuanTriDuLieuDichVu.CapNhatNhanhBanGhiAsync(
+                "Khoa",
+                pk,
+                new Dictionary<string, string?> { ["Custom_" + maTruong] = giaTriMoi },
+                "Superadmin Live"
+            );
+            if (mapCustomValues.TryGetValue(pk, out var dict))
+            {
+                dict[maTruong] = giaTriMoi ?? "";
+            }
+        }
+        catch (Exception ex)
+        {
+            await JSRuntime.InvokeVoidAsync("alert", ex.Message);
+        }
+        finally
+        {
+            editingPk = null;
+            editingField = null;
+        }
     }
 
     private void LocDuLieu()
     {
         if (danhSachGoc == null) return;
         danhSachHienThi = danhSachGoc.Where(k =>
-            (string.IsNullOrWhiteSpace(tuKhoa) || k.MaKhoa.Contains(tuKhoa, StringComparison.OrdinalIgnoreCase) || k.TenKhoa.Contains(tuKhoa, StringComparison.OrdinalIgnoreCase)) &&
+            (string.IsNullOrWhiteSpace(tuKhoa) ||
+             k.MaKhoa.Contains(tuKhoa, StringComparison.OrdinalIgnoreCase) ||
+             k.TenKhoa.Contains(tuKhoa, StringComparison.OrdinalIgnoreCase) ||
+             (mapCustomValues.TryGetValue(k.KhoaId.ToString(), out var cDict) && cDict.Values.Any(v => v != null && v.Contains(tuKhoa, StringComparison.OrdinalIgnoreCase)))) &&
             (!coHoatDongLoc.HasValue || k.CoHoatDong == coHoatDongLoc.Value)
         ).ToList();
     }

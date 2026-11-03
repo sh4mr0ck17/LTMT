@@ -96,4 +96,47 @@ public class HocVienDichVuTests
         // Act & Assert
         await Assert.ThrowsAsync<InvalidOperationException>(() => dichVu.ThemHocVienAsync(hvTrung));
     }
+
+    [Fact]
+    public async Task LayDanhSach_TimKiemTheoDiaChi_TraVeHocVienPhuHop()
+    {
+        // Arrange
+        using var db = CoSoDuLieuTestHelper.TaoDbContextAo();
+        var khoa = new Khoa { MaKhoa = "K_DC", TenKhoa = "Khoa Test Địa Chỉ" };
+        db.Khoas.Add(khoa);
+        await db.SaveChangesAsync();
+
+        var lop = new LopHoc { MaLop = "L_DC", TenLop = "Lớp Test Địa Chỉ", NienKhoa = "2024-2028", KhoaId = khoa.KhoaId };
+        db.LopHocs.Add(lop);
+        await db.SaveChangesAsync();
+
+        var dichVu = new HocVienDichVu(db);
+        await dichVu.ThemHocVienAsync(new HocVien
+        {
+            MaHocVien = "HV_HANOI",
+            HoVaTen = "Nguyễn Văn Hà",
+            NgaySinh = new DateTime(2005, 1, 1),
+            GioiTinh = "Nam",
+            LopHocId = lop.LopHocId,
+            DiaChi = "Hà Nội, Việt Nam"
+        });
+
+        await dichVu.ThemHocVienAsync(new HocVien
+        {
+            MaHocVien = "HV_SAIGON",
+            HoVaTen = "Trần Thị Lan",
+            NgaySinh = new DateTime(2005, 2, 2),
+            GioiTinh = "Nữ",
+            LopHocId = lop.LopHocId,
+            DiaChi = "TP. Hồ Chí Minh"
+        });
+
+        // Act: Tìm kiếm theo từ khóa "Hà Nội"
+        var ketQua = await dichVu.LayDanhSachAsync(tuKhoa: "Hà Nội");
+
+        // Assert
+        Assert.Single(ketQua);
+        Assert.Equal("HV_HANOI", ketQua[0].MaHocVien);
+        Assert.Equal("Hà Nội, Việt Nam", ketQua[0].DiaChi);
+    }
 }

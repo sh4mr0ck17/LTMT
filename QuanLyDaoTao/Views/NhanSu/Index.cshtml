@@ -129,7 +129,13 @@
                                         <a asp-action="ChiTiet" asp-route-id="@ns.NhanSuId" class="fw-semibold text-decoration-none text-dark">
                                             @ns.HoVaTen
                                         </a>
-                                        <div class="text-muted small">@ns.GioiTinh • @ns.NgaySinh.ToString("dd/MM/yyyy")</div>
+                                        <div class="text-muted small">
+                                            @ns.GioiTinh • @ns.NgaySinh.ToString("dd/MM/yyyy")
+                                            @if (!string.IsNullOrWhiteSpace(ns.SoCCCD))
+                                            {
+                                                <span> • <i class="bi bi-card-text me-1 text-primary"></i>CCCD: @ns.SoCCCD</span>
+                                            }
+                                        </div>
                                     </td>
                                     <td>
                                         <span class="badge bg-light text-dark border">@(ns.ChucVu?.TenChucVu ?? "Cán bộ")</span>
@@ -149,7 +155,15 @@
                                         <span class="badge bg-info text-dark">@(ns.TrinhDoChuyenMon?.TenTrinhDo ?? ns.HocVi ?? "-")</span>
                                     </td>
                                     <td><a href="mailto:@ns.EmailCongViec" class="text-decoration-none">@ns.EmailCongViec</a></td>
-                                    <td>@(ns.SoDienThoai ?? "-")</td>
+                                    <td>
+                                        <div>@(ns.SoDienThoai ?? "-")</div>
+                                        @if (!string.IsNullOrWhiteSpace(ns.DiaChi))
+                                        {
+                                            <div class="text-muted small text-truncate" style="max-width: 180px;" title="@ns.DiaChi">
+                                                <i class="bi bi-geo-alt me-1 text-primary"></i>@ns.DiaChi
+                                            </div>
+                                        }
+                                    </td>
                                     <td class="text-center">
                                         @{
                                             var badgeStatus = ns.TrangThaiCongTac switch

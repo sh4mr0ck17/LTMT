@@ -187,4 +187,38 @@ public class PhanQuyenVaDangKyTests : IClassFixture<WebApplicationFactory<Progra
         Assert.NotNull(apiAttr);
         Assert.Equal(VaiTroMacDinh.SuperAdmin, apiAttr.Roles);
     }
+
+    [Theory]
+    [InlineData(typeof(QuanLyDaoTao.Controllers.KhoaController))]
+    [InlineData(typeof(QuanLyDaoTao.Controllers.BoMonController))]
+    [InlineData(typeof(QuanLyDaoTao.Controllers.LopHocController))]
+    [InlineData(typeof(QuanLyDaoTao.Controllers.HocVienController))]
+    [InlineData(typeof(QuanLyDaoTao.Controllers.NhanSuController))]
+    [InlineData(typeof(QuanLyDaoTao.Controllers.MonHocController))]
+    [InlineData(typeof(QuanLyDaoTao.Controllers.PhanCongGiangDayController))]
+    [InlineData(typeof(QuanLyDaoTao.Controllers.ChucVuController))]
+    [InlineData(typeof(QuanLyDaoTao.Controllers.TrinhDoChuyenMonController))]
+    [InlineData(typeof(QuanLyDaoTao.Controllers.NhatKyController))]
+    [InlineData(typeof(QuanLyDaoTao.Controllers.Api.KhoaApiController))]
+    [InlineData(typeof(QuanLyDaoTao.Controllers.Api.LopHocApiController))]
+    [InlineData(typeof(QuanLyDaoTao.Controllers.Api.HocVienApiController))]
+    [InlineData(typeof(QuanLyDaoTao.Controllers.Api.NhanSuApiController))]
+    public void Controllers_DeuCapQuyenChoSuperAdmin(Type controllerType)
+    {
+        // Kiểm tra xem controller hoặc các method có chứa vai trò Superadmin không
+        var classAuth = controllerType
+            .GetCustomAttributes(typeof(Microsoft.AspNetCore.Authorization.AuthorizeAttribute), true)
+            .Cast<Microsoft.AspNetCore.Authorization.AuthorizeAttribute>()
+            .FirstOrDefault();
+
+        var methodAuths = controllerType.GetMethods()
+            .SelectMany(m => m.GetCustomAttributes(typeof(Microsoft.AspNetCore.Authorization.AuthorizeAttribute), true))
+            .Cast<Microsoft.AspNetCore.Authorization.AuthorizeAttribute>()
+            .ToList();
+
+        bool coSuperAdmin = (classAuth != null && (classAuth.Roles?.Contains(VaiTroMacDinh.SuperAdmin) ?? false))
+            || methodAuths.Any(a => a.Roles?.Contains(VaiTroMacDinh.SuperAdmin) ?? false);
+
+        Assert.True(coSuperAdmin, $"Controller {controllerType.Name} phải cấp quyền cho Superadmin");
+    }
 }

@@ -232,7 +232,13 @@
                                     <td><span class="badge bg-primary bg-opacity-10 text-primary fw-bold font-monospace fs-6">@ns.MaNhanSu</span></td>
                                     <td>
                                         <a href="NhanSu/ChiTiet/@ns.NhanSuId" class="fw-semibold text-decoration-none text-dark">@ns.HoVaTen</a>
-                                        <div class="text-muted small">@ns.GioiTinh • @ns.NgaySinh.ToString("dd/MM/yyyy")</div>
+                                        <div class="text-muted small">
+                                            @ns.GioiTinh • @ns.NgaySinh.ToString("dd/MM/yyyy")
+                                            @if (!string.IsNullOrWhiteSpace(ns.SoCCCD))
+                                            {
+                                                <span> • <i class="bi bi-card-text me-1 text-primary"></i>CCCD: @ns.SoCCCD</span>
+                                            }
+                                        </div>
                                     </td>
                                     <td><span class="badge bg-light text-dark border">@(ns.ChucVu?.TenChucVu ?? "Cán bộ")</span></td>
                                     <td>
@@ -250,7 +256,15 @@
                                         }
                                     </td>
                                     <td><a href="mailto:@ns.Email" class="text-decoration-none">@ns.Email</a></td>
-                                    <td>@(ns.SoDienThoai ?? "-")</td>
+                                    <td>
+                                        <div>@(ns.SoDienThoai ?? "-")</div>
+                                        @if (!string.IsNullOrWhiteSpace(ns.DiaChi))
+                                        {
+                                            <div class="text-muted small text-truncate" style="max-width: 200px;" title="@ns.DiaChi">
+                                                <i class="bi bi-geo-alt me-1 text-primary"></i>@ns.DiaChi
+                                            </div>
+                                        }
+                                    </td>
 
                                     <!-- HIỂN THỊ VÀ SỬA NHANH TRỰC TIẾP GIÁ TRỊ TRƯỜNG TÙY CHỈNH (VÍ DỤ: CHỨNG CHỈ IELTS, HSK...) -->
                                     @if (dsTruongTuyChinh != null)

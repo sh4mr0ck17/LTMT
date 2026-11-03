@@ -60,7 +60,7 @@ public class HocVienApiController : ControllerBase
     /// Thêm mới một học viên vào lớp.
     /// </summary>
     [HttpPost]
-    [Authorize(Roles = $"{VaiTroMacDinh.QuanTriVien},{VaiTroMacDinh.QuanLyDaoTao}")]
+    [Authorize(Roles = $"{VaiTroMacDinh.SuperAdmin},{VaiTroMacDinh.QuanTriVien},{VaiTroMacDinh.QuanLyDaoTao}")]
     public async Task<IActionResult> ThemHocVien([FromBody] HocVien hocVien)
     {
         if (hocVien == null || !ModelState.IsValid)
@@ -83,7 +83,7 @@ public class HocVienApiController : ControllerBase
     /// Cập nhật thông tin học viên.
     /// </summary>
     [HttpPut("{id:int}")]
-    [Authorize(Roles = $"{VaiTroMacDinh.QuanTriVien},{VaiTroMacDinh.QuanLyDaoTao}")]
+    [Authorize(Roles = $"{VaiTroMacDinh.SuperAdmin},{VaiTroMacDinh.QuanTriVien},{VaiTroMacDinh.QuanLyDaoTao}")]
     public async Task<IActionResult> CapNhatHocVien(int id, [FromBody] HocVien hocVien)
     {
         if (hocVien == null || id != hocVien.HocVienId || !ModelState.IsValid)
@@ -110,7 +110,7 @@ public class HocVienApiController : ControllerBase
     /// Xóa một học viên khỏi hệ thống.
     /// </summary>
     [HttpDelete("{id:int}")]
-    [Authorize(Roles = $"{VaiTroMacDinh.QuanTriVien},{VaiTroMacDinh.QuanLyDaoTao}")]
+    [Authorize(Roles = $"{VaiTroMacDinh.SuperAdmin},{VaiTroMacDinh.QuanTriVien},{VaiTroMacDinh.QuanLyDaoTao}")]
     public async Task<IActionResult> XoaHocVien(int id)
     {
         try

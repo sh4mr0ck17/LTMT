@@ -89,6 +89,7 @@
                             <th>Khoa Chủ Quản</th>
                             <th>Email</th>
                             <th>Số Điện Thoại</th>
+                            <th>Địa Chỉ Cư Trú</th>
                             <th class="text-center" style="width: 120px;">Trạng Thái</th>
                             <th class="text-center" style="width: 160px;">Thao Tác</th>
                         </tr>
@@ -127,6 +128,7 @@
                                     <td>@(hv.LopHoc?.Khoa?.TenKhoa ?? "-")</td>
                                     <td>@(hv.Email ?? "-")</td>
                                     <td>@(hv.SoDienThoai ?? "-")</td>
+                                    <td><span class="text-muted small"><i class="bi bi-geo-alt me-1 text-primary"></i>@(string.IsNullOrWhiteSpace(hv.DiaChi) ? "-" : hv.DiaChi)</span></td>
                                     <td class="text-center">
                                         @if (hv.CoHoatDong)
                                         {

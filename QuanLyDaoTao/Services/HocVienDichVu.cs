@@ -48,7 +48,8 @@ public class HocVienDichVu : IHocVienDichVu
                 hv.MaHocVien.Contains(tuKhoaChuan) ||
                 hv.HoVaTen.Contains(tuKhoaChuan) ||
                 (hv.Email != null && hv.Email.Contains(tuKhoaChuan)) ||
-                (hv.SoDienThoai != null && hv.SoDienThoai.Contains(tuKhoaChuan)));
+                (hv.SoDienThoai != null && hv.SoDienThoai.Contains(tuKhoaChuan)) ||
+                (hv.DiaChi != null && hv.DiaChi.Contains(tuKhoaChuan)));
         }
 
         if (coHoatDong.HasValue)

@@ -47,10 +47,10 @@
                             <th>Giảng Viên Giảng Dạy</th>
                             <th>Môn Học</th>
                             <th>Lớp Đào Tạo</th>
-                            <th>Học Kỳ</th>
-                            <th>Năm Học</th>
-                            <th>Vai Trò</th>
-                            <th class="text-center" style="width: 110px;">Chủ Nhiệm</th>
+                            <th>Học Kỳ / Năm Học</th>
+                            <th>Vai Trò Giảng Dạy</th>
+                            <th class="text-center" style="width: 100px;">Chủ Nhiệm</th>
+                            <th>Ghi Chú</th>
                             <th class="text-center" style="width: 140px;">Thao Tác</th>
                         </tr>
                     </thead>
@@ -74,8 +74,7 @@
                                     <td class="fw-semibold text-dark">@(pc.NhanSu?.HoVaTen ?? "-")</td>
                                     <td><span class="badge bg-light text-dark border">@(pc.MonHoc?.TenMonHoc ?? "-")</span></td>
                                     <td><span class="badge bg-light text-dark border">@(pc.LopHoc?.TenLop ?? "-")</span></td>
-                                    <td>@pc.HocKyNamHoc</td>
-                                    <td><span class="badge bg-light text-dark border">@pc.HocKyNamHoc</span></td>
+                                    <td><span class="badge bg-light text-dark border"><i class="bi bi-calendar3 me-1"></i>@pc.HocKyNamHoc</span></td>
                                     <td><span class="badge bg-info text-dark">@pc.VaiTroGiangDay</span></td>
                                     <td class="text-center">
                                         @if (pc.LaChuNhiem)
@@ -87,6 +86,7 @@
                                             <span class="text-muted">-</span>
                                         }
                                     </td>
+                                    <td><small class="text-muted">@(string.IsNullOrWhiteSpace(pc.GhiChu) ? "-" : pc.GhiChu)</small></td>
                                     <td class="text-center">
                                         <AuthorizeView Roles="Superadmin,Admin,DataManager,CanBo">
                                             <Authorized>

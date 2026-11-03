@@ -82,7 +82,7 @@
                             <th>Lớp Đào Tạo</th>
                             <th>Email</th>
                             <th>Số Điện Thoại</th>
-
+                            <th>Địa Chỉ Cư Trú</th>
                             <!-- CÁC CỘT TÙY CHỈNH ĐỘNG (NHƯ DÂN TỘC, ...) -->
                             @if (dsTruongTuyChinh != null)
                             {
@@ -126,14 +126,44 @@
                                     </td>
                                     <td>@(hv.Email ?? "-")</td>
                                     <td>@(hv.SoDienThoai ?? "-")</td>
+                                    <td>
+                                        <span class="text-muted small"><i class="bi bi-geo-alt me-1 text-primary"></i>@(string.IsNullOrWhiteSpace(hv.DiaChi) ? "-" : hv.DiaChi)</span>
+                                    </td>
 
-                                    <!-- HIỂN THỊ CỘT TÙY CHỈNH ĐỘNG (VÍ DỤ: DÂN TỘC) -->
+                                    <!-- HIỂN THỊ VÀ SỬA NHANH CỘT TÙY CHỈNH ĐỘNG (VÍ DỤ: DÂN TỘC) -->
                                     @if (dsTruongTuyChinh != null)
                                     {
                                         @foreach (var cot in dsTruongTuyChinh)
                                         {
                                             string val = LayGiaTriCustom(pk, cot.MaTruong);
-                                            <td><span class="badge bg-light text-dark border p-1">@(string.IsNullOrEmpty(val) ? "-" : val)</span></td>
+                                            string fieldKey = "Custom_" + cot.MaTruong;
+                                            <td>
+                                                @if (editingPk == pk && editingField == fieldKey)
+                                                {
+                                                    <div class="input-group input-group-sm">
+                                                        <input type="text" class="form-control form-control-sm"
+                                                               value="@val"
+                                                               @onchange="(e) => LuuNhanhCustom(pk, cot.MaTruong, e.Value?.ToString())"
+                                                               @onblur="() => { editingPk = null; editingField = null; }" autofocus />
+                                                    </div>
+                                                }
+                                                else
+                                                {
+                                                    <AuthorizeView Roles="Superadmin,Admin,DataManager,CanBo,GiaoVien">
+                                                        <Authorized>
+                                                            <span class="badge bg-light text-dark border p-1 cursor-pointer"
+                                                                  @onclick="() => { editingPk = pk; editingField = fieldKey; }"
+                                                                  title="Bấm để sửa nhanh trực tiếp">
+                                                                @(string.IsNullOrEmpty(val) ? "(Trống)" : val)
+                                                                <i class="bi bi-pencil-fill ms-1 text-primary small"></i>
+                                                            </span>
+                                                        </Authorized>
+                                                        <NotAuthorized>
+                                                            <span class="badge bg-light text-dark border p-1">@(string.IsNullOrEmpty(val) ? "-" : val)</span>
+                                                        </NotAuthorized>
+                                                    </AuthorizeView>
+                                                }
+                                            </td>
                                         }
                                     }
 
@@ -231,6 +261,9 @@
             (string.IsNullOrWhiteSpace(tuKhoa) ||
              h.MaHocVien.Contains(tuKhoa, StringComparison.OrdinalIgnoreCase) ||
              h.HoVaTen.Contains(tuKhoa, StringComparison.OrdinalIgnoreCase) ||
+             (h.DiaChi != null && h.DiaChi.Contains(tuKhoa, StringComparison.OrdinalIgnoreCase)) ||
+             (h.Email != null && h.Email.Contains(tuKhoa, StringComparison.OrdinalIgnoreCase)) ||
+             (h.SoDienThoai != null && h.SoDienThoai.Contains(tuKhoa, StringComparison.OrdinalIgnoreCase)) ||
              (mapCustomValues.TryGetValue(h.HocVienId.ToString(), out var cDict) && cDict.Values.Any(v => v != null && v.Contains(tuKhoa, StringComparison.OrdinalIgnoreCase)))) &&
             (!lopIdLoc.HasValue || h.LopHocId == lopIdLoc.Value)
         ).ToList();
@@ -266,6 +299,36 @@
         }
         catch
         {
+        }
+    }
+
+    private string? editingPk;
+    private string? editingField;
+
+    private async Task LuuNhanhCustom(string pk, string maTruong, string? giaTriMoi)
+    {
+        if (string.IsNullOrWhiteSpace(pk)) return;
+        try
+        {
+            await QuanTriDuLieuDichVu.CapNhatNhanhBanGhiAsync(
+                "HocVien",
+                pk,
+                new Dictionary<string, string?> { ["Custom_" + maTruong] = giaTriMoi },
+                "Superadmin Live"
+            );
+            if (mapCustomValues.TryGetValue(pk, out var dict))
+            {
+                dict[maTruong] = giaTriMoi ?? "";
+            }
+        }
+        catch (Exception ex)
+        {
+            await JSRuntime.InvokeVoidAsync("alert", ex.Message);
+        }
+        finally
+        {
+            editingPk = null;
+            editingField = null;
         }
     }
 }
