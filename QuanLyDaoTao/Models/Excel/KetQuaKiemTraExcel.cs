@@ -24,6 +24,49 @@ public class DongDuLieuPreviewExcel
     /// Danh sách các thông điệp lỗi thuộc về dòng này nếu có.
     /// </summary>
     public List<string> DanhSachLoi { get; set; } = new();
+
+    /// <summary>
+    /// Bản đồ lưu danh sách lỗi chi tiết theo từng tên cột trong dòng.
+    /// Cột có lỗi sẽ hiển thị MÀU ĐỎ trên giao diện.
+    /// Cột thỏa mãn điều kiện hợp lệ sẽ hiển thị MÀU XANH LÁ trên giao diện.
+    /// </summary>
+    public Dictionary<string, List<string>> LoiTheoCot { get; set; } = new(StringComparer.OrdinalIgnoreCase);
+
+    /// <summary>
+    /// Ghi nhận lỗi cho một cột cụ thể trong dòng.
+    /// </summary>
+    /// <param name="tenCot">Tên cột tiêu đề.</param>
+    /// <param name="thongDiepLoi">Mô tả lỗi phát hiện.</param>
+    public void GhiNhanLoiCot(string tenCot, string thongDiepLoi)
+    {
+        if (string.IsNullOrWhiteSpace(tenCot)) return;
+        if (!LoiTheoCot.ContainsKey(tenCot))
+        {
+            LoiTheoCot[tenCot] = new List<string>();
+        }
+        LoiTheoCot[tenCot].Add(thongDiepLoi);
+        DanhSachLoi.Add(thongDiepLoi);
+        LaHopLe = false;
+    }
+
+    /// <summary>
+    /// Kiểm tra xem cột có bị lỗi hay không (phục vụ hiển thị MÀU ĐỎ).
+    /// </summary>
+    public bool CotCoLoi(string tenCot) => LoiTheoCot.TryGetValue(tenCot, out var loi) && loi.Count > 0;
+
+    /// <summary>
+    /// Lấy chuỗi thông điệp lỗi của cột để hiển thị tooltip / badge cảnh báo.
+    /// </summary>
+    public string? LayLoiCot(string tenCot) => LoiTheoCot.TryGetValue(tenCot, out var loi) && loi.Count > 0 ? string.Join("; ", loi) : null;
+
+    /// <summary>
+    /// Kiểm tra xem cột có thỏa mãn dữ liệu hợp lệ hay không (phục vụ hiển thị MÀU XANH LÁ).
+    /// </summary>
+    public bool CotThoaMan(string tenCot)
+    {
+        if (CotCoLoi(tenCot)) return false;
+        return DuLieuCot.TryGetValue(tenCot, out var v) && !string.IsNullOrWhiteSpace(v);
+    }
 }
 
 /// <summary>

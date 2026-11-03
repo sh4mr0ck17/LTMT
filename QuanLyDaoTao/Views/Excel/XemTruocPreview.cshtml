@@ -111,20 +111,27 @@
             <h5 class="mb-0 text-primary fw-bold">
                 <i class="bi bi-table me-2"></i>Dữ Liệu Xem Trước (Preview Table)
             </h5>
-            <small class="text-muted">Các dòng tô màu đỏ sẽ không được nhập vào hệ thống</small>
+            <div class="d-flex align-items-center gap-2">
+                <span class="badge" style="background-color: #f0fdf4; color: #166534; border: 1px solid #86efac;">
+                    <i class="bi bi-check-circle-fill me-1 text-success"></i>Ô Xanh lá: Thỏa mãn
+                </span>
+                <span class="badge" style="background-color: #fef2f2; color: #991b1b; border: 1px solid #f87171;">
+                    <i class="bi bi-x-circle-fill me-1 text-danger"></i>Ô Đỏ: Báo lỗi cần sửa
+                </span>
+            </div>
         </div>
         <div class="card-body p-0">
-            <div class="table-responsive" style="max-height: 500px;">
+            <div class="table-responsive" style="max-height: 540px;">
                 <table class="table table-hover table-bordered align-middle mb-0" id="dgvXemTruocDuLieu">
                     <thead class="table-light sticky-top">
                         <tr>
-                            <th class="text-center" style="width: 60px;">Dòng</th>
-                            <th class="text-center" style="width: 110px;">Trạng thái</th>
+                            <th class="text-center" style="width: 55px;">Dòng</th>
+                            <th class="text-center" style="width: 105px;">Trạng thái</th>
                             @foreach (var cot in Model.DanhSachCot)
                             {
                                 <th>@cot</th>
                             }
-                            <th>Ghi chú lỗi</th>
+                            <th style="min-width: 220px;">Ghi chú lỗi</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -140,8 +147,7 @@
                         {
                             foreach (var dong in Model.DanhSachDongDuLieu)
                             {
-                                var classDong = dong.LaHopLe ? "" : "table-danger";
-                                <tr class="@classDong">
+                                <tr>
                                     <td class="text-center fw-bold text-muted">@dong.SoDong</td>
                                     <td class="text-center">
                                         @if (dong.LaHopLe)
@@ -150,13 +156,45 @@
                                         }
                                         else
                                         {
-                                            <span class="badge bg-danger"><i class="bi bi-x-circle me-1"></i>Lỗi</span>
+                                            <span class="badge bg-danger"><i class="bi bi-x-circle me-1"></i>Có lỗi</span>
                                         }
                                     </td>
                                     @foreach (var cot in Model.DanhSachCot)
                                     {
                                         var val = dong.DuLieuCot.ContainsKey(cot) ? dong.DuLieuCot[cot] : "";
-                                        <td>@val</td>
+                                        bool coLoi = dong.CotCoLoi(cot);
+                                        string? thongDiepLoi = dong.LayLoiCot(cot);
+                                        bool coGiaTri = !string.IsNullOrWhiteSpace(val);
+
+                                        if (coLoi)
+                                        {
+                                            <td class="excel-cell-error" title="@thongDiepLoi">
+                                                <div class="d-flex align-items-center justify-content-between gap-1">
+                                                    <span class="fw-bold text-danger">@(string.IsNullOrWhiteSpace(val) ? "(Trống)" : val)</span>
+                                                    <span class="badge bg-danger rounded-pill px-1" title="@thongDiepLoi">
+                                                        <i class="bi bi-x-circle-fill"></i>
+                                                    </span>
+                                                </div>
+                                                <div class="small text-danger fst-italic mt-1" style="font-size: 0.72rem; line-height: 1.2;">
+                                                    <i class="bi bi-exclamation-circle me-1"></i>@thongDiepLoi
+                                                </div>
+                                            </td>
+                                        }
+                                        else if (coGiaTri)
+                                        {
+                                            <td class="excel-cell-valid" title="Dữ liệu trường thỏa mãn hợp lệ">
+                                                <div class="d-flex align-items-center justify-content-between gap-1">
+                                                    <span class="fw-semibold text-success">@val</span>
+                                                    <span class="text-success small" title="Thỏa mãn"><i class="bi bi-check-circle-fill"></i></span>
+                                                </div>
+                                            </td>
+                                        }
+                                        else
+                                        {
+                                            <td class="excel-cell-optional text-center" title="Trường tùy chọn để trống (Hợp lệ)">
+                                                <span class="text-muted small fst-italic"><i class="bi bi-dash"></i></span>
+                                            </td>
+                                        }
                                     }
                                     <td>
                                         @if (dong.DanhSachLoi.Count > 0)
@@ -170,7 +208,7 @@
                                         }
                                         else
                                         {
-                                            <span class="text-success small"><i class="bi bi-check me-1"></i>Sẵn sàng lưu</span>
+                                            <span class="text-success small fw-semibold"><i class="bi bi-check-circle-fill me-1"></i>Tất cả trường thỏa mãn</span>
                                         }
                                     </td>
                                 </tr>

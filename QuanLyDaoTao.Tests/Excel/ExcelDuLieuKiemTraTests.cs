@@ -269,4 +269,145 @@ public class ExcelDuLieuKiemTraTests
         Assert.False(dong.LaHopLe);
         Assert.Equal(2, dong.DanhSachLoi.Count); // Báo đầy đủ 2 lỗi trên dòng!
     }
+
+    [Fact]
+    public async Task KiemTraDuLieu_GhiNhanLoiTheoTungCot_TruongThoaManVaTruongBaoLoi()
+    {
+        // Arrange
+        using var db = CoSoDuLieuTestHelper.TaoDbContextAo();
+        var nhatKy = new NhatKyDichVu(db);
+        var excelDichVu = new ExcelDichVu(db, nhatKy);
+
+        var khoa = new Khoa { MaKhoa = "CNTT", TenKhoa = "Công nghệ Thông tin" };
+        var lop = new LopHoc { MaLop = "CNTT_K20A", TenLop = "Lớp K20A", NienKhoa = "2024-2028", Khoa = khoa };
+        db.Khoas.Add(khoa);
+        db.LopHocs.Add(lop);
+        await db.SaveChangesAsync();
+
+        // Dòng có: Họ tên đúng, Ngày sinh đúng, Email đúng nhưng Giới tính sai và Mã lớp sai
+        using var stream = TaoWorkbookInMemory(ws =>
+        {
+            ws.Cell(1, 1).Value = "Mã học viên";
+            ws.Cell(1, 2).Value = "Họ và tên";
+            ws.Cell(1, 3).Value = "Ngày sinh";
+            ws.Cell(1, 4).Value = "Giới tính";
+            ws.Cell(1, 5).Value = "Email";
+            ws.Cell(1, 6).Value = "Mã lớp";
+
+            ws.Cell(2, 1).SetValue("HV20260001");
+            ws.Cell(2, 2).SetValue("Nguyễn Văn An"); // Thỏa mãn
+            ws.Cell(2, 3).SetValue("15/08/2005");   // Thỏa mãn
+            ws.Cell(2, 4).SetValue("Gay");          // Sai giới tính -> Báo đỏ
+            ws.Cell(2, 5).SetValue("an@email.com"); // Thỏa mãn
+            ws.Cell(2, 6).SetValue("LOP_KHONG_CO"); // Sai mã lớp -> Báo đỏ
+        });
+
+        // Act
+        var ketQua = await excelDichVu.KiemTraVaDocTepExcelAsync("HocVien", stream, "test.xlsx");
+
+        // Assert
+        Assert.False(ketQua.LaHopLeToanBo);
+        var dong = ketQua.DanhSachDongDuLieu[0];
+        Assert.False(dong.LaHopLe);
+
+        // Các trường sai phải được ghi nhận lỗi theo cột (Báo đỏ)
+        Assert.True(dong.CotCoLoi("Giới tính"));
+        Assert.True(dong.CotCoLoi("Mã lớp"));
+        Assert.False(dong.CotThoaMan("Giới tính"));
+        Assert.False(dong.CotThoaMan("Mã lớp"));
+
+        // Các trường đúng phải THỎA MÃN (Hiện xanh lá)
+        Assert.False(dong.CotCoLoi("Mã học viên"));
+        Assert.True(dong.CotThoaMan("Mã học viên"));
+        Assert.False(dong.CotCoLoi("Họ và tên"));
+        Assert.True(dong.CotThoaMan("Họ và tên"));
+        Assert.False(dong.CotCoLoi("Ngày sinh"));
+        Assert.True(dong.CotThoaMan("Ngày sinh"));
+        Assert.False(dong.CotCoLoi("Email"));
+        Assert.True(dong.CotThoaMan("Email"));
+    }
+
+    [Fact]
+    public async Task KiemTraDuLieu_NgayThangDinhDangSaCh_KhongBiLoiDoDai()
+    {
+        // Arrange
+        using var db = CoSoDuLieuTestHelper.TaoDbContextAo();
+        var nhatKy = new NhatKyDichVu(db);
+        var excelDichVu = new ExcelDichVu(db, nhatKy);
+
+        var khoa = new Khoa { MaKhoa = "CNTT", TenKhoa = "CNTT" };
+        var lop = new LopHoc { MaLop = "L_K20", TenLop = "Lớp K20", NienKhoa = "2024-2028", Khoa = khoa };
+        db.LopHocs.Add(lop);
+        await db.SaveChangesAsync();
+
+        // Ngày sinh dạng DateTime trong Excel ClosedXML trả chuỗi 22 ký tự ("15/08/2006 12:00:00 SA")
+        using var stream = TaoWorkbookInMemory(ws =>
+        {
+            ws.Cell(1, 1).Value = "Mã học viên";
+            ws.Cell(1, 2).Value = "Họ và tên";
+            ws.Cell(1, 3).Value = "Ngày sinh";
+            ws.Cell(1, 4).Value = "Giới tính";
+            ws.Cell(1, 5).Value = "Mã lớp";
+
+            ws.Cell(2, 1).SetValue("HV01");
+            ws.Cell(2, 2).SetValue("Nguyễn Văn B");
+            ws.Cell(2, 3).SetValue(new DateTime(2006, 8, 15)); // ClosedXML ghi cell DateTime
+            ws.Cell(2, 4).SetValue("Nam");
+            ws.Cell(2, 5).SetValue("L_K20");
+        });
+
+        // Act
+        var ketQua = await excelDichVu.KiemTraVaDocTepExcelAsync("HocVien", stream, "test.xlsx");
+
+        // Assert: Không được báo lỗi độ dài (ERR_MAX_LENGTH_EXCEEDED) mà phải chuẩn hóa thành 15/08/2006
+        Assert.True(ketQua.LaHopLeToanBo);
+        var dong = ketQua.DanhSachDongDuLieu[0];
+        Assert.False(dong.CotCoLoi("Ngày sinh"));
+        Assert.True(dong.CotThoaMan("Ngày sinh"));
+        Assert.Equal("15/08/2006", dong.DuLieuCot["Ngày sinh"]);
+    }
+
+    [Fact]
+    public async Task KiemTraDuLieu_SoDienThoaiVaTrangThaiSai_BaoLoiTheoCot()
+    {
+        // Arrange
+        using var db = CoSoDuLieuTestHelper.TaoDbContextAo();
+        var nhatKy = new NhatKyDichVu(db);
+        var excelDichVu = new ExcelDichVu(db, nhatKy);
+
+        var khoa = new Khoa { MaKhoa = "CNTT", TenKhoa = "CNTT" };
+        var lop = new LopHoc { MaLop = "L_K20", TenLop = "Lớp K20", NienKhoa = "2024-2028", Khoa = khoa };
+        db.LopHocs.Add(lop);
+        await db.SaveChangesAsync();
+
+        using var stream = TaoWorkbookInMemory(ws =>
+        {
+            ws.Cell(1, 1).Value = "Mã học viên";
+            ws.Cell(1, 2).Value = "Họ và tên";
+            ws.Cell(1, 3).Value = "Ngày sinh";
+            ws.Cell(1, 4).Value = "Giới tính";
+            ws.Cell(1, 5).Value = "Mã lớp";
+            ws.Cell(1, 6).Value = "Số điện thoại";
+            ws.Cell(1, 7).Value = "Trạng thái";
+
+            ws.Cell(2, 1).SetValue("HV01");
+            ws.Cell(2, 2).SetValue("Nguyễn Văn C");
+            ws.Cell(2, 3).SetValue("10/10/2005");
+            ws.Cell(2, 4).SetValue("Nam");
+            ws.Cell(2, 5).SetValue("L_K20");
+            ws.Cell(2, 6).SetValue("091234567811"); // 12 số -> Báo lỗi
+            ws.Cell(2, 7).SetValue("lol");          // Trạng thái vô nghĩa -> Báo lỗi
+        });
+
+        // Act
+        var ketQua = await excelDichVu.KiemTraVaDocTepExcelAsync("HocVien", stream, "test.xlsx");
+
+        // Assert
+        Assert.False(ketQua.LaHopLeToanBo);
+        var dong = ketQua.DanhSachDongDuLieu[0];
+        Assert.True(dong.CotCoLoi("Số điện thoại"));
+        Assert.True(dong.CotCoLoi("Trạng thái"));
+        Assert.Contains(ketQua.DanhSachLoi, l => l.MaLoi == "ERR_INVALID_PHONE_NUMBER");
+        Assert.Contains(ketQua.DanhSachLoi, l => l.MaLoi == "ERR_INVALID_LOGIC_VALUE");
+    }
 }

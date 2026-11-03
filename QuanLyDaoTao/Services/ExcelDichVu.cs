@@ -484,8 +484,20 @@ public class ExcelDichVu : IExcelDichVu
                     var cell = rowObj.Cell(colIdx);
                     // Đọc an toàn giữ nguyên số 0 đầu
                     string giaTriO = cell.GetString().Trim();
-                    dongPreview.DuLieuCot[colDef.TenCot] = giaTriO;
                     string diaChiO = cell.Address?.ToString() ?? $"R{row}C{colIdx}";
+
+                    // A. Chuẩn hóa trước định dạng ngày tháng nếu là cột NgayThang
+                    if (colDef.KieuDuLieu == KieuDuLieuExcel.NgayThang && !string.IsNullOrWhiteSpace(giaTriO))
+                    {
+                        if (KiemTraNgayThangHopLe(cell, out var ngayPhanTichPre))
+                        {
+                            giaTriO = ngayPhanTichPre.ToString("dd/MM/yyyy");
+                        }
+                    }
+
+                    dongPreview.DuLieuCot[colDef.TenCot] = giaTriO;
+
+                    // Kiểm tra trường bắt buộc
                     if (string.IsNullOrWhiteSpace(giaTriO))
                     {
                         if (colDef.LaBatBuoc)
@@ -502,8 +514,7 @@ public class ExcelDichVu : IExcelDichVu
                                 MucDoLoi = "Lỗi nghiêm trọng"
                             };
                             ketQua.DanhSachLoi.Add(loi);
-                            dongPreview.DanhSachLoi.Add(loi.MoTaLoi);
-                            dongPreview.LaHopLe = false;
+                            dongPreview.GhiNhanLoiCot(colDef.TenCot, loi.MoTaLoi);
                         }
                         continue;
                     }
@@ -523,11 +534,34 @@ public class ExcelDichVu : IExcelDichVu
                             MucDoLoi = "Lỗi nghiêm trọng"
                         };
                         ketQua.DanhSachLoi.Add(loi);
-                        dongPreview.DanhSachLoi.Add(loi.MoTaLoi);
-                        dongPreview.LaHopLe = false;
+                        dongPreview.GhiNhanLoiCot(colDef.TenCot, loi.MoTaLoi);
                     }
 
-                    // C. Kiểm tra kiểu dữ liệu và định dạng
+                    // C. Kiểm tra Giới tính (nếu cột là Giới tính)
+                    if (string.Equals(colDef.TenCot, "Giới tính", StringComparison.OrdinalIgnoreCase) ||
+                        colDef.CacTenGoiKhac.Any(a => string.Equals(a, "GioiTinh", StringComparison.OrdinalIgnoreCase)))
+                    {
+                        var gt = giaTriO.Trim();
+                        if (!string.Equals(gt, "Nam", StringComparison.OrdinalIgnoreCase) &&
+                            !string.Equals(gt, "Nữ", StringComparison.OrdinalIgnoreCase))
+                        {
+                            var loi = new LoiChiTietExcel
+                            {
+                                SoDong = row,
+                                TenTruong = colDef.TenCot,
+                                DiaChiO = diaChiO,
+                                GiaTriDauVao = giaTriO,
+                                MaLoi = "ERR_INVALID_GENDER",
+                                MoTaLoi = $"Giới tính '{giaTriO}' không hợp lệ (chỉ chấp nhận 'Nam' hoặc 'Nữ').",
+                                HuongXuLy = "Vui lòng nhập chính xác 'Nam' hoặc 'Nữ'.",
+                                MucDoLoi = "Lỗi nghiêm trọng"
+                            };
+                            ketQua.DanhSachLoi.Add(loi);
+                            dongPreview.GhiNhanLoiCot(colDef.TenCot, loi.MoTaLoi);
+                        }
+                    }
+
+                    // D. Kiểm tra kiểu dữ liệu và định dạng chi tiết
                     switch (colDef.KieuDuLieu)
                     {
                         case KieuDuLieuExcel.NgayThang:
@@ -545,12 +579,10 @@ public class ExcelDichVu : IExcelDichVu
                                     MucDoLoi = "Lỗi nghiêm trọng"
                                 };
                                 ketQua.DanhSachLoi.Add(loi);
-                                dongPreview.DanhSachLoi.Add(loi.MoTaLoi);
-                                dongPreview.LaHopLe = false;
+                                dongPreview.GhiNhanLoiCot(colDef.TenCot, loi.MoTaLoi);
                             }
                             else
                             {
-                                // Chuẩn hóa chuỗi hiển thị
                                 dongPreview.DuLieuCot[colDef.TenCot] = ngayPhanTich.ToString("dd/MM/yyyy");
                             }
                             break;
@@ -570,52 +602,106 @@ public class ExcelDichVu : IExcelDichVu
                                     MucDoLoi = "Lỗi nghiêm trọng"
                                 };
                                 ketQua.DanhSachLoi.Add(loi);
-                                dongPreview.DanhSachLoi.Add(loi.MoTaLoi);
-                                dongPreview.LaHopLe = false;
+                                dongPreview.GhiNhanLoiCot(colDef.TenCot, loi.MoTaLoi);
                             }
-                            else if (string.Equals(colDef.TenCot, "Email công việc", StringComparison.OrdinalIgnoreCase))
+                            else if (string.Equals(colDef.TenCot, "Email công việc", StringComparison.OrdinalIgnoreCase) ||
+                                     string.Equals(colDef.TenCot, "Email", StringComparison.OrdinalIgnoreCase))
                             {
-                                // Kiểm tra trùng email trong file
-                                if (tapEmailTrongFile.Contains(giaTriO))
+                                if (string.Equals(tenModule, "NhanSu", StringComparison.OrdinalIgnoreCase))
                                 {
-                                    var loi = new LoiChiTietExcel
+                                    if (tapEmailTrongFile.Contains(giaTriO))
                                     {
-                                        SoDong = row,
-                                        TenTruong = colDef.TenCot,
-                                        DiaChiO = diaChiO,
-                                        GiaTriDauVao = giaTriO,
-                                        MaLoi = "ERR_DUPLICATE_EMAIL_IN_FILE",
-                                        MoTaLoi = $"Email công việc '{giaTriO}' bị trùng lặp với dòng khác trong cùng tệp.",
-                                        HuongXuLy = "Mỗi nhân sự phải có email công việc duy nhất.",
-                                        MucDoLoi = "Lỗi nghiêm trọng"
-                                    };
-                                    ketQua.DanhSachLoi.Add(loi);
-                                    dongPreview.DanhSachLoi.Add(loi.MoTaLoi);
-                                    dongPreview.LaHopLe = false;
-                                }
-                                else
-                                {
-                                    tapEmailTrongFile.Add(giaTriO);
-                                }
+                                        var loi = new LoiChiTietExcel
+                                        {
+                                            SoDong = row,
+                                            TenTruong = colDef.TenCot,
+                                            DiaChiO = diaChiO,
+                                            GiaTriDauVao = giaTriO,
+                                            MaLoi = "ERR_DUPLICATE_EMAIL_IN_FILE",
+                                            MoTaLoi = $"Email '{giaTriO}' bị trùng lặp với dòng khác trong cùng tệp.",
+                                            HuongXuLy = "Mỗi nhân sự phải có email duy nhất trong tệp.",
+                                            MucDoLoi = "Lỗi nghiêm trọng"
+                                        };
+                                        ketQua.DanhSachLoi.Add(loi);
+                                        dongPreview.GhiNhanLoiCot(colDef.TenCot, loi.MoTaLoi);
+                                    }
+                                    else
+                                    {
+                                        tapEmailTrongFile.Add(giaTriO);
+                                    }
 
-                                // Kiểm tra trùng email trong DB
-                                if (tapEmailNhanSuTrongDb.Contains(giaTriO, StringComparer.OrdinalIgnoreCase))
-                                {
-                                    var loi = new LoiChiTietExcel
+                                    if (tapEmailNhanSuTrongDb.Contains(giaTriO, StringComparer.OrdinalIgnoreCase))
                                     {
-                                        SoDong = row,
-                                        TenTruong = colDef.TenCot,
-                                        DiaChiO = diaChiO,
-                                        GiaTriDauVao = giaTriO,
-                                        MaLoi = "ERR_DUPLICATE_EMAIL_IN_DB",
-                                        MoTaLoi = $"Email công việc '{giaTriO}' đã tồn tại trong cơ sở dữ liệu.",
-                                        HuongXuLy = "Vui lòng sử dụng địa chỉ email công việc chưa được đăng ký.",
-                                        MucDoLoi = "Lỗi nghiêm trọng"
-                                    };
-                                    ketQua.DanhSachLoi.Add(loi);
-                                    dongPreview.DanhSachLoi.Add(loi.MoTaLoi);
-                                    dongPreview.LaHopLe = false;
+                                        var loi = new LoiChiTietExcel
+                                        {
+                                            SoDong = row,
+                                            TenTruong = colDef.TenCot,
+                                            DiaChiO = diaChiO,
+                                            GiaTriDauVao = giaTriO,
+                                            MaLoi = "ERR_DUPLICATE_EMAIL_IN_DB",
+                                            MoTaLoi = $"Email '{giaTriO}' đã tồn tại trong cơ sở dữ liệu hệ thống.",
+                                            HuongXuLy = "Vui lòng sử dụng địa chỉ email chưa được đăng ký.",
+                                            MucDoLoi = "Lỗi nghiêm trọng"
+                                        };
+                                        ketQua.DanhSachLoi.Add(loi);
+                                        dongPreview.GhiNhanLoiCot(colDef.TenCot, loi.MoTaLoi);
+                                    }
                                 }
+                            }
+                            break;
+
+                        case KieuDuLieuExcel.SoDienThoai:
+                            var phoneCleaned = Regex.Replace(giaTriO, @"[\s\.\-\(\)]", "");
+                            if (!Regex.IsMatch(phoneCleaned, @"^0\d{9,10}$"))
+                            {
+                                var loi = new LoiChiTietExcel
+                                {
+                                    SoDong = row,
+                                    TenTruong = colDef.TenCot,
+                                    DiaChiO = diaChiO,
+                                    GiaTriDauVao = giaTriO,
+                                    MaLoi = "ERR_INVALID_PHONE_NUMBER",
+                                    MoTaLoi = $"Số điện thoại '{giaTriO}' không đúng định dạng (yêu cầu số bắt đầu bằng số 0 và có từ 10 đến 11 chữ số).",
+                                    HuongXuLy = "Vui lòng kiểm tra lại số điện thoại (ví dụ: 0912345678).",
+                                    MucDoLoi = "Lỗi nghiêm trọng"
+                                };
+                                ketQua.DanhSachLoi.Add(loi);
+                                dongPreview.GhiNhanLoiCot(colDef.TenCot, loi.MoTaLoi);
+                            }
+                            else
+                            {
+                                dongPreview.DuLieuCot[colDef.TenCot] = phoneCleaned;
+                            }
+                            break;
+
+                        case KieuDuLieuExcel.Logic:
+                            var logicStr = giaTriO.Trim();
+                            bool laLogicHopLe = string.Equals(logicStr, "Hoạt động", StringComparison.OrdinalIgnoreCase) ||
+                                                string.Equals(logicStr, "Đã khóa", StringComparison.OrdinalIgnoreCase) ||
+                                                string.Equals(logicStr, "Có", StringComparison.OrdinalIgnoreCase) ||
+                                                string.Equals(logicStr, "Không", StringComparison.OrdinalIgnoreCase) ||
+                                                string.Equals(logicStr, "1", StringComparison.OrdinalIgnoreCase) ||
+                                                string.Equals(logicStr, "0", StringComparison.OrdinalIgnoreCase) ||
+                                                string.Equals(logicStr, "True", StringComparison.OrdinalIgnoreCase) ||
+                                                string.Equals(logicStr, "False", StringComparison.OrdinalIgnoreCase) ||
+                                                string.Equals(logicStr, "Đang học", StringComparison.OrdinalIgnoreCase) ||
+                                                string.Equals(logicStr, "Đã tốt nghiệp", StringComparison.OrdinalIgnoreCase) ||
+                                                string.Equals(logicStr, "Thôi học", StringComparison.OrdinalIgnoreCase);
+                            if (!laLogicHopLe)
+                            {
+                                var loi = new LoiChiTietExcel
+                                {
+                                    SoDong = row,
+                                    TenTruong = colDef.TenCot,
+                                    DiaChiO = diaChiO,
+                                    GiaTriDauVao = giaTriO,
+                                    MaLoi = "ERR_INVALID_LOGIC_VALUE",
+                                    MoTaLoi = $"Giá trị '{giaTriO}' không hợp lệ cho trường trạng thái/logic.",
+                                    HuongXuLy = "Vui lòng nhập giá trị hợp lệ: Hoạt động, Đã khóa, Có, Không, 1 hoặc 0.",
+                                    MucDoLoi = "Lỗi nghiêm trọng"
+                                };
+                                ketQua.DanhSachLoi.Add(loi);
+                                dongPreview.GhiNhanLoiCot(colDef.TenCot, loi.MoTaLoi);
                             }
                             break;
 
@@ -634,8 +720,7 @@ public class ExcelDichVu : IExcelDichVu
                                     MucDoLoi = "Lỗi nghiêm trọng"
                                 };
                                 ketQua.DanhSachLoi.Add(loi);
-                                dongPreview.DanhSachLoi.Add(loi.MoTaLoi);
-                                dongPreview.LaHopLe = false;
+                                dongPreview.GhiNhanLoiCot(colDef.TenCot, loi.MoTaLoi);
                             }
                             break;
 
@@ -647,7 +732,7 @@ public class ExcelDichVu : IExcelDichVu
                             break;
                     }
 
-                    // D. Kiểm tra khóa chính / mã duy nhất của bản ghi
+                    // E. Kiểm tra khóa chính / mã duy nhất của bản ghi
                     if (LaCotKhoaChinh(tenModule, colDef.TenCot))
                     {
                         // Kiểm tra trùng trong file
@@ -665,8 +750,7 @@ public class ExcelDichVu : IExcelDichVu
                                 MucDoLoi = "Lỗi nghiêm trọng"
                             };
                             ketQua.DanhSachLoi.Add(loi);
-                            dongPreview.DanhSachLoi.Add(loi.MoTaLoi);
-                            dongPreview.LaHopLe = false;
+                            dongPreview.GhiNhanLoiCot(colDef.TenCot, loi.MoTaLoi);
                         }
                         else
                         {
@@ -690,8 +774,7 @@ public class ExcelDichVu : IExcelDichVu
                                 MucDoLoi = "Lỗi nghiêm trọng"
                             };
                             ketQua.DanhSachLoi.Add(loi);
-                            dongPreview.DanhSachLoi.Add(loi.MoTaLoi);
-                            dongPreview.LaHopLe = false;
+                            dongPreview.GhiNhanLoiCot(colDef.TenCot, loi.MoTaLoi);
                         }
                     }
                 }
@@ -1300,8 +1383,7 @@ public class ExcelDichVu : IExcelDichVu
                 MucDoLoi = "Lỗi nghiêm trọng"
             };
             ketQua.DanhSachLoi.Add(loi);
-            dongPreview.DanhSachLoi.Add(loi.MoTaLoi);
-            dongPreview.LaHopLe = false;
+            dongPreview.GhiNhanLoiCot(tenCot, loi.MoTaLoi);
         }
     }
 
