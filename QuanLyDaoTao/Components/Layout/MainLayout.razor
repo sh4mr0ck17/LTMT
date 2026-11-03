@@ -4,6 +4,7 @@
 @using Microsoft.Extensions.DependencyInjection
 @inject NavigationManager Navigation
 @inject IServiceScopeFactory ScopeFactory
+@inject IJSRuntime JSRuntime
 
 <RadzenComponents />
 
@@ -27,11 +28,14 @@
                     <button type="button" class="sidebar-collapse-btn d-none d-lg-flex" id="btnToggleNav" @onclick="ToggleCollapse" title="Thu gọn về Icon / Mở rộng Side Panel">
                         <i class="bi @(isSidebarCollapsed ? "bi-chevron-right" : "bi-chevron-left")"></i>
                     </button>
+                    <button type="button" class="btn btn-sm text-white-50 d-lg-none p-1 border-0" @onclick="ToggleMobileSidebar" title="Đóng menu">
+                        <i class="bi bi-x-lg"></i>
+                    </button>
                 </div>
 
-                <!-- Thân Sidebar: Danh mục tối giản + Hover mở cửa sổ nổi (Cô lập cuộn chuột) -->
+                <!-- Thân Sidebar: Danh mục tối giản + Hover mở cửa sổ nổi / Mobile mở Accordion -->
                 <div class="app-sidebar-body">
-                    <NavMenu />
+                    <NavMenu OnNavigateMobile="() => isMobileSidebarOpen = false" />
                 </div>
 
                 <!-- Góc Dưới Bên Trái: Thông Tin Tài Khoản + Avatar Mặt Người + Hồ Sơ & Đăng Xuất Rõ Ràng -->
@@ -45,7 +49,7 @@
                             <span class="user-profile-name" id="lblUserDisplayName" title="@userDisplayName">@userDisplayName</span>
                             <span class="user-profile-role" id="lblUserRoleBadge">@userRoleTitle • @userEmail</span>
                             <div class="d-flex align-items-center gap-1 mt-2">
-                                <a href="HoSoCaNhan" class="btn btn-sm btn-outline-light py-1 px-2" style="font-size: 0.72rem; border-color: rgba(255,255,255,0.28);" title="Hồ sơ cá nhân (Profile)">
+                                <a href="HoSoCaNhan" class="btn btn-sm btn-outline-light py-1 px-2" style="font-size: 0.72rem; border-color: rgba(255,255,255,0.28);" title="Hồ sơ cá nhân (Profile)" @onclick="() => isMobileSidebarOpen = false">
                                     <i class="bi bi-person-vcard me-1"></i>Hồ sơ
                                 </a>
                                 <a href="TaiKhoan/DangXuat" class="btn-sidebar-logout flex-grow-1" id="btnDangXuat" title="Đăng xuất khỏi hệ thống">
@@ -58,15 +62,28 @@
                 </div>
             </aside>
 
-            <!-- VÙNG NỘI DUNG CHÍNH (ĐÃ BỎ HEADER DƯ THỪA BÊN CẠNH SIDE PANEL) -->
+            <!-- VÙNG NỘI DUNG CHÍNH (ĐỒNG BỘ DESKTOP & ĐIỆN THOẠI DI ĐỘNG) -->
             <div class="app-main">
-                <!-- Thanh bar siêu gọn chỉ hiển thị trên màn hình điện thoại di động -->
-                <div class="d-flex d-lg-none align-items-center justify-content-between bg-white border-bottom px-3 py-2 sticky-top">
-                    <button type="button" class="btn btn-outline-primary btn-sm" @onclick="ToggleMobileSidebar">
+                <!-- Thanh Topbar đồng bộ riêng cho người dùng truy cập qua Điện thoại -->
+                <div class="d-flex d-lg-none align-items-center justify-content-between bg-white border-bottom px-3 py-2 sticky-top shadow-sm">
+                    <button type="button" class="btn btn-outline-primary btn-sm" id="btnMobileMenuToggle" @onclick="ToggleMobileSidebar" title="Mở danh mục điều hướng">
                         <i class="bi bi-list fs-5"></i>
                     </button>
-                    <span class="fw-bold text-primary small">HỌC VIỆN AN NINH NHÂN DÂN • C500</span>
-                    <a href="TaiKhoan/DangXuat" class="btn btn-sm btn-outline-danger"><i class="bi bi-box-arrow-right"></i></a>
+                    <div class="d-flex align-items-center gap-2">
+                        <img src="images/logo_badge.png" alt="C500" style="width: 26px; height: 26px; border-radius: 50%;" />
+                        <span class="fw-bold text-primary small">C500 • ĐÀO TẠO</span>
+                    </div>
+                    <div class="d-flex align-items-center gap-1">
+                        <button type="button" class="btn btn-sm btn-outline-primary" id="btnTourMobile" onclick="window.batDauTourHuongDan()" title="Hướng dẫn làm quen từng bước">
+                            <i class="bi bi-magic"></i>
+                        </button>
+                        <a href="HoSoCaNhan" class="btn btn-sm btn-outline-secondary" title="Hồ sơ cá nhân">
+                            <i class="bi bi-person-circle"></i>
+                        </a>
+                        <a href="TaiKhoan/DangXuat" class="btn btn-sm btn-outline-danger" title="Đăng xuất">
+                            <i class="bi bi-box-arrow-right"></i>
+                        </a>
+                    </div>
                 </div>
 
                 <main role="main" class="app-content">
@@ -89,7 +106,7 @@
                         </div>
                         <div class="modal-body p-4">
                             <label class="form-label fw-semibold small text-muted mb-2">Chọn mẫu chân dung đại diện:</label>
-                            <div class="d-flex justify-content-around gap-2 mb-3">
+                            <div class="d-flex justify-content-around gap-2 mb-3 flex-wrap">
                                 @foreach (var mau in danhSachAvatarMau)
                                 {
                                     <div class="text-center cursor-pointer p-2 rounded border @(customAvatarInput == mau.Url ? "border-primary bg-light" : "")"
@@ -117,9 +134,9 @@
         }
     </Authorized>
     <NotAuthorized>
-        <!-- KHI CHƯA ĐĂNG NHẬP: HIỂN THỊ MÀN HÌNH CỔNG ĐĂNG NHẬP TRỰC TIẾP TRÊN TRANG CHỦ / -->
-        <div class="min-vh-100 d-flex flex-column justify-content-between" style="background-color: #f8faf9;" id="pnlKhachDangNhap">
-            <header class="navbar-cand py-3 px-4 bg-white border-bottom shadow-sm">
+        <!-- KHI CHƯA ĐĂNG NHẬP: HIỂN THỊ MÀN HÌNH CỔNG ĐĂNG NHẬP TRỰC TIẾP TRÊN TRANG CHỦ / (ĐÃ XÓA FOOTER DƯ THỪA) -->
+        <div class="min-vh-100 d-flex flex-column" style="background-color: #f8faf9;" id="pnlKhachDangNhap">
+            <header class="navbar-cand py-3 px-3 px-md-4 bg-white border-bottom shadow-sm">
                 <div class="container d-flex align-items-center justify-content-between">
                     <div class="d-flex align-items-center">
                         <img src="images/logo_badge.png" alt="Logo C500" class="logo-cand-nav me-2 shadow-sm" />
@@ -128,7 +145,7 @@
                             <small class="text-muted">CỔNG XÁC THỰC QUẢN LÝ ĐÀO TẠO &amp; NHÂN SỰ</small>
                         </div>
                     </div>
-                    <span class="badge bg-primary px-3 py-2 fw-semibold">
+                    <span class="badge bg-primary px-3 py-2 fw-semibold d-none d-sm-inline-block">
                         <i class="bi bi-shield-lock-fill me-1"></i>HỆ THỐNG NỘI BỘ
                     </span>
                 </div>
@@ -136,7 +153,7 @@
 
             <div class="container my-auto py-4">
                 <div class="row justify-content-center" id="pnlDangNhap">
-                    <div class="col-md-5 col-lg-4">
+                    <div class="col-11 col-sm-9 col-md-5 col-lg-4">
                         <div class="card shadow-sm border overflow-hidden" style="border-radius: 12px;">
                             <div class="card-header text-white text-center py-4" style="background: linear-gradient(135deg, #052614 0%, #0b4627 100%);">
                                 <img src="images/logo_badge.png" alt="Logo Học viện An ninh Nhân dân" class="logo-cand-lg mb-3" />
@@ -183,10 +200,6 @@
                     </div>
                 </div>
             </div>
-
-            <footer class="py-3 text-center text-muted small bg-white border-top">
-                <span>&copy; 2026 Học Viện An Ninh Nhân Dân (C500) — Bộ Công An. Bảo lưu mọi quyền.</span>
-            </footer>
         </div>
     </NotAuthorized>
 </AuthorizeView>
@@ -293,6 +306,18 @@
     private void ToggleMobileSidebar()
     {
         isMobileSidebarOpen = !isMobileSidebarOpen;
+    }
+
+    private async Task BatDauTourMobile()
+    {
+        isMobileSidebarOpen = false;
+        try
+        {
+            await JSRuntime.InvokeVoidAsync("batDauTourHuongDan", userRoleTitle);
+        }
+        catch
+        {
+        }
     }
 
     private async Task LuuAvatarMoi()

@@ -38,9 +38,9 @@
             <a href="HoSoCaNhan" class="btn btn-sm btn-outline-primary" id="btnXemProfileNhanh">
                 <i class="bi bi-person-vcard me-1"></i>Hồ Sơ Cá Nhân
             </a>
-            <a href="HuongDan" class="btn btn-sm btn-outline-secondary" id="btnXemHuongDanNhanh">
-                <i class="bi bi-book-half me-1"></i>Hướng Dẫn Sử Dụng
-            </a>
+            <button type="button" class="btn btn-sm btn-outline-primary" id="btnBatDauTourWorkspace" onclick="window.batDauTourHuongDan()">
+                <i class="bi bi-magic me-1"></i>Hướng Dẫn Làm Quen
+            </button>
             @if (laSuperAdmin || laAdmin)
             {
                 <a href="TaiKhoan/TaoMoi" class="btn btn-sm btn-outline-primary" id="btnCapTaiKhoanGv">
@@ -609,6 +609,17 @@
             catch
             {
             }
+        }
+    }
+
+    private async Task BatDauTourHuongDan()
+    {
+        try
+        {
+            await JSRuntime.InvokeVoidAsync("batDauTourHuongDan", tenWorkspace);
+        }
+        catch
+        {
         }
     }
 }

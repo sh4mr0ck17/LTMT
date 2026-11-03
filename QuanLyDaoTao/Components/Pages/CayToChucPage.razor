@@ -1,16 +1,16 @@
 @page "/CayToChuc"
 @inject IKhoaDichVu KhoaDichVu
 
-<PageTitle>Sơ Đồ Cây Tổ Chức Đào Tạo - C500</PageTitle>
+<PageTitle>Sơ Đồ Cây Tổ Chức Đa Nhánh - C500</PageTitle>
 
-<div class="container-fluid px-4 py-3" id="pnlCayToChuc">
-    <!-- Thanh tiêu đề Sơ đồ cây -->
+<div class="container-fluid px-3 px-md-4 py-3" id="pnlCayToChuc">
+    <!-- Thanh tiêu đề Sơ đồ cây đa nhánh -->
     <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center bg-white border rounded-3 px-4 py-3 mb-4 shadow-sm">
         <div>
             <h5 class="mb-1 text-primary fw-bold" id="lblTieuDe">
-                <i class="bi bi-diagram-3-fill me-2"></i>Sơ Đồ Cây Tổ Chức Học Viện (Visual Org Tree)
+                <i class="bi bi-diagram-3-fill me-2"></i>Sơ Đồ Cây Tổ Chức Học Viện (Multi-Branch Org Tree)
             </h5>
-            <span class="text-muted small">Cấu trúc cây phân cấp trực quan: Ban Giám Đốc &rarr; Khoa Đào Tạo &rarr; Bộ Môn / Lớp Học &rarr; Nhân Sự</span>
+            <span class="text-muted small">Cấu trúc phân nhánh: Ban Giám Đốc &rarr; Các Khoa Đào Tạo &rarr; Tách 3 nhánh độc lập (Bộ Môn • Lớp Học • Đội Ngũ Giảng Viên)</span>
         </div>
         <div class="d-flex gap-2 mt-2 mt-md-0">
             <button type="button" class="btn btn-outline-primary btn-sm" id="btnMoRongTatCa" @onclick="() => SetAllExpand(true)">
@@ -26,15 +26,15 @@
     {
         <div class="text-center py-5">
             <div class="spinner-border text-primary" role="status"></div>
-            <p class="text-muted mt-2">Đang dựng sơ đồ cây tổ chức...</p>
+            <p class="text-muted mt-2">Đang dựng sơ đồ cây tổ chức đa nhánh...</p>
         </div>
     }
     else
     {
-        <!-- SƠ ĐỒ CÂY PHÂN CẤP TRỰC QUAN VỚI ĐƯỜNG NỐI NHÁNH (ORG CHART TREE) -->
+        <!-- SƠ ĐỒ CÂY PHÂN CẤP ĐA NHÁNH (ROOT -> KHOA -> TÁCH 3 NHÁNH CON NGANG: BỘ MÔN | LỚP HỌC | GIẢNG VIÊN) -->
         <div class="org-tree-Workspace bg-white border rounded-3 shadow-sm">
             <div class="org-tree" id="treeSoDoToChuc">
-                <!-- NODE GỐC (ROOT NODE): BAN GIÁM ĐỐC HỌC VIỆN -->
+                <!-- CẤP 1: NODE GỐC BAN GIÁM ĐỐC HỌC VIỆN -->
                 <div class="org-root-node">
                     <div class="d-flex align-items-center justify-content-center gap-3">
                         <img src="images/logo_badge.png" alt="Logo C500" class="logo-cand-nav" />
@@ -46,10 +46,10 @@
                     </div>
                 </div>
 
-                <!-- ĐƯỜNG THÂN CÂY DỌC TỪ GỐC XUỐNG NHÁNH KHOA -->
+                <!-- Trục dọc nối từ Ban Giám Đốc xuống hàng ngang các Khoa -->
                 <div class="org-vertical-stem"></div>
 
-                <!-- HÀNG NHÁNH NGANG CÁC KHOA TRỰC THUỘC -->
+                <!-- CẤP 2: HÀNG NHÁNH NGANG CÁC KHOA ĐÀO TẠO -->
                 <div class="org-branches-row">
                     @foreach (var khoa in danhSachKhoa)
                     {
@@ -65,7 +65,7 @@
                                     <span class="badge bg-primary font-monospace">@khoa.MaKhoa</span>
                                     <button type="button" class="btn btn-sm btn-outline-primary py-0 px-2"
                                             @onclick="() => ToggleKhoa(khoa.KhoaId)"
-                                            title="Đóng / Mở nhánh con của @khoa.TenKhoa">
+                                            title="Đóng / Mở 3 nhánh trực thuộc của @khoa.TenKhoa">
                                         <i class="bi @(isExpanded ? "bi-dash-lg" : "bi-plus-lg")"></i>
                                     </button>
                                 </div>
@@ -73,71 +73,92 @@
                                 <div class="text-muted small mb-2">
                                     <i class="bi bi-geo-alt me-1"></i>@(khoa.DiaDiem ?? "Học viện C500")
                                 </div>
-                                <div class="d-flex flex-wrap gap-1 pt-2 border-top">
-                                    <span class="badge bg-light text-dark border">@soBoMon Bộ môn</span>
-                                    <span class="badge bg-light text-dark border">@soLop Lớp</span>
-                                    <span class="badge bg-light text-dark border">@soCanBo Cán bộ</span>
+                                <div class="d-flex justify-content-between pt-2 border-top small">
+                                    <span class="badge bg-light text-primary border">@soBoMon Bộ môn</span>
+                                    <span class="badge bg-light text-primary border">@soLop Lớp học</span>
+                                    <span class="badge bg-light text-primary border">@soCanBo Giảng viên</span>
                                 </div>
                             </div>
 
-                            <!-- CÁC NHÁNH LÁ CON (BỘ MÔN, LỚP HỌC, CÁN BỘ) NỐI DỌC TỪ KHOA -->
+                            <!-- CẤP 3: TÁCH THÀNH 3 NHÁNH CON SONG SONG DƯỚI MỖI KHOA (KHÔNG GỘP CHUNG 1 CỘT THẲNG) -->
                             @if (isExpanded)
                             {
-                                <div class="org-sub-tree">
-                                    <!-- Nhánh con 1: Các Bộ Môn thuộc Khoa -->
-                                    @if (khoa.BoMons != null && khoa.BoMons.Count > 0)
-                                    {
-                                        @foreach (var bm in khoa.BoMons)
-                                        {
-                                            <div class="org-leaf-node">
-                                                <div class="d-flex justify-content-between align-items-center">
-                                                    <span class="fw-semibold text-primary">
-                                                        <i class="bi bi-diagram-2 me-1"></i>@bm.TenBoMon
-                                                    </span>
-                                                    <span class="badge bg-light text-dark border font-monospace">@bm.MaBoMon</span>
-                                                </div>
-                                                <div class="text-muted small mt-1">
-                                                    Bộ môn chuyên ngành
-                                                </div>
-                                            </div>
-                                        }
-                                    }
-
-                                    <!-- Nhánh con 2: Các Lớp Đào Tạo thuộc Khoa -->
-                                    @if (khoa.LopHocs != null && khoa.LopHocs.Count > 0)
-                                    {
-                                        @foreach (var lop in khoa.LopHocs)
-                                        {
-                                            <div class="org-leaf-node" style="border-left: 3px solid #0284c7;">
-                                                <div class="d-flex justify-content-between align-items-center">
-                                                    <span class="fw-semibold text-dark">
-                                                        <i class="bi bi-mortarboard me-1 text-primary"></i>@lop.TenLop
-                                                    </span>
-                                                    <span class="badge bg-primary">@lop.NienKhoa</span>
-                                                </div>
-                                                <div class="text-muted small mt-1">
-                                                    Mã lớp: <code>@lop.MaLop</code> • Tối đa: @lop.SoLuongToiDa HV
-                                                </div>
-                                            </div>
-                                        }
-                                    }
-
-                                    <!-- Nhánh con 3: Đội ngũ Giảng viên / Cán bộ tiêu biểu -->
-                                    @if (khoa.NhanSus != null && khoa.NhanSus.Count > 0)
-                                    {
-                                        <div class="org-leaf-node bg-light">
-                                            <div class="fw-semibold text-primary mb-1">
-                                                <i class="bi bi-people-fill me-1"></i>Cán bộ / Giảng viên (@khoa.NhanSus.Count)
-                                            </div>
-                                            @foreach (var ns in khoa.NhanSus.Take(4))
+                                <div class="org-khoa-fork-stem"></div>
+                                <div class="org-khoa-children-fork">
+                                    <!-- NHÁNH CON 1: KHỐI BỘ MÔN CHUYÊN NGÀNH -->
+                                    <div class="org-sub-branch">
+                                        <div class="org-sub-branch-header">
+                                            <i class="bi bi-diagram-2-fill me-1"></i>Bộ Môn (@soBoMon)
+                                        </div>
+                                        <div class="org-sub-branch-stem"></div>
+                                        <div class="org-sub-leaves">
+                                            @if (khoa.BoMons == null || khoa.BoMons.Count == 0)
                                             {
-                                                <div class="d-flex justify-content-between align-items-center small py-1 border-top">
-                                                    <a href="NhanSu/ChiTiet/@ns.NhanSuId" class="text-decoration-none text-dark fw-medium">@ns.HoVaTen</a>
-                                                    <span class="text-muted" style="font-size: 0.72rem;">@(ns.ChucVu?.TenChucVu ?? "GV")</span>
-                                                </div>
+                                                <div class="org-leaf-node text-muted text-center">Chưa có bộ môn</div>
+                                            }
+                                            else
+                                            {
+                                                @foreach (var bm in khoa.BoMons)
+                                                {
+                                                    <div class="org-leaf-node">
+                                                        <div class="fw-semibold text-primary">@bm.TenBoMon</div>
+                                                        <div class="text-muted" style="font-size: 0.7rem;">Mã: <code>@bm.MaBoMon</code></div>
+                                                    </div>
+                                                }
                                             }
                                         </div>
-                                    }
+                                    </div>
+
+                                    <!-- NHÁNH CON 2: KHỐI LỚP ĐÀO TẠO -->
+                                    <div class="org-sub-branch">
+                                        <div class="org-sub-branch-header">
+                                            <i class="bi bi-mortarboard-fill me-1"></i>Lớp Học (@soLop)
+                                        </div>
+                                        <div class="org-sub-branch-stem"></div>
+                                        <div class="org-sub-leaves">
+                                            @if (khoa.LopHocs == null || khoa.LopHocs.Count == 0)
+                                            {
+                                                <div class="org-leaf-node text-muted text-center">Chưa có lớp học</div>
+                                            }
+                                            else
+                                            {
+                                                @foreach (var lop in khoa.LopHocs)
+                                                {
+                                                    <div class="org-leaf-node">
+                                                        <div class="fw-semibold text-dark">@lop.TenLop</div>
+                                                        <div class="d-flex justify-content-between align-items-center mt-1" style="font-size: 0.7rem;">
+                                                            <code>@lop.MaLop</code>
+                                                            <span class="badge bg-primary">@lop.NienKhoa</span>
+                                                        </div>
+                                                    </div>
+                                                }
+                                            }
+                                        </div>
+                                    </div>
+
+                                    <!-- NHÁNH CON 3: KHỐI GIẢNG VIÊN & CÁN BỘ -->
+                                    <div class="org-sub-branch">
+                                        <div class="org-sub-branch-header">
+                                            <i class="bi bi-people-fill me-1"></i>Giảng Viên (@soCanBo)
+                                        </div>
+                                        <div class="org-sub-branch-stem"></div>
+                                        <div class="org-sub-leaves">
+                                            @if (khoa.NhanSus == null || khoa.NhanSus.Count == 0)
+                                            {
+                                                <div class="org-leaf-node text-muted text-center">Chưa có cán bộ</div>
+                                            }
+                                            else
+                                            {
+                                                @foreach (var ns in khoa.NhanSus.Take(5))
+                                                {
+                                                    <div class="org-leaf-node">
+                                                        <a href="NhanSu/ChiTiet/@ns.NhanSuId" class="fw-semibold text-decoration-none text-primary d-block">@ns.HoVaTen</a>
+                                                        <div class="text-muted" style="font-size: 0.7rem;">@(ns.ChucVu?.TenChucVu ?? "Giảng viên") • <code>@ns.MaNhanSu</code></div>
+                                                    </div>
+                                                }
+                                            }
+                                        </div>
+                                    </div>
                                 </div>
                             }
                         </div>

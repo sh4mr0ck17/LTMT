@@ -1,6 +1,6 @@
 /* ==========================================================================
    CHỦ ĐỀ GIAO DIỆN HIỆN ĐẠI: DARK FOREST GREEN & PURE WHITE (XANH LÁ ĐẬM & TRẮNG)
-   Bố cục: SMOOTH MINI COLLAPSIBLE SIDEBAR + HOVER FLYOUT + VISUAL ORG TREE
+   Bố cục: SMOOTH MINI SIDEBAR + SPOTLIGHT ONBOARDING TOUR + MULTI-BRANCH ORG TREE
    ========================================================================== */
 
 :root {
@@ -79,19 +79,18 @@ h1:focus, h2:focus, h3:focus, h4:focus, h5:focus, h6:focus {
   height: 100vh;
   z-index: 1045;
   box-shadow: 4px 0 24px rgba(4, 34, 17, 0.15);
-  transition: width 0.28s cubic-bezier(0.22, 1, 0.36, 1), min-width 0.28s cubic-bezier(0.22, 1, 0.36, 1);
-  will-change: width, min-width;
+  transition: width 0.28s cubic-bezier(0.22, 1, 0.36, 1), min-width 0.28s cubic-bezier(0.22, 1, 0.36, 1), transform 0.28s cubic-bezier(0.22, 1, 0.36, 1);
+  will-change: width, min-width, transform;
   overscroll-behavior: contain;
 }
 
-/* Chế độ Hide Panel (Thu gọn về Icon 74px mượt mà) */
-.app-sidebar.sidebar-collapsed {
-  width: var(--sidebar-mini-width);
-  min-width: var(--sidebar-mini-width);
-}
-
-/* Khi ở dạng Hide Panel, Hover vào Side Panel sẽ mở sang bên mượt mà */
+/* Chế độ Hide Panel (Thu gọn về Icon 74px mượt mà trên Desktop) */
 @media (min-width: 992px) {
+  .app-sidebar.sidebar-collapsed {
+    width: var(--sidebar-mini-width);
+    min-width: var(--sidebar-mini-width);
+  }
+
   .app-sidebar.sidebar-collapsed:hover {
     width: var(--sidebar-width);
     min-width: var(--sidebar-width);
@@ -105,6 +104,7 @@ h1:focus, h2:focus, h3:focus, h4:focus, h5:focus, h6:focus {
   background: rgba(255, 255, 255, 0.02);
   display: flex;
   align-items: center;
+  justify-content: space-between;
   min-height: 66px;
   position: relative;
 }
@@ -136,7 +136,7 @@ h1:focus, h2:focus, h3:focus, h4:focus, h5:focus, h6:focus {
   transform: scale(1.08);
 }
 
-/* Hiệu ứng ẩn/hiện chữ mượt mà bằng opacity & max-width (thay vì display:none bị giật) */
+/* Hiệu ứng ẩn/hiện chữ mượt mà bằng opacity & max-width */
 .sidebar-brand-text,
 .nav-label-text,
 .branch-chevron,
@@ -148,22 +148,24 @@ h1:focus, h2:focus, h3:focus, h4:focus, h5:focus, h6:focus {
   transition: opacity 0.2s ease, max-width 0.26s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
-.app-sidebar.sidebar-collapsed:not(:hover) .sidebar-brand-text,
-.app-sidebar.sidebar-collapsed:not(:hover) .nav-label-text,
-.app-sidebar.sidebar-collapsed:not(:hover) .branch-chevron,
-.app-sidebar.sidebar-collapsed:not(:hover) .user-profile-details {
-  opacity: 0 !important;
-  max-width: 0 !important;
-  margin-left: 0 !important;
-  pointer-events: none !important;
+@media (min-width: 992px) {
+  .app-sidebar.sidebar-collapsed:not(:hover) .sidebar-brand-text,
+  .app-sidebar.sidebar-collapsed:not(:hover) .nav-label-text,
+  .app-sidebar.sidebar-collapsed:not(:hover) .branch-chevron,
+  .app-sidebar.sidebar-collapsed:not(:hover) .user-profile-details {
+    opacity: 0 !important;
+    max-width: 0 !important;
+    margin-left: 0 !important;
+    pointer-events: none !important;
+  }
+
+  .app-sidebar.sidebar-collapsed:not(:hover) .app-sidebar-header {
+    justify-content: center;
+    padding: 0.9rem 0;
+  }
 }
 
-.app-sidebar.sidebar-collapsed:not(:hover) .app-sidebar-header {
-  justify-content: center;
-  padding: 0.9rem 0;
-}
-
-/* Thân Sidebar: Cô lập lăn chuột (overscroll-behavior: contain) */
+/* Thân Sidebar: Cô lập lăn chuột */
 .app-sidebar-body {
   flex-grow: 1;
   overflow: visible;
@@ -188,10 +190,12 @@ h1:focus, h2:focus, h3:focus, h4:focus, h5:focus, h6:focus {
   transition: all 0.22s ease;
 }
 
-.app-sidebar.sidebar-collapsed:not(:hover) .sidebar-user-card {
-  justify-content: center;
-  gap: 0;
-  padding: 0.25rem 0;
+@media (min-width: 992px) {
+  .app-sidebar.sidebar-collapsed:not(:hover) .sidebar-user-card {
+    justify-content: center;
+    gap: 0;
+    padding: 0.25rem 0;
+  }
 }
 
 .user-avatar-wrapper {
@@ -246,6 +250,9 @@ h1:focus, h2:focus, h3:focus, h4:focus, h5:focus, h6:focus {
   font-size: 0.7rem;
   color: rgba(255, 255, 255, 0.72);
   display: block;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .btn-sidebar-logout {
@@ -270,7 +277,7 @@ h1:focus, h2:focus, h3:focus, h4:focus, h5:focus, h6:focus {
   border-color: #dc2626;
 }
 
-/* Vùng nội dung chính bên phải (Cô lập cuộn độc lập với Sidebar) */
+/* Vùng nội dung chính bên phải */
 .app-main {
   flex-grow: 1;
   display: flex;
@@ -285,11 +292,11 @@ h1:focus, h2:focus, h3:focus, h4:focus, h5:focus, h6:focus {
 
 .app-content {
   flex-grow: 1;
-  padding-bottom: 2rem;
+  padding-bottom: 1.5rem;
 }
 
 /* ==========================================================================
-   2. MENU SIDEBAR TỐI GIẢN & CỬA SỔ NỔI KHI HOVER (FLOATING FLYOUT MENU)
+   2. MENU SIDEBAR & CỬA SỔ NỔI DESKTOP + ACCORDION MƯỢT TRÊN MOBILE
    ========================================================================== */
 .sidebar-tree {
   list-style: none;
@@ -321,15 +328,17 @@ h1:focus, h2:focus, h3:focus, h4:focus, h5:focus, h6:focus {
   transition: background-color 0.18s ease, color 0.18s ease, padding 0.22s ease;
 }
 
-.app-sidebar.sidebar-collapsed:not(:hover) .tree-link,
-.app-sidebar.sidebar-collapsed:not(:hover) .tree-branch-header {
-  justify-content: center;
-  padding: 0.65rem 0;
-}
+@media (min-width: 992px) {
+  .app-sidebar.sidebar-collapsed:not(:hover) .tree-link,
+  .app-sidebar.sidebar-collapsed:not(:hover) .tree-branch-header {
+    justify-content: center;
+    padding: 0.65rem 0;
+  }
 
-.app-sidebar.sidebar-collapsed:not(:hover) .tree-link > div,
-.app-sidebar.sidebar-collapsed:not(:hover) .tree-branch-header > div {
-  gap: 0 !important;
+  .app-sidebar.sidebar-collapsed:not(:hover) .tree-link > div,
+  .app-sidebar.sidebar-collapsed:not(:hover) .tree-branch-header > div {
+    gap: 0 !important;
+  }
 }
 
 .tree-link .nav-icon,
@@ -349,12 +358,6 @@ h1:focus, h2:focus, h3:focus, h4:focus, h5:focus, h6:focus {
   background-color: rgba(255, 255, 255, 0.12);
 }
 
-.tree-link:hover .nav-icon,
-.tree-branch-header:hover .nav-icon,
-.nav-item-Flyout:hover > .tree-branch-header .nav-icon {
-  color: #ffffff;
-}
-
 .tree-link.active {
   color: #0b4627 !important;
   background-color: #ffffff !important;
@@ -366,37 +369,107 @@ h1:focus, h2:focus, h3:focus, h4:focus, h5:focus, h6:focus {
   color: #0b4627 !important;
 }
 
-/* Cửa sổ nổi (Floating Flyout Submenu) mở sang bên phải khi Hover vào mục lớn */
-.flyout-submenu {
-  display: none;
-  position: absolute;
-  left: 100%;
-  top: 0;
-  min-width: 235px;
-  background: #ffffff;
-  border: 1px solid #d1fae5;
-  border-radius: 10px;
-  box-shadow: 0 12px 32px rgba(5, 38, 20, 0.18);
-  padding: 0.5rem;
-  z-index: 2050;
-  list-style: none;
-  margin: 0 0 0 6px;
+/* Cửa sổ nổi (Floating Flyout Submenu) trên Desktop */
+@media (min-width: 992px) {
+  .flyout-submenu {
+    display: none;
+    position: absolute;
+    left: 100%;
+    top: 0;
+    min-width: 235px;
+    background: #ffffff;
+    border: 1px solid #d1fae5;
+    border-radius: 10px;
+    box-shadow: 0 12px 32px rgba(5, 38, 20, 0.18);
+    padding: 0.5rem;
+    z-index: 2050;
+    list-style: none;
+    margin: 0 0 0 6px;
+  }
+
+  .flyout-submenu::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: -10px;
+    width: 10px;
+    background: transparent;
+  }
+
+  .nav-item-Flyout:hover > .flyout-submenu {
+    display: block;
+    animation: flyoutFadeIn 0.16s ease-out;
+  }
 }
 
-/* Cầu nối vô hình (Hover Bridge) giúp rê chuột từ mục lớn sang cửa sổ nổi không mất hover */
-.flyout-submenu::before {
-  content: "";
-  position: absolute;
-  top: 0;
-  bottom: 0;
-  left: -10px;
-  width: 10px;
-  background: transparent;
-}
+/* Đồng bộ Mobile: Chuyển Flyout thành Accordion nằm gọn trong ngăn kéo điện thoại */
+@media (max-width: 991.98px) {
+  .app-sidebar {
+    position: fixed;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 275px !important;
+    min-width: 275px !important;
+    transform: translateX(-100%);
+    z-index: 2050;
+  }
 
-.nav-item-Flyout:hover > .flyout-submenu {
-  display: block;
-  animation: flyoutFadeIn 0.16s ease-out;
+  .app-sidebar.show {
+    transform: translateX(0);
+  }
+
+  .app-sidebar-body {
+    overflow-y: auto !important;
+  }
+
+  .app-sidebar-backdrop {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(5, 38, 20, 0.55);
+    z-index: 2040;
+  }
+
+  .app-sidebar-backdrop.show {
+    display: block;
+  }
+
+  .flyout-submenu {
+    display: none;
+    position: static;
+    width: 100%;
+    background: rgba(255, 255, 255, 0.07);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 8px;
+    padding: 0.35rem 0.45rem;
+    margin: 0.25rem 0 0.45rem 0;
+    list-style: none;
+  }
+
+  .nav-item-Flyout.mobile-open > .flyout-submenu,
+  .nav-item-Flyout:focus-within > .flyout-submenu {
+    display: block;
+  }
+
+  .flyout-header {
+    display: none;
+  }
+
+  .flyout-submenu .tree-sublink {
+    color: rgba(255, 255, 255, 0.9) !important;
+    padding: 0.48rem 0.65rem;
+  }
+
+  .flyout-submenu .tree-sublink:hover,
+  .flyout-submenu .tree-sublink.active {
+    background-color: #ffffff !important;
+    color: #0b4627 !important;
+  }
 }
 
 @keyframes flyoutFadeIn {
@@ -446,20 +519,22 @@ h1:focus, h2:focus, h3:focus, h4:focus, h5:focus, h6:focus {
 }
 
 /* ==========================================================================
-   3. SƠ ĐỒ CÂY TỔ CHỨC TRỰC QUAN (VISUAL HIERARCHY ORG TREE)
+   3. SƠ ĐỒ CÂY TỔ CHỨC ĐA NHÁNH (MULTI-BRANCH HIERARCHICAL ORG TREE)
    ========================================================================== */
 .org-tree-Workspace {
   overflow-x: auto;
-  padding: 1.5rem 0.5rem 2.5rem 0.5rem;
+  padding: 1.5rem 0.75rem 2.5rem 0.75rem;
+  -webkit-overflow-scrolling: touch;
 }
 
 .org-tree {
   display: flex;
   flex-direction: column;
   align-items: center;
-  min-width: 780px;
+  min-width: 920px;
 }
 
+/* Cấp 1: Node Gốc (Ban Giám Đốc) */
 .org-root-node {
   background: linear-gradient(135deg, #052614 0%, #0b4627 100%);
   color: #ffffff;
@@ -469,30 +544,32 @@ h1:focus, h2:focus, h3:focus, h4:focus, h5:focus, h6:focus {
   border: 1px solid rgba(255, 255, 255, 0.18);
   position: relative;
   text-align: center;
-  max-width: 480px;
+  max-width: 500px;
 }
 
 .org-vertical-stem {
   width: 2px;
-  height: 28px;
+  height: 26px;
   background-color: #0b4627;
 }
 
+/* Cấp 2: Hàng ngang các Khoa đào tạo */
 .org-branches-row {
   display: flex;
   justify-content: center;
-  gap: 1.25rem;
+  align-items: flex-start;
+  gap: 1.75rem;
   position: relative;
-  padding-top: 20px;
-  flex-wrap: wrap;
+  padding-top: 22px;
+  flex-wrap: nowrap;
 }
 
 .org-branches-row::before {
   content: "";
   position: absolute;
   top: 0;
-  left: 10%;
-  right: 10%;
+  left: 12%;
+  right: 12%;
   height: 2px;
   background-color: #0b4627;
 }
@@ -502,64 +579,201 @@ h1:focus, h2:focus, h3:focus, h4:focus, h5:focus, h6:focus {
   flex-direction: column;
   align-items: center;
   position: relative;
-  width: 295px;
+  min-width: 440px;
+  max-width: 520px;
 }
 
 .org-branch-col::before {
   content: "";
   position: absolute;
-  top: -20px;
+  top: -22px;
   width: 2px;
-  height: 20px;
+  height: 22px;
   background-color: #0b4627;
 }
 
 .org-khoa-card {
-  width: 100%;
+  width: 310px;
   background: #ffffff;
   border: 1px solid #cbd5e1;
   border-top: 4px solid #0b4627;
   border-radius: 10px;
-  padding: 0.9rem 1rem;
-  box-shadow: 0 2px 8px rgba(11, 70, 39, 0.06);
+  padding: 0.85rem 1rem;
+  box-shadow: 0 3px 10px rgba(11, 70, 39, 0.08);
   transition: transform 0.18s ease, box-shadow 0.18s ease;
+  position: relative;
 }
 
 .org-khoa-card:hover {
   transform: translateY(-2px);
-  box-shadow: 0 6px 16px rgba(11, 70, 39, 0.12);
+  box-shadow: 0 6px 16px rgba(11, 70, 39, 0.14);
 }
 
-.org-sub-tree {
+/* Cấp 3: Tách thành 3 Nhánh Con Song Song dưới mỗi Khoa (Bộ Môn | Lớp Học | Giảng Viên) */
+.org-khoa-fork-stem {
+  width: 2px;
+  height: 20px;
+  background-color: #15803d;
+}
+
+.org-khoa-children-fork {
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  gap: 0.65rem;
+  position: relative;
+  padding-top: 18px;
   width: 100%;
-  padding-left: 1.15rem;
-  margin-top: 0.5rem;
-  border-left: 2px solid #15803d;
+}
+
+.org-khoa-children-fork::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 16%;
+  right: 16%;
+  height: 2px;
+  background-color: #15803d;
+}
+
+.org-sub-branch {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  position: relative;
+  flex: 1;
+  min-width: 140px;
+}
+
+.org-sub-branch::before {
+  content: "";
+  position: absolute;
+  top: -18px;
+  width: 2px;
+  height: 18px;
+  background-color: #15803d;
+}
+
+.org-sub-branch-header {
+  background: #f0f7f3;
+  color: #0b4627;
+  border: 1px solid #a7f3d0;
+  border-radius: 8px;
+  padding: 0.4rem 0.6rem;
+  font-size: 0.76rem;
+  font-weight: 700;
+  text-align: center;
+  width: 100%;
+  box-shadow: 0 1px 3px rgba(11, 70, 39, 0.05);
+}
+
+.org-sub-branch-stem {
+  width: 2px;
+  height: 12px;
+  background-color: #86efac;
+}
+
+.org-sub-leaves {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+  width: 100%;
 }
 
 .org-leaf-node {
   position: relative;
   background: #ffffff;
   border: 1px solid #e2e8f0;
+  border-left: 3px solid #0b4627;
   border-radius: 8px;
-  padding: 0.55rem 0.75rem;
-  margin-bottom: 0.5rem;
-  font-size: 0.82rem;
+  padding: 0.48rem 0.6rem;
+  font-size: 0.78rem;
   box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04);
+  transition: border-color 0.15s ease, transform 0.15s ease;
 }
 
-.org-leaf-node::before {
-  content: "";
-  position: absolute;
-  left: -1.15rem;
-  top: 50%;
-  width: 1.15rem;
-  height: 2px;
-  background-color: #15803d;
+.org-leaf-node:hover {
+  border-color: #15803d;
+  transform: translateY(-1px);
 }
 
 /* ==========================================================================
-   4. THẺ THỐNG KÊ KPI, BIỂU ĐỒ & THÀNH PHẦN GIAO DIỆN XANH LÁ ĐẬM & TRẮNG
+   4. HỆ THỐNG HƯỚNG DẪN TƯƠNG TÁC QUA SHADOW BOX (SPOTLIGHT ONBOARDING TOUR)
+   ========================================================================== */
+.tour-overlay-container {
+  position: fixed;
+  inset: 0;
+  z-index: 9990;
+  pointer-events: none;
+}
+
+/* Ô sáng cắt lớp với Shadow Box làm tối toàn bộ màn hình xung quanh nút đang trỏ */
+.tour-spotlight-box {
+  position: fixed;
+  border-radius: 10px;
+  box-shadow: 0 0 0 9999px rgba(4, 24, 14, 0.74), 0 0 0 3px #34d399, 0 0 24px rgba(52, 211, 153, 0.65);
+  z-index: 9991;
+  pointer-events: none;
+  transition: top 0.28s cubic-bezier(0.22, 1, 0.36, 1),
+              left 0.28s cubic-bezier(0.22, 1, 0.36, 1),
+              width 0.28s cubic-bezier(0.22, 1, 0.36, 1),
+              height 0.28s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* Hộp thoại chỉ dẫn từng bước (Popover Card) */
+.tour-popover-card {
+  position: fixed;
+  width: 345px;
+  max-width: calc(100vw - 24px);
+  background: #ffffff;
+  color: #0f1f17;
+  border-radius: 14px;
+  border: 1px solid #a7f3d0;
+  box-shadow: 0 18px 42px rgba(3, 26, 13, 0.38);
+  padding: 1.15rem 1.25rem;
+  z-index: 9995;
+  pointer-events: auto;
+  transition: top 0.28s cubic-bezier(0.22, 1, 0.36, 1),
+              left 0.28s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.tour-step-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  background: #f0f7f3;
+  color: #0b4627;
+  border: 1px solid #a7f3d0;
+  padding: 0.22rem 0.6rem;
+  border-radius: 20px;
+}
+
+.tour-dots {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.tour-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #cbd5e1;
+  transition: all 0.2s ease;
+}
+
+.tour-dot.active {
+  width: 18px;
+  border-radius: 4px;
+  background: #0b4627;
+}
+
+/* ==========================================================================
+   5. THẺ THỐNG KÊ KPI, BIỂU ĐỒ & THÀNH PHẦN GIAO DIỆN XANH LÁ ĐẬM & TRẮNG
    ========================================================================== */
 .diagram-panel-card {
   background: #ffffff;
@@ -667,7 +881,6 @@ h1:focus, h2:focus, h3:focus, h4:focus, h5:focus, h6:focus {
   font-weight: 600;
 }
 
-/* Nút bấm Primary màu Xanh Lá Đậm (Dark Forest Green) */
 .btn-primary {
   background-color: #0b4627 !important;
   border-color: #0b4627 !important;
@@ -726,37 +939,4 @@ h1:focus, h2:focus, h3:focus, h4:focus, h5:focus, h6:focus {
 
 .table-hover tbody tr:hover {
   background-color: #f8faf9 !important;
-}
-
-.footer-cand {
-  background: #ffffff;
-  color: #64748b;
-  border-top: 1px solid #e2e8f0;
-}
-
-/* Responsive Sidebar trên Mobile */
-@media (max-width: 991.98px) {
-  .app-sidebar {
-    position: fixed;
-    left: 0;
-    top: 0;
-    bottom: 0;
-    transform: translateX(-100%);
-  }
-  .app-sidebar.show {
-    transform: translateX(0);
-  }
-  .app-sidebar-backdrop {
-    display: none;
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: rgba(5, 38, 20, 0.5);
-    z-index: 1030;
-  }
-  .app-sidebar-backdrop.show {
-    display: block;
-  }
 }
