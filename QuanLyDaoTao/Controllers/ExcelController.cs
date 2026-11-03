@@ -79,7 +79,7 @@ public class ExcelController : Controller
     [HttpPost]
     [Authorize(Roles = $"{VaiTroMacDinh.SuperAdmin},{VaiTroMacDinh.QuanTriVien},{VaiTroMacDinh.QuanLyDaoTao},{VaiTroMacDinh.CanBo},{VaiTroMacDinh.GiaoVien},{VaiTroMacDinh.NguoiDung}")]
     [ValidateAntiForgeryToken]
-    public async Task<IActionResult> KiemTraTep(string module, IFormFile? tepExcel)
+    public async Task<IActionResult> KiemTraTep(string module, IFormFile? tepExcel, bool choPhepThieuTruong = true)
     {
         if (string.IsNullOrWhiteSpace(module))
         {
@@ -109,8 +109,8 @@ public class ExcelController : Controller
             module,
             memoryStream,
             tepExcel.FileName,
+            choPhepThieuTruong,
             HttpContext.RequestAborted);
-
         // Lưu thông tin phiên xem trước
         var phienPreview = _excelDichVu.LuuPhienPreview(
             module,
@@ -128,7 +128,7 @@ public class ExcelController : Controller
     [HttpPost]
     [Authorize(Roles = $"{VaiTroMacDinh.SuperAdmin},{VaiTroMacDinh.QuanTriVien},{VaiTroMacDinh.QuanLyDaoTao},{VaiTroMacDinh.CanBo},{VaiTroMacDinh.GiaoVien},{VaiTroMacDinh.NguoiDung}")]
     [ValidateAntiForgeryToken]
-    public async Task<IActionResult> XacNhanCommit(string maPhien)
+    public async Task<IActionResult> XacNhanCommit(string maPhien, bool buDapTatCa = false)
     {
         var phien = _excelDichVu.LayPhienPreview(maPhien);
         if (phien == null)
@@ -137,7 +137,9 @@ public class ExcelController : Controller
             return Redirect("/");
         }
 
-        var danhSachHopLe = phien.KetQuaKiemTra.DanhSachDongDuLieu.Where(d => d.LaHopLe).ToList();
+        var danhSachHopLe = phien.KetQuaKiemTra.DanhSachDongDuLieu
+            .Where(d => d.LaHopLe || buDapTatCa)
+            .ToList();
         var ketQuaCommit = await _excelDichVu.CommitDuLieuExcelAsync(
             phien.TenModule,
             danhSachHopLe,

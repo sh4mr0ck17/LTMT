@@ -86,7 +86,7 @@ public class ExcelApiController : ControllerBase
         await tepExcel.CopyToAsync(ms);
         ms.Position = 0;
 
-        var ketQua = await _excelDichVu.KiemTraVaDocTepExcelAsync(module, ms, tepExcel.FileName, HttpContext.RequestAborted);
+        var ketQua = await _excelDichVu.KiemTraVaDocTepExcelAsync(module, ms, tepExcel.FileName, true, HttpContext.RequestAborted);
         return Ok(ApiResponse<KetQuaKiemTraExcel>.ThanhCongResponse(ketQua, $"Phân tích tệp xong: {ketQua.SoDongHopLe} dòng hợp lệ, {ketQua.SoDongLoi} dòng lỗi."));
     }
 }

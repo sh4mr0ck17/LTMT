@@ -31,6 +31,15 @@ public class DongDuLieuPreviewExcel
     /// Cột thỏa mãn điều kiện hợp lệ sẽ hiển thị MÀU XANH LÁ trên giao diện.
     /// </summary>
     public Dictionary<string, List<string>> LoiTheoCot { get; set; } = new(StringComparer.OrdinalIgnoreCase);
+    /// <summary>
+    /// Bản đồ lưu danh sách cảnh báo chi tiết theo từng tên cột trong dòng (Cột được tự động bù đắp dữ liệu).
+    /// </summary>
+    public Dictionary<string, List<string>> CanhBaoTheoCot { get; set; } = new(StringComparer.OrdinalIgnoreCase);
+
+    /// <summary>
+    /// Danh sách toàn bộ các cảnh báo thuộc về dòng này.
+    /// </summary>
+    public List<string> DanhSachCanhBao { get; set; } = new();
 
     /// <summary>
     /// Ghi nhận lỗi cho một cột cụ thể trong dòng.
@@ -48,6 +57,32 @@ public class DongDuLieuPreviewExcel
         DanhSachLoi.Add(thongDiepLoi);
         LaHopLe = false;
     }
+
+    /// <summary>
+    /// Ghi nhận cảnh báo tự động bù đắp dữ liệu cho một cột (Vẫn cho phép dòng hợp lệ để tiếp tục nhập).
+    /// </summary>
+    /// <param name="tenCot">Tên cột tiêu đề.</param>
+    /// <param name="thongDiepCanhBao">Mô tả bù đắp dữ liệu.</param>
+    public void GhiNhanCanhBaoCot(string tenCot, string thongDiepCanhBao)
+    {
+        if (string.IsNullOrWhiteSpace(tenCot)) return;
+        if (!CanhBaoTheoCot.ContainsKey(tenCot))
+        {
+            CanhBaoTheoCot[tenCot] = new List<string>();
+        }
+        CanhBaoTheoCot[tenCot].Add(thongDiepCanhBao);
+        DanhSachCanhBao.Add(thongDiepCanhBao);
+    }
+
+    /// <summary>
+    /// Kiểm tra xem cột có bị cảnh báo/tự động bù đắp hay không (phục vụ hiển thị MÀU VÀNG CAM).
+    /// </summary>
+    public bool CotCoCanhBao(string tenCot) => CanhBaoTheoCot.TryGetValue(tenCot, out var cb) && cb.Count > 0;
+
+    /// <summary>
+    /// Lấy chuỗi thông điệp cảnh báo của cột.
+    /// </summary>
+    public string? LayCanhBaoCot(string tenCot) => CanhBaoTheoCot.TryGetValue(tenCot, out var cb) && cb.Count > 0 ? string.Join("; ", cb) : null;
 
     /// <summary>
     /// Kiểm tra xem cột có bị lỗi hay không (phục vụ hiển thị MÀU ĐỎ).
@@ -123,4 +158,14 @@ public class KetQuaKiemTraExcel
     /// Danh sách các tên cột theo đúng thứ tự tiêu đề.
     /// </summary>
     public List<string> DanhSachCot { get; set; } = new();
+
+    /// <summary>
+    /// Cho phép tiếp tục import dữ liệu ngay cả khi thiếu trường thông tin trong 1 hàng (Chế độ nhập linh hoạt).
+    /// </summary>
+    public bool ChoPhepThieuTruong { get; set; } = true;
+
+    /// <summary>
+    /// Số lượng dòng được tự động bù đắp dữ liệu khuyết thiếu.
+    /// </summary>
+    public int SoDongDuocBuDap => DanhSachDongDuLieu.Count(d => d.DanhSachCanhBao.Count > 0);
 }

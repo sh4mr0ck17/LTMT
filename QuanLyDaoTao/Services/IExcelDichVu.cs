@@ -26,6 +26,7 @@ public interface IExcelDichVu
         string tenModule,
         Stream luongDuLieu,
         string tenTepGoc,
+        bool choPhepThieuTruong = false,
         CancellationToken cancellationToken = default);
 
     /// <summary>

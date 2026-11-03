@@ -197,13 +197,15 @@ public class ExcelDichVu : IExcelDichVu
         string tenModule,
         Stream luongDuLieu,
         string tenTepGoc,
+        bool choPhepThieuTruong = false,
         CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(luongDuLieu);
         var ketQua = new KetQuaKiemTraExcel
         {
             TenTep = tenTepGoc,
-            TenModule = tenModule
+            TenModule = tenModule,
+            ChoPhepThieuTruong = choPhepThieuTruong
         };
 
         // 1. Kiểm tra kích thước tệp
@@ -502,21 +504,114 @@ public class ExcelDichVu : IExcelDichVu
                     {
                         if (colDef.LaBatBuoc)
                         {
-                            var loi = new LoiChiTietExcel
+                            if (choPhepThieuTruong)
                             {
-                                SoDong = row,
-                                TenTruong = colDef.TenCot,
-                                DiaChiO = diaChiO,
-                                GiaTriDauVao = "(Trống)",
-                                MaLoi = "ERR_REQUIRED_FIELD_EMPTY",
-                                MoTaLoi = $"Trường '{colDef.TenCot}' là bắt buộc nhưng đang bị để trống.",
-                                HuongXuLy = $"Vui lòng nhập giá trị hợp lệ cho trường '{colDef.TenCot}'.",
-                                MucDoLoi = "Lỗi nghiêm trọng"
-                            };
-                            ketQua.DanhSachLoi.Add(loi);
-                            dongPreview.GhiNhanLoiCot(colDef.TenCot, loi.MoTaLoi);
+                                // Tự động bù đắp thông minh khi thiếu trường trong 1 hàng để tiếp tục nhập
+                                string giaTriBuDap;
+                                if (string.Equals(colDef.TenCot, "Giới tính", StringComparison.OrdinalIgnoreCase))
+                                {
+                                    giaTriBuDap = SuyLuanGioiTinh(dongPreview.DuLieuCot.TryGetValue("Họ và tên", out var hvt) ? hvt : "");
+                                }
+                                else if (string.Equals(colDef.TenCot, "Ngày sinh", StringComparison.OrdinalIgnoreCase))
+                                {
+                                    giaTriBuDap = "01/01/2007";
+                                }
+                                else if (string.Equals(colDef.TenCot, "Mã học viên", StringComparison.OrdinalIgnoreCase))
+                                {
+                                    giaTriBuDap = $"HV_{DateTime.Now:yyyyMMdd}_{row:D4}";
+                                    while (tapMaChinhTrongFile.Contains(giaTriBuDap) || tapMaHocVienTrongDb.Contains(giaTriBuDap))
+                                    {
+                                        giaTriBuDap = $"HV_{DateTime.Now:yyyyMMdd}_{Guid.NewGuid().ToString("N")[..4].ToUpper()}";
+                                    }
+                                }
+                                else if (string.Equals(colDef.TenCot, "Mã nhân sự", StringComparison.OrdinalIgnoreCase))
+                                {
+                                    giaTriBuDap = $"CB_AUTOGEN_{row:D4}";
+                                    while (tapMaChinhTrongFile.Contains(giaTriBuDap) || tapMaNhanSuTrongDb.Contains(giaTriBuDap))
+                                    {
+                                        giaTriBuDap = $"CB_AUTOGEN_{Guid.NewGuid().ToString("N")[..4].ToUpper()}";
+                                    }
+                                }
+                                else if (string.Equals(colDef.TenCot, "Mã lớp", StringComparison.OrdinalIgnoreCase))
+                                {
+                                    giaTriBuDap = tapMaLopTrongDb.FirstOrDefault() ?? "B1D57";
+                                }
+                                else if (string.Equals(colDef.TenCot, "Mã khoa", StringComparison.OrdinalIgnoreCase))
+                                {
+                                    giaTriBuDap = tapMaKhoaTrongDb.FirstOrDefault() ?? "KHOA_CNTT";
+                                }
+                                else if (string.Equals(colDef.TenCot, "Mã bộ môn", StringComparison.OrdinalIgnoreCase))
+                                {
+                                    giaTriBuDap = tapMaBoMonTrongDb.FirstOrDefault() ?? "BM_CNTT";
+                                }
+                                else if (string.Equals(colDef.TenCot, "Mã môn học", StringComparison.OrdinalIgnoreCase))
+                                {
+                                    giaTriBuDap = tapMaMonHocTrongDb.FirstOrDefault() ?? "CSHARP_NET";
+                                }
+                                else if (string.Equals(colDef.TenCot, "Mã phân công", StringComparison.OrdinalIgnoreCase))
+                                {
+                                    giaTriBuDap = $"PC_{DateTime.Now:yyyyMMdd}_{row:D4}";
+                                }
+                                else if (string.Equals(colDef.TenCot, "Trạng thái", StringComparison.OrdinalIgnoreCase))
+                                {
+                                    giaTriBuDap = "Hoạt động";
+                                }
+                                else if (string.Equals(colDef.TenCot, "Họ và tên", StringComparison.OrdinalIgnoreCase) ||
+                                         string.Equals(colDef.TenCot, "Tên khoa", StringComparison.OrdinalIgnoreCase) ||
+                                         string.Equals(colDef.TenCot, "Tên lớp", StringComparison.OrdinalIgnoreCase) ||
+                                         string.Equals(colDef.TenCot, "Tên bộ môn", StringComparison.OrdinalIgnoreCase) ||
+                                         string.Equals(colDef.TenCot, "Tên môn học", StringComparison.OrdinalIgnoreCase))
+                                {
+                                    giaTriBuDap = $"{colDef.TenCot} tự điền (Dòng {row})";
+                                }
+                                else
+                                {
+                                    giaTriBuDap = !string.IsNullOrWhiteSpace(colDef.ViDu) ? colDef.ViDu : "(Chưa xác định)";
+                                }
+
+                                giaTriO = giaTriBuDap;
+                                dongPreview.DuLieuCot[colDef.TenCot] = giaTriO;
+                                dongPreview.GhiNhanCanhBaoCot(colDef.TenCot, $"Trường '{colDef.TenCot}' để trống, đã tự động bù đắp: '{giaTriO}'");
+
+                                ketQua.DanhSachLoi.Add(new LoiChiTietExcel
+                                {
+                                    SoDong = row,
+                                    TenTruong = colDef.TenCot,
+                                    DiaChiO = diaChiO,
+                                    GiaTriDauVao = "(Trống)",
+                                    MaLoi = "WARN_AUTO_FILLED",
+                                    MoTaLoi = $"Trường '{colDef.TenCot}' để trống đã được tự động bù đắp giá trị '{giaTriO}' để tiếp tục nhập.",
+                                    HuongXuLy = "Hệ thống tự động bù đắp dữ liệu hợp lệ.",
+                                    MucDoLoi = "Cảnh báo"
+                                });
+
+                                if (LaCotKhoaChinh(tenModule, colDef.TenCot))
+                                {
+                                    tapMaChinhTrongFile.Add(giaTriO);
+                                }
+                            }
+                            else
+                            {
+                                var loi = new LoiChiTietExcel
+                                {
+                                    SoDong = row,
+                                    TenTruong = colDef.TenCot,
+                                    DiaChiO = diaChiO,
+                                    GiaTriDauVao = "(Trống)",
+                                    MaLoi = "ERR_REQUIRED_FIELD_EMPTY",
+                                    MoTaLoi = $"Trường '{colDef.TenCot}' là bắt buộc nhưng đang bị để trống.",
+                                    HuongXuLy = $"Vui lòng nhập giá trị hợp lệ cho trường '{colDef.TenCot}'.",
+                                    MucDoLoi = "Lỗi nghiêm trọng"
+                                };
+                                ketQua.DanhSachLoi.Add(loi);
+                                dongPreview.GhiNhanLoiCot(colDef.TenCot, loi.MoTaLoi);
+                                continue;
+                            }
                         }
-                        continue;
+                        else
+                        {
+                            continue;
+                        }
                     }
 
                     // B. Kiểm tra độ dài
@@ -545,19 +640,39 @@ public class ExcelDichVu : IExcelDichVu
                         if (!string.Equals(gt, "Nam", StringComparison.OrdinalIgnoreCase) &&
                             !string.Equals(gt, "Nữ", StringComparison.OrdinalIgnoreCase))
                         {
-                            var loi = new LoiChiTietExcel
+                            if (choPhepThieuTruong)
                             {
-                                SoDong = row,
-                                TenTruong = colDef.TenCot,
-                                DiaChiO = diaChiO,
-                                GiaTriDauVao = giaTriO,
-                                MaLoi = "ERR_INVALID_GENDER",
-                                MoTaLoi = $"Giới tính '{giaTriO}' không hợp lệ (chỉ chấp nhận 'Nam' hoặc 'Nữ').",
-                                HuongXuLy = "Vui lòng nhập chính xác 'Nam' hoặc 'Nữ'.",
-                                MucDoLoi = "Lỗi nghiêm trọng"
-                            };
-                            ketQua.DanhSachLoi.Add(loi);
-                            dongPreview.GhiNhanLoiCot(colDef.TenCot, loi.MoTaLoi);
+                                string gtSuyLuan = SuyLuanGioiTinh(dongPreview.DuLieuCot.TryGetValue("Họ và tên", out var hvt) ? hvt : "");
+                                dongPreview.DuLieuCot[colDef.TenCot] = gtSuyLuan;
+                                dongPreview.GhiNhanCanhBaoCot(colDef.TenCot, $"Giới tính '{giaTriO}' chưa chuẩn, tự động nhận diện thành '{gtSuyLuan}'");
+                                ketQua.DanhSachLoi.Add(new LoiChiTietExcel
+                                {
+                                    SoDong = row,
+                                    TenTruong = colDef.TenCot,
+                                    DiaChiO = diaChiO,
+                                    GiaTriDauVao = giaTriO,
+                                    MaLoi = "WARN_GENDER_AUTO_FIXED",
+                                    MoTaLoi = $"Giới tính '{giaTriO}' được tự động chuẩn hóa thành '{gtSuyLuan}'.",
+                                    HuongXuLy = "Hệ thống tự động chuẩn hóa giới tính hợp lệ.",
+                                    MucDoLoi = "Cảnh báo"
+                                });
+                            }
+                            else
+                            {
+                                var loi = new LoiChiTietExcel
+                                {
+                                    SoDong = row,
+                                    TenTruong = colDef.TenCot,
+                                    DiaChiO = diaChiO,
+                                    GiaTriDauVao = giaTriO,
+                                    MaLoi = "ERR_INVALID_GENDER",
+                                    MoTaLoi = $"Giới tính '{giaTriO}' không hợp lệ (chỉ chấp nhận 'Nam' hoặc 'Nữ').",
+                                    HuongXuLy = "Vui lòng nhập chính xác 'Nam' hoặc 'Nữ'.",
+                                    MucDoLoi = "Lỗi nghiêm trọng"
+                                };
+                                ketQua.DanhSachLoi.Add(loi);
+                                dongPreview.GhiNhanLoiCot(colDef.TenCot, loi.MoTaLoi);
+                            }
                         }
                     }
 
@@ -567,19 +682,39 @@ public class ExcelDichVu : IExcelDichVu
                         case KieuDuLieuExcel.NgayThang:
                             if (!KiemTraNgayThangHopLe(cell, out var ngayPhanTich))
                             {
-                                var loi = new LoiChiTietExcel
+                                if (choPhepThieuTruong)
                                 {
-                                    SoDong = row,
-                                    TenTruong = colDef.TenCot,
-                                    DiaChiO = diaChiO,
-                                    GiaTriDauVao = giaTriO,
-                                    MaLoi = "ERR_INVALID_DATE_FORMAT",
-                                    MoTaLoi = $"Giá trị '{giaTriO}' không phải là ngày tháng hợp lệ.",
-                                    HuongXuLy = "Vui lòng nhập ngày tháng theo đúng định dạng ngày/tháng/năm (ví dụ: 25/12/2000).",
-                                    MucDoLoi = "Lỗi nghiêm trọng"
-                                };
-                                ketQua.DanhSachLoi.Add(loi);
-                                dongPreview.GhiNhanLoiCot(colDef.TenCot, loi.MoTaLoi);
+                                    string ngayBuDap = "01/01/2007";
+                                    dongPreview.DuLieuCot[colDef.TenCot] = ngayBuDap;
+                                    dongPreview.GhiNhanCanhBaoCot(colDef.TenCot, $"Ngày sinh '{giaTriO}' không đúng định dạng, tự động gán '{ngayBuDap}'");
+                                    ketQua.DanhSachLoi.Add(new LoiChiTietExcel
+                                    {
+                                        SoDong = row,
+                                        TenTruong = colDef.TenCot,
+                                        DiaChiO = diaChiO,
+                                        GiaTriDauVao = giaTriO,
+                                        MaLoi = "WARN_DATE_AUTO_FIXED",
+                                        MoTaLoi = $"Ngày tháng '{giaTriO}' không đúng chuẩn dd/MM/yyyy, đã tự động gán '{ngayBuDap}' để tiếp tục nhập.",
+                                        HuongXuLy = "Hệ thống tự động bù đắp ngày mặc định.",
+                                        MucDoLoi = "Cảnh báo"
+                                    });
+                                }
+                                else
+                                {
+                                    var loi = new LoiChiTietExcel
+                                    {
+                                        SoDong = row,
+                                        TenTruong = colDef.TenCot,
+                                        DiaChiO = diaChiO,
+                                        GiaTriDauVao = giaTriO,
+                                        MaLoi = "ERR_INVALID_DATE_FORMAT",
+                                        MoTaLoi = $"Giá trị '{giaTriO}' không phải là ngày tháng hợp lệ.",
+                                        HuongXuLy = "Vui lòng nhập ngày tháng theo đúng định dạng ngày/tháng/năm (ví dụ: 25/12/2000).",
+                                        MucDoLoi = "Lỗi nghiêm trọng"
+                                    };
+                                    ketQua.DanhSachLoi.Add(loi);
+                                    dongPreview.GhiNhanLoiCot(colDef.TenCot, loi.MoTaLoi);
+                                }
                             }
                             else
                             {
@@ -728,7 +863,7 @@ public class ExcelDichVu : IExcelDichVu
                             KiemTraKhoaNgoaiTonTai(tenModule, colDef.TenCot, giaTriO, row, diaChiO,
                                 tapMaKhoaTrongDb, tapMaBoMonTrongDb, tapMaLopTrongDb, tapMaNhanSuTrongDb,
                                 tapMaChucVuTrongDb, tapMaTrinhDoTrongDb, tapMaMonHocTrongDb,
-                                ketQua, dongPreview);
+                                ketQua, dongPreview, choPhepThieuTruong);
                             break;
                     }
 
@@ -738,19 +873,40 @@ public class ExcelDichVu : IExcelDichVu
                         // Kiểm tra trùng trong file
                         if (tapMaChinhTrongFile.Contains(giaTriO))
                         {
-                            var loi = new LoiChiTietExcel
+                            if (choPhepThieuTruong)
                             {
-                                SoDong = row,
-                                TenTruong = colDef.TenCot,
-                                DiaChiO = diaChiO,
-                                GiaTriDauVao = giaTriO,
-                                MaLoi = "ERR_DUPLICATE_KEY_IN_FILE",
-                                MoTaLoi = $"Mã '{giaTriO}' bị trùng lặp với dòng khác trong cùng tệp.",
-                                HuongXuLy = "Vui lòng đảm bảo mỗi mã nghiệp vụ là duy nhất trong tệp.",
-                                MucDoLoi = "Lỗi nghiêm trọng"
-                            };
-                            ketQua.DanhSachLoi.Add(loi);
-                            dongPreview.GhiNhanLoiCot(colDef.TenCot, loi.MoTaLoi);
+                                string maMoi = $"{giaTriO}_{row:D3}";
+                                dongPreview.DuLieuCot[colDef.TenCot] = maMoi;
+                                dongPreview.GhiNhanCanhBaoCot(colDef.TenCot, $"Mã '{giaTriO}' trùng trong tệp, tự đổi thành '{maMoi}' để tiếp tục");
+                                tapMaChinhTrongFile.Add(maMoi);
+                                ketQua.DanhSachLoi.Add(new LoiChiTietExcel
+                                {
+                                    SoDong = row,
+                                    TenTruong = colDef.TenCot,
+                                    DiaChiO = diaChiO,
+                                    GiaTriDauVao = giaTriO,
+                                    MaLoi = "WARN_DUPLICATE_KEY_AUTO_FIXED",
+                                    MoTaLoi = $"Mã '{giaTriO}' bị trùng lặp trong tệp, đã tự động bù đắp mã mới '{maMoi}' để tiếp tục nhập.",
+                                    HuongXuLy = "Hệ thống tự động cấp mã duy nhất.",
+                                    MucDoLoi = "Cảnh báo"
+                                });
+                            }
+                            else
+                            {
+                                var loi = new LoiChiTietExcel
+                                {
+                                    SoDong = row,
+                                    TenTruong = colDef.TenCot,
+                                    DiaChiO = diaChiO,
+                                    GiaTriDauVao = giaTriO,
+                                    MaLoi = "ERR_DUPLICATE_KEY_IN_FILE",
+                                    MoTaLoi = $"Mã '{giaTriO}' bị trùng lặp với dòng khác trong cùng tệp.",
+                                    HuongXuLy = "Vui lòng đảm bảo mỗi mã nghiệp vụ là duy nhất trong tệp.",
+                                    MucDoLoi = "Lỗi nghiêm trọng"
+                                };
+                                ketQua.DanhSachLoi.Add(loi);
+                                dongPreview.GhiNhanLoiCot(colDef.TenCot, loi.MoTaLoi);
+                            }
                         }
                         else
                         {
@@ -762,19 +918,40 @@ public class ExcelDichVu : IExcelDichVu
                             tapMaKhoaTrongDb, tapMaBoMonTrongDb, tapMaLopTrongDb, tapMaHocVienTrongDb,
                             tapMaNhanSuTrongDb, tapMaMonHocTrongDb, tapMaPhanCongTrongDb))
                         {
-                            var loi = new LoiChiTietExcel
+                            if (choPhepThieuTruong)
                             {
-                                SoDong = row,
-                                TenTruong = colDef.TenCot,
-                                DiaChiO = diaChiO,
-                                GiaTriDauVao = giaTriO,
-                                MaLoi = "ERR_DUPLICATE_KEY_IN_DB",
-                                MoTaLoi = $"Mã '{giaTriO}' đã tồn tại trong cơ sở dữ liệu hệ thống.",
-                                HuongXuLy = "Vui lòng đổi sang một mã mới chưa tồn tại trong hệ thống.",
-                                MucDoLoi = "Lỗi nghiêm trọng"
-                            };
-                            ketQua.DanhSachLoi.Add(loi);
-                            dongPreview.GhiNhanLoiCot(colDef.TenCot, loi.MoTaLoi);
+                                string maMoi = $"{giaTriO}_{Guid.NewGuid().ToString("N")[..4].ToUpper()}";
+                                dongPreview.DuLieuCot[colDef.TenCot] = maMoi;
+                                dongPreview.GhiNhanCanhBaoCot(colDef.TenCot, $"Mã '{giaTriO}' đã có trong DB, tự đổi thành '{maMoi}' để tiếp tục");
+                                tapMaChinhTrongFile.Add(maMoi);
+                                ketQua.DanhSachLoi.Add(new LoiChiTietExcel
+                                {
+                                    SoDong = row,
+                                    TenTruong = colDef.TenCot,
+                                    DiaChiO = diaChiO,
+                                    GiaTriDauVao = giaTriO,
+                                    MaLoi = "WARN_DUPLICATE_DB_AUTO_FIXED",
+                                    MoTaLoi = $"Mã '{giaTriO}' đã tồn tại trong CSDL, đã tự động bù đắp mã mới '{maMoi}' để tiếp tục nhập.",
+                                    HuongXuLy = "Hệ thống tự động cấp mã duy nhất.",
+                                    MucDoLoi = "Cảnh báo"
+                                });
+                            }
+                            else
+                            {
+                                var loi = new LoiChiTietExcel
+                                {
+                                    SoDong = row,
+                                    TenTruong = colDef.TenCot,
+                                    DiaChiO = diaChiO,
+                                    GiaTriDauVao = giaTriO,
+                                    MaLoi = "ERR_DUPLICATE_KEY_IN_DB",
+                                    MoTaLoi = $"Mã '{giaTriO}' đã tồn tại trong cơ sở dữ liệu hệ thống.",
+                                    HuongXuLy = "Vui lòng đổi sang một mã mới chưa tồn tại trong hệ thống.",
+                                    MucDoLoi = "Lỗi nghiêm trọng"
+                                };
+                                ketQua.DanhSachLoi.Add(loi);
+                                dongPreview.GhiNhanLoiCot(colDef.TenCot, loi.MoTaLoi);
+                            }
                         }
                     }
                 }
@@ -1314,6 +1491,23 @@ public class ExcelDichVu : IExcelDichVu
         };
     }
 
+    private static string SuyLuanGioiTinh(string hoVaTen)
+    {
+        if (string.IsNullOrWhiteSpace(hoVaTen)) return "Nam";
+        var words = hoVaTen.ToLowerInvariant().Split(' ', StringSplitOptions.RemoveEmptyEntries);
+        if (words.Length == 0) return "Nam";
+
+        if (words.Contains("thị")) return "Nữ";
+
+        var lastWord = words[^1];
+        var femaleLastWords = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+        {
+            "vân", "hân", "quỳnh", "chi", "nhi", "thư", "yến", "ly", "hoa", "huệ", "hạnh", "huyền", "phượng", "trang"
+        };
+
+        return femaleLastWords.Contains(lastWord) ? "Nữ" : "Nam";
+    }
+
     private static void KiemTraKhoaNgoaiTonTai(
         string tenModule,
         string tenCot,
@@ -1328,7 +1522,8 @@ public class ExcelDichVu : IExcelDichVu
         List<string> dsTrinhDo,
         List<string> dsMonHoc,
         KetQuaKiemTraExcel ketQua,
-        DongDuLieuPreviewExcel dongPreview)
+        DongDuLieuPreviewExcel dongPreview,
+        bool choPhepThieuTruong = false)
     {
         bool tonTai = true;
         string doiTuong = "";
@@ -1371,19 +1566,47 @@ public class ExcelDichVu : IExcelDichVu
 
         if (!tonTai)
         {
-            var loi = new LoiChiTietExcel
+            if (choPhepThieuTruong)
             {
-                SoDong = row,
-                TenTruong = tenCot,
-                DiaChiO = diaChiO,
-                GiaTriDauVao = giaTri,
-                MaLoi = "ERR_FOREIGN_KEY_NOT_FOUND",
-                MoTaLoi = $"Không tìm thấy {doiTuong} có mã '{giaTri}' trong hệ thống.",
-                HuongXuLy = $"Vui lòng chọn một mã {doiTuong} đã tồn tại trong danh mục hệ thống.",
-                MucDoLoi = "Lỗi nghiêm trọng"
-            };
-            ketQua.DanhSachLoi.Add(loi);
-            dongPreview.GhiNhanLoiCot(tenCot, loi.MoTaLoi);
+                string maThayThe = "";
+                if (string.Equals(tenCot, "Mã khoa", StringComparison.OrdinalIgnoreCase)) maThayThe = dsKhoa.FirstOrDefault() ?? "KHOA_CNTT";
+                else if (string.Equals(tenCot, "Mã bộ môn", StringComparison.OrdinalIgnoreCase)) maThayThe = dsBoMon.FirstOrDefault() ?? "BM_CNTT";
+                else if (string.Equals(tenCot, "Mã lớp", StringComparison.OrdinalIgnoreCase)) maThayThe = dsLop.FirstOrDefault() ?? "B1D57";
+                else if (string.Equals(tenCot, "Mã nhân sự", StringComparison.OrdinalIgnoreCase)) maThayThe = dsNhanSu.FirstOrDefault() ?? "CB_C500_01";
+                else if (string.Equals(tenCot, "Mã chức vụ", StringComparison.OrdinalIgnoreCase)) maThayThe = dsChucVu.FirstOrDefault() ?? "CV_GV";
+                else if (string.Equals(tenCot, "Mã trình độ", StringComparison.OrdinalIgnoreCase)) maThayThe = dsTrinhDo.FirstOrDefault() ?? "TD_TS";
+                else if (string.Equals(tenCot, "Mã môn học", StringComparison.OrdinalIgnoreCase)) maThayThe = dsMonHoc.FirstOrDefault() ?? "CSHARP_NET";
+
+                dongPreview.DuLieuCot[tenCot] = maThayThe;
+                dongPreview.GhiNhanCanhBaoCot(tenCot, $"{doiTuong} '{giaTri}' chưa có, tự động gán '{maThayThe}' để tiếp tục nhập");
+                ketQua.DanhSachLoi.Add(new LoiChiTietExcel
+                {
+                    SoDong = row,
+                    TenTruong = tenCot,
+                    DiaChiO = diaChiO,
+                    GiaTriDauVao = giaTri,
+                    MaLoi = "WARN_FOREIGN_KEY_FALLBACK",
+                    MoTaLoi = $"Giá trị khóa ngoại '{giaTri}' chưa tồn tại trong hệ thống, đã tự động liên kết tới '{maThayThe}' để tiếp tục nhập.",
+                    HuongXuLy = "Hệ thống tự động liên kết tới bản ghi khả dụng.",
+                    MucDoLoi = "Cảnh báo"
+                });
+            }
+            else
+            {
+                var loi = new LoiChiTietExcel
+                {
+                    SoDong = row,
+                    TenTruong = tenCot,
+                    DiaChiO = diaChiO,
+                    GiaTriDauVao = giaTri,
+                    MaLoi = "ERR_FOREIGN_KEY_NOT_FOUND",
+                    MoTaLoi = $"Không tìm thấy {doiTuong} có mã '{giaTri}' trong hệ thống.",
+                    HuongXuLy = $"Vui lòng chọn một mã {doiTuong} đã tồn tại trong danh mục hệ thống.",
+                    MucDoLoi = "Lỗi nghiêm trọng"
+                };
+                ketQua.DanhSachLoi.Add(loi);
+                dongPreview.GhiNhanLoiCot(tenCot, loi.MoTaLoi);
+            }
         }
     }
 
@@ -1439,12 +1662,15 @@ public class ExcelDichVu : IExcelDichVu
         {
             var d = dong.DuLieuCot;
             var maKhoa = LayGiaTri(d, "Mã khoa", "");
+            int khoaId = (!string.IsNullOrEmpty(maKhoa) && mapKhoa.TryGetValue(maKhoa, out int foundKid))
+                ? foundKid
+                : (mapKhoa.Values.FirstOrDefault() > 0 ? mapKhoa.Values.FirstOrDefault() : 1);
             var boMon = new BoMon
             {
                 MaBoMon = LayGiaTri(d, "Mã bộ môn", ""),
                 TenBoMon = LayGiaTri(d, "Tên bộ môn", ""),
                 MoTa = LayGiaTriHoacNull(d, "Mô tả"),
-                KhoaId = mapKhoa[maKhoa],
+                KhoaId = khoaId,
                 CoHoatDong = !string.Equals(LayGiaTri(d, "Trạng thái", "Hoạt động"), "Đã khóa", StringComparison.OrdinalIgnoreCase),
                 NgayTao = DateTime.UtcNow
             };
@@ -1462,12 +1688,15 @@ public class ExcelDichVu : IExcelDichVu
             var d = dong.DuLieuCot;
             var maKhoa = LayGiaTri(d, "Mã khoa", "");
             int.TryParse(LayGiaTri(d, "Số lượng tối đa", "50"), out int soLuong);
+            int khoaId = (!string.IsNullOrEmpty(maKhoa) && mapKhoa.TryGetValue(maKhoa, out int foundKid))
+                ? foundKid
+                : (mapKhoa.Values.FirstOrDefault() > 0 ? mapKhoa.Values.FirstOrDefault() : 1);
             var lop = new LopHoc
             {
                 MaLop = LayGiaTri(d, "Mã lớp", ""),
                 TenLop = LayGiaTri(d, "Tên lớp", ""),
                 NienKhoa = LayGiaTri(d, "Niên khóa", ""),
-                KhoaId = mapKhoa[maKhoa],
+                KhoaId = khoaId,
                 SoLuongToiDa = soLuong > 0 ? soLuong : 50,
                 CoHoatDong = !string.Equals(LayGiaTri(d, "Trạng thái", "Hoạt động"), "Đã khóa", StringComparison.OrdinalIgnoreCase),
                 NgayTao = DateTime.UtcNow
@@ -1485,17 +1714,37 @@ public class ExcelDichVu : IExcelDichVu
         {
             var d = dong.DuLieuCot;
             var maLop = LayGiaTri(d, "Mã lớp", "");
-            DateTime.TryParseExact(LayGiaTri(d, "Ngày sinh", ""), "dd/MM/yyyy", CultureInfo.InvariantCulture, DateTimeStyles.None, out var ngaySinh);
+            int lopHocId = (!string.IsNullOrEmpty(maLop) && mapLop.TryGetValue(maLop, out int foundLid))
+                ? foundLid
+                : (mapLop.Values.FirstOrDefault() > 0 ? mapLop.Values.FirstOrDefault() : 1);
+
+            if (!DateTime.TryParseExact(LayGiaTri(d, "Ngày sinh", ""), "dd/MM/yyyy", CultureInfo.InvariantCulture, DateTimeStyles.None, out var ngaySinh) || ngaySinh == default)
+            {
+                ngaySinh = new DateTime(2007, 1, 1);
+            }
+
+            var maHocVien = LayGiaTri(d, "Mã học viên", "");
+            if (string.IsNullOrWhiteSpace(maHocVien))
+            {
+                maHocVien = $"HV_{DateTime.Now:yyyyMMdd}_{Guid.NewGuid().ToString("N")[..6].ToUpper()}";
+            }
+
+            var hoVaTen = LayGiaTri(d, "Họ và tên", "");
+            if (string.IsNullOrWhiteSpace(hoVaTen))
+            {
+                hoVaTen = "Học viên (Hồ sơ cập nhật)";
+            }
+
             var hv = new HocVien
             {
-                MaHocVien = LayGiaTri(d, "Mã học viên", ""),
-                HoVaTen = LayGiaTri(d, "Họ và tên", ""),
+                MaHocVien = maHocVien,
+                HoVaTen = hoVaTen,
                 NgaySinh = ngaySinh,
                 GioiTinh = LayGiaTri(d, "Giới tính", "Nam"),
                 Email = LayGiaTriHoacNull(d, "Email"),
                 SoDienThoai = LayGiaTriHoacNull(d, "Số điện thoại"),
                 DiaChi = LayGiaTriHoacNull(d, "Địa chỉ"),
-                LopHocId = mapLop[maLop],
+                LopHocId = lopHocId,
                 CoHoatDong = !string.Equals(LayGiaTri(d, "Trạng thái", "Hoạt động"), "Đã khóa", StringComparison.OrdinalIgnoreCase),
                 NgayTao = DateTime.UtcNow
             };

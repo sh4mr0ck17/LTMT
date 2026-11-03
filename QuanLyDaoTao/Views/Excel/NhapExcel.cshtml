@@ -60,6 +60,17 @@
                             <input type="file" name="tepExcel" class="form-control form-control-lg" id="txtChonTepExcel" accept=".xlsx" required />
                             <div class="form-text">Chỉ chấp nhận tệp định dạng Microsoft Excel (.xlsx).</div>
                         </div>
+                        <div class="card bg-light border-0 p-3 mb-4 rounded-3" id="pnlCheDoLinhHoat">
+                            <div class="form-check form-switch mb-0">
+                                <input class="form-check-input fs-5" type="checkbox" name="choPhepThieuTruong" id="chkChoPhepThieuTruong" value="true" checked />
+                                <label class="form-check-label fw-bold text-dark pt-1" for="chkChoPhepThieuTruong">
+                                    <i class="bi bi-magic text-primary me-1"></i>Cho phép tiếp tục nhập khi thiếu trường thông tin trong 1 hàng (Chế độ linh hoạt)
+                                </label>
+                                <div class="form-text small text-muted ps-1 mt-1">
+                                    Khi kích hoạt, hệ thống sẽ tự động bù đắp các trường khuyết thiếu (tự sinh mã học viên/cán bộ, suy luận giới tính, gán lớp/khoa khả dụng, điền ngày sinh mặc định) để đảm bảo toàn bộ tệp được tiếp tục import mà không bị từ chối dòng.
+                                </div>
+                            </div>
+                        </div>
 
                         <div class="d-flex justify-content-between align-items-center">
                             <a asp-controller="@module" asp-action="Index" class="btn btn-outline-secondary" id="btnQuayLai">

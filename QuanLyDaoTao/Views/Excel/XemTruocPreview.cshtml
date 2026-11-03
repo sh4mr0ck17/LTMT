@@ -36,6 +36,18 @@
                     </button>
                 </form>
             }
+            @if (Model.SoDongLoi > 0)
+            {
+                <form asp-action="XacNhanCommit" method="post" class="d-inline" id="frmXacNhanCommitBuDap">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" name="maPhien" value="@maPhien" />
+                    <input type="hidden" name="buDapTatCa" value="true" />
+                    <button type="submit" class="btn btn-warning btn-lg fw-bold" id="btnXacNhanCommitBuDap"
+                            onclick="return confirm('Bạn có chắc chắn muốn hệ thống TỰ ĐỘNG BÙ ĐẮP các trường khuyết thiếu và ghi toàn bộ @Model.TongSoDong dòng vào cơ sở dữ liệu?');">
+                        <i class="bi bi-magic me-1"></i>Tiếp Tục Nhập Tất Cả (@Model.TongSoDong dòng)
+                    </button>
+                </form>
+            }
         </div>
     </div>
 
@@ -118,6 +130,9 @@
                 <span class="badge" style="background-color: #fef2f2; color: #991b1b; border: 1px solid #f87171;">
                     <i class="bi bi-x-circle-fill me-1 text-danger"></i>Ô Đỏ: Báo lỗi cần sửa
                 </span>
+                <span class="badge" style="background-color: #fefce8; color: #854d0e; border: 1.5px solid #eab308;">
+                    <i class="bi bi-magic me-1 text-warning"></i>Ô Vàng: Tự động bù đắp (Cho phép tiếp tục nhập)
+                </span>
             </div>
         </div>
         <div class="card-body p-0">
@@ -163,7 +178,9 @@
                                     {
                                         var val = dong.DuLieuCot.ContainsKey(cot) ? dong.DuLieuCot[cot] : "";
                                         bool coLoi = dong.CotCoLoi(cot);
+                                        bool coCanhBao = dong.CotCoCanhBao(cot);
                                         string? thongDiepLoi = dong.LayLoiCot(cot);
+                                        string? thongDiepCanhBao = dong.LayCanhBaoCot(cot);
                                         bool coGiaTri = !string.IsNullOrWhiteSpace(val);
 
                                         if (coLoi)
@@ -177,6 +194,20 @@
                                                 </div>
                                                 <div class="small text-danger fst-italic mt-1" style="font-size: 0.72rem; line-height: 1.2;">
                                                     <i class="bi bi-exclamation-circle me-1"></i>@thongDiepLoi
+                                                </div>
+                                            </td>
+                                        }
+                                        else if (coCanhBao)
+                                        {
+                                            <td class="excel-cell-warning" title="@thongDiepCanhBao" style="background-color: #fefce8; border: 1.5px solid #eab308;">
+                                                <div class="d-flex align-items-center justify-content-between gap-1">
+                                                    <span class="fw-bold text-dark">@val</span>
+                                                    <span class="badge bg-warning text-dark border rounded-pill px-1" title="@thongDiepCanhBao">
+                                                        <i class="bi bi-magic"></i>
+                                                    </span>
+                                                </div>
+                                                <div class="small text-warning-emphasis fst-italic mt-1" style="font-size: 0.72rem; line-height: 1.2;">
+                                                    <i class="bi bi-info-circle me-1"></i>@thongDiepCanhBao
                                                 </div>
                                             </td>
                                         }
@@ -203,6 +234,15 @@
                                                 @foreach (var msg in dong.DanhSachLoi)
                                                 {
                                                     <li>@msg</li>
+                                                }
+                                            </ul>
+                                        }
+                                        else if (dong.DanhSachCanhBao.Count > 0)
+                                        {
+                                            <ul class="mb-0 ps-3 text-warning-emphasis small">
+                                                @foreach (var msg in dong.DanhSachCanhBao)
+                                                {
+                                                    <li><i class="bi bi-magic me-1"></i>@msg</li>
                                                 }
                                             </ul>
                                         }
