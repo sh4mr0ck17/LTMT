@@ -122,6 +122,7 @@ builder.Services.AddScoped<IMonHocDichVu, MonHocDichVu>();
 builder.Services.AddScoped<IPhanCongGiangDayDichVu, PhanCongGiangDayDichVu>();
 builder.Services.AddScoped<IExcelDichVu, ExcelDichVu>();
 builder.Services.AddScoped<IQuanTriDuLieuDichVu, QuanTriDuLieuDichVu>();
+builder.Services.AddScoped<ICayToChucDichVu, CayToChucDichVu>();
 
 // Đăng ký Blazor Server & Razor Components .NET 8
 builder.Services.AddRazorComponents()

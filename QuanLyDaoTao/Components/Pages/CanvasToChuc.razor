@@ -1,0 +1,138 @@
+@using QuanLyDaoTao.Models.ToChuc
+@implements IAsyncDisposable
+@inject IJSRuntime TuongTacJs
+@inject ILogger<CanvasToChuc> NhatKy
+
+<section class="tc-canvas-panel" data-canvas-panel aria-labelledby="lblCauTrucToChuc">
+    <div class="tc-panel-header">
+        <div><h2 id="lblCauTrucToChuc">Sơ đồ tổ chức</h2><small class="tc-canvas-huong-dan" id="lblHuongDanCanvas">Kéo nền để di chuyển. Cuộn để thu/phóng. Chọn thẻ để xem chi tiết.</small></div>
+        <div class="tc-thao-tac-cay">
+            <button id="btnMoRongTatCa" type="button" @onclick="KhiMoTatCa">Mở hết</button>
+            <button id="btnThuGonTatCa" type="button" @onclick="KhiThuGon">Thu gọn</button>
+        </div>
+    </div>
+    <div class="tc-canvas-toolbar" role="toolbar" aria-label="Điều khiển canvas">
+        <div class="tc-canvas-zoom">
+            <button id="btnThuNhoCanvas" type="button" data-canvas-action="thu-nho" title="Thu nhỏ" aria-label="Thu nhỏ"><i class="bi bi-dash-lg" aria-hidden="true"></i></button>
+            <output class="tc-canvas-ti-le" aria-label="Tỉ lệ phóng" data-canvas-zoom>100%</output>
+            <button id="btnPhongToCanvas" type="button" data-canvas-action="phong-to" title="Phóng to" aria-label="Phóng to"><i class="bi bi-plus-lg" aria-hidden="true"></i></button>
+        </div>
+        <button id="btnVuaKhungCanvas" type="button" data-canvas-action="vua-khung"><i class="bi bi-bounding-box" aria-hidden="true"></i> Vừa khung</button>
+        <button id="btnTimNutDangChon" type="button" data-canvas-action="nut-dang-chon" disabled="@(KhoaNutChon == null)"><i class="bi bi-crosshair" aria-hidden="true"></i> Về nút chọn</button>
+        <button id="btnToanManHinhCanvas" type="button" data-canvas-action="toan-man-hinh" aria-pressed="false"><i class="bi bi-fullscreen" aria-hidden="true"></i> Toàn màn hình</button>
+        <span class="tc-canvas-dem">@_boCuc.CacNut.Count nút đang hiển thị</span>
+    </div>
+    @if (_loiTuongTac != null) { <p class="tc-canvas-loi" role="status">@_loiTuongTac</p> }
+    <div class="tc-canvas-viewport" id="pnlCanvasToChuc" @ref="_khungCanvas" tabindex="0" role="region" aria-label="Canvas sơ đồ tổ chức" aria-describedby="lblHuongDanCanvas lblPhimTatCanvas">
+        @if (_boCuc.CacNut.Count == 0)
+        {
+            <div class="tc-trong"><i class="bi bi-search" aria-hidden="true"></i><strong>Không tìm thấy kết quả</strong><span>Thử từ khóa khác hoặc xóa bộ lọc.</span></div>
+        }
+        <div class="tc-canvas-san" style="@_boCuc.KieuDang" data-canvas-stage>
+            <svg class="tc-canvas-duong-noi" width="@_boCuc.ChieuRong" height="@_boCuc.ChieuCao" aria-hidden="true">
+                @foreach (var duongNoi in _boCuc.CacDuongNoi)
+                {
+                    <path @key="duongNoi.Con" d="@duongNoi.DuongVe" class="@(DuongDanChon.Contains(duongNoi.Cha) && DuongDanChon.Contains(duongNoi.Con) ? "tc-canvas-duong-chon" : null)" />
+                }
+            </svg>
+            @foreach (var viTri in _boCuc.CacNut)
+            {
+                var nut = viTri.Nut;
+                var soCon = nut.Con.Count(n => NutHienThi.Contains(n.KhoaNut));
+                var soRaSoat = nut.SoCanRaSoat;
+                <article @key="nut.KhoaNut" class="tc-canvas-nut @(nut.KhoaNut == KhoaNutChon ? "tc-canvas-dang-chon" : "") @(DuongDanChon.Contains(nut.KhoaNut) ? "tc-canvas-tren-duong" : "") @(CoBoLoc && NutKhop.Contains(nut.KhoaNut) ? "tc-canvas-khop" : "")" style="@viTri.KieuDang" data-canvas-node="@nut.KhoaNut">
+                    <button id="btnChonNhanh_@nut.KhoaNut" class="tc-canvas-chon" type="button" title="@nut.Ten" aria-current="@(nut.KhoaNut == KhoaNutChon ? "location" : null)" @onclick="() => KhiChon.InvokeAsync(nut)">
+                        <span class="tc-canvas-loai"><i class="bi @nut.BieuTuong" aria-hidden="true"></i> @nut.Loai <span>@nut.Ma</span></span>
+                        <strong class="tc-canvas-ten">@nut.Ten</strong>
+                        <span class="tc-canvas-tom-tat">@LayTomTat(nut)</span>
+                    </button>
+                    <div class="tc-canvas-chan-nut">
+                        @if (soRaSoat > 0) { <span class="tc-icon-canh-bao" title="@($"{soRaSoat} bản ghi cần rà soát trong nhánh")"><i class="bi bi-exclamation-triangle" aria-hidden="true"></i> @soRaSoat cần rà soát</span> }
+                        else if (nut.CoHoatDong.HasValue) { <span class="@(nut.CoHoatDong == true ? "tc-canvas-hoat-dong" : "tc-canvas-ngung")">@nut.TrangThai</span> }
+                        else { <span>@(soCon == 0 ? "Chưa có mục trực thuộc" : $"{soCon} mục trực thuộc")</span> }
+                        @if (soCon > 0)
+                        {
+                            <button type="button" id="btnMoNhanh_@nut.KhoaNut" class="tc-canvas-mo" aria-label="@($"{(NutMo.Contains(nut.KhoaNut) ? "Thu gọn" : "Mở nhánh")} {nut.Ten}")" aria-expanded="@NutMo.Contains(nut.KhoaNut).ToString().ToLowerInvariant()" @onclick="() => KhiDoiTrangThai.InvokeAsync(nut)"><i class="bi @(NutMo.Contains(nut.KhoaNut) ? "bi-chevron-left" : "bi-chevron-right")" aria-hidden="true"></i> @soCon</button>
+                        }
+                    </div>
+                </article>
+            }
+        </div>
+    </div>
+    <footer class="tc-canvas-footer"><span>Cấp trên ở bên trái, đơn vị trực thuộc ở bên phải.</span><span id="lblPhimTatCanvas">Phím mũi tên để di chuyển; + / − để thu phóng; 0 để vừa khung.</span></footer>
+</section>
+
+@code {
+    /// <summary>Gốc cơ cấu tổ chức.</summary>
+    [Parameter, EditorRequired] public NutToChuc Goc { get; set; } = default!;
+    /// <summary>Các nút phù hợp và đường dẫn cấp trên của chúng.</summary>
+    [Parameter, EditorRequired] public HashSet<string> NutHienThi { get; set; } = default!;
+    /// <summary>Các nhánh đang mở.</summary>
+    [Parameter, EditorRequired] public HashSet<string> NutMo { get; set; } = default!;
+    /// <summary>Các bản ghi khớp bộ lọc.</summary>
+    [Parameter, EditorRequired] public HashSet<string> NutKhop { get; set; } = default!;
+    /// <summary>Đường dẫn tới bản ghi đang chọn.</summary>
+    [Parameter, EditorRequired] public HashSet<string> DuongDanChon { get; set; } = default!;
+    /// <summary>Khóa nút đang chọn.</summary>
+    [Parameter] public string? KhoaNutChon { get; set; }
+    /// <summary>Có áp dụng bộ lọc hay không.</summary>
+    [Parameter] public bool CoBoLoc { get; set; }
+    /// <summary>Thay đổi giá trị này để căn toàn bộ sơ đồ sau khi lọc hoặc mở hết.</summary>
+    [Parameter] public int LanCanKhung { get; set; }
+    /// <summary>Sự kiện lựa chọn bản ghi.</summary>
+    [Parameter] public EventCallback<NutToChuc> KhiChon { get; set; }
+    /// <summary>Sự kiện mở hoặc thu một nhánh.</summary>
+    [Parameter] public EventCallback<NutToChuc> KhiDoiTrangThai { get; set; }
+    /// <summary>Sự kiện mở toàn bộ nhánh.</summary>
+    [Parameter] public EventCallback KhiMoTatCa { get; set; }
+    /// <summary>Sự kiện thu về cấp khoa.</summary>
+    [Parameter] public EventCallback KhiThuGon { get; set; }
+    private ElementReference _khungCanvas;
+    private BoCucCayToChuc _boCuc = new();
+    private IJSObjectReference? _moDun;
+    private IJSObjectReference? _dieuKhien;
+    private string? _loiTuongTac;
+
+    /// <summary>Tính lại vị trí thẻ khi cây hoặc trạng thái mở thay đổi.</summary>
+    protected override void OnParametersSet() => _boCuc = BoCucCayToChuc.Tao(Goc, NutHienThi, NutMo);
+
+    /// <summary>Khởi tạo điều khiển tại trình duyệt, sau đó đồng bộ khung nhìn.</summary>
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (_loiTuongTac != null) { return; }
+        try
+        {
+            _moDun ??= await TuongTacJs.InvokeAsync<IJSObjectReference>("import", "./js/canvas-to-chuc.js?v=1");
+            _dieuKhien ??= await _moDun.InvokeAsync<IJSObjectReference>("khoiTao", _khungCanvas);
+            await _dieuKhien.InvokeVoidAsync("capNhat", KhoaNutChon, LanCanKhung, _boCuc.DauBoCuc);
+        }
+        catch (JSDisconnectedException loi) { NhatKy.LogDebug(loi, "Phiên canvas đã ngắt kết nối."); }
+        catch (JSException loi)
+        {
+            NhatKy.LogWarning(loi, "Không tải được điều khiển canvas.");
+            _loiTuongTac = "Điều khiển thu phóng chưa tải được. Bạn vẫn có thể cuộn và chọn các thẻ.";
+            StateHasChanged();
+        }
+    }
+
+    private static string LayTomTat(NutToChuc nut) => nut.Loai switch
+    {
+        "Học viện" => $"{nut.SoKhoa} khoa, {nut.SoNhanSu} nhân sự",
+        "Khoa" => $"{nut.SoBoMon} bộ môn, {nut.SoLop} lớp, {nut.SoNhanSu} nhân sự",
+        "Bộ môn" => $"{nut.SoNhanSu} nhân sự trực thuộc",
+        "Lớp học" => $"{nut.SiSo}/{nut.SucChua} học viên đang học",
+        "Nhân sự" => nut.MoTa,
+        _ => $"{nut.Con.Count} mục trực thuộc"
+    };
+
+    /// <summary>Gỡ sự kiện và bộ theo dõi kích thước khi rời trang.</summary>
+    public async ValueTask DisposeAsync()
+    {
+        try
+        {
+            if (_dieuKhien != null) { await _dieuKhien.InvokeVoidAsync("huy"); await _dieuKhien.DisposeAsync(); }
+            if (_moDun != null) { await _moDun.DisposeAsync(); }
+        }
+        catch (JSDisconnectedException loi) { NhatKy.LogDebug(loi, "Phiên canvas đã đóng trước khi giải phóng."); }
+    }
+}
