@@ -1,187 +1,115 @@
 @page "/CayToChuc"
-@inject IKhoaDichVu KhoaDichVu
+@using QuanLyDaoTao.Models.ToChuc
 
-<PageTitle>Sơ Đồ Cây Tổ Chức Đào Tạo - C500</PageTitle>
+<PageTitle>Cây tổ chức - C500</PageTitle>
+<HeadContent><link rel="stylesheet" href="css/cay-to-chuc.css?v=3" /></HeadContent>
 
-<div class="container-fluid px-4 py-3" id="pnlCayToChuc">
-    <!-- Thanh tiêu đề Sơ đồ cây -->
-    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center bg-white border rounded-3 px-4 py-3 mb-4 shadow-sm">
-        <div>
-            <h5 class="mb-1 text-primary fw-bold" id="lblTieuDe">
-                <i class="bi bi-diagram-3-fill me-2"></i>Sơ Đồ Cây Tổ Chức Học Viện (Visual Org Tree)
-            </h5>
-            <span class="text-muted small">Cấu trúc cây phân cấp trực quan: Ban Giám Đốc &rarr; Khoa Đào Tạo &rarr; Bộ Môn / Lớp Học &rarr; Nhân Sự</span>
+<div class="to-chuc container-fluid px-4 py-3" id="pnlCayToChuc" aria-busy="@_coDangTai.ToString().ToLowerInvariant()">
+    <header class="tc-header">
+        <div><h1 id="lblTieuDe">Cây tổ chức</h1><p>Nắm cơ cấu đơn vị, theo dõi nhân sự và các lớp trong cùng một nơi.</p></div>
+        <div class="tc-cap-nhat">
+            @if (_lanCapNhat.HasValue) { <small>Cập nhật @_lanCapNhat.Value.ToString("HH:mm:ss dd/MM/yyyy") (GMT+7)</small> }
+            <button class="btn btn-outline-primary btn-sm" id="btnTaiLaiToChuc" disabled="@_coDangTai" @onclick="TaiDuLieuAsync"><i class="bi bi-arrow-clockwise" aria-hidden="true"></i> Làm mới</button>
         </div>
-        <div class="d-flex gap-2 mt-2 mt-md-0">
-            <button type="button" class="btn btn-outline-primary btn-sm" id="btnMoRongTatCa" @onclick="() => SetAllExpand(true)">
-                <i class="bi bi-arrows-expand me-1"></i>Mở Rộng Toàn Bộ Nhánh
-            </button>
-            <button type="button" class="btn btn-outline-secondary btn-sm" id="btnThuGonTatCa" @onclick="() => SetAllExpand(false)">
-                <i class="bi bi-arrows-collapse me-1"></i>Thu Gọn Các Nhánh
-            </button>
-        </div>
-    </div>
-
-    @if (danhSachKhoa == null)
+    </header>
+    @if (_loiTaiDuLieu != null) { <div class="alert alert-danger" role="alert">@_loiTaiDuLieu Bấm “Làm mới” để thử lại.</div> }
+    @if (_goc == null)
     {
-        <div class="text-center py-5">
-            <div class="spinner-border text-primary" role="status"></div>
-            <p class="text-muted mt-2">Đang dựng sơ đồ cây tổ chức...</p>
-        </div>
+        <div class="tc-trong" role="status">@(_coDangTai ? "Đang tải cơ cấu tổ chức…" : "Chưa tải được cơ cấu tổ chức.")</div>
     }
     else
     {
-        <!-- SƠ ĐỒ CÂY PHÂN CẤP TRỰC QUAN VỚI ĐƯỜNG NỐI NHÁNH (ORG CHART TREE) -->
-        <div class="org-tree-Workspace bg-white border rounded-3 shadow-sm">
-            <div class="org-tree" id="treeSoDoToChuc">
-                <!-- NODE GỐC (ROOT NODE): BAN GIÁM ĐỐC HỌC VIỆN -->
-                <div class="org-root-node">
-                    <div class="d-flex align-items-center justify-content-center gap-3">
-                        <img src="images/logo_badge.png" alt="Logo C500" class="logo-cand-nav" />
-                        <div class="text-start">
-                            <div class="badge bg-light text-primary mb-1">CẤP CHỈ HUY CAO NHẤT</div>
-                            <h6 class="mb-0 fw-bold text-white">BAN GIÁM ĐỐC HỌC VIỆN AN NINH NHÂN DÂN (C500)</h6>
-                            <small class="text-white-50">@danhSachKhoa.Count Khoa đào tạo • @danhSachKhoa.Sum(k => k.BoMons?.Count ?? 0) Bộ môn • @danhSachKhoa.Sum(k => k.LopHocs?.Count ?? 0) Lớp học</small>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- ĐƯỜNG THÂN CÂY DỌC TỪ GỐC XUỐNG NHÁNH KHOA -->
-                <div class="org-vertical-stem"></div>
-
-                <!-- HÀNG NHÁNH NGANG CÁC KHOA TRỰC THUỘC -->
-                <div class="org-branches-row">
-                    @foreach (var khoa in danhSachKhoa)
-                    {
-                        bool isExpanded = expandedMap.ContainsKey(khoa.KhoaId) && expandedMap[khoa.KhoaId];
-                        int soBoMon = khoa.BoMons?.Count ?? 0;
-                        int soLop = khoa.LopHocs?.Count ?? 0;
-                        int soCanBo = khoa.NhanSus?.Count ?? 0;
-
-                        <div class="org-branch-col">
-                            <!-- NODE KHOA -->
-                            <div class="org-khoa-card">
-                                <div class="d-flex justify-content-between align-items-start mb-2">
-                                    <span class="badge bg-primary font-monospace">@khoa.MaKhoa</span>
-                                    <button type="button" class="btn btn-sm btn-outline-primary py-0 px-2"
-                                            @onclick="() => ToggleKhoa(khoa.KhoaId)"
-                                            title="Đóng / Mở nhánh con của @khoa.TenKhoa">
-                                        <i class="bi @(isExpanded ? "bi-dash-lg" : "bi-plus-lg")"></i>
-                                    </button>
-                                </div>
-                                <h6 class="fw-bold text-primary mb-1">@khoa.TenKhoa</h6>
-                                <div class="text-muted small mb-2">
-                                    <i class="bi bi-geo-alt me-1"></i>@(khoa.DiaDiem ?? "Học viện C500")
-                                </div>
-                                <div class="d-flex flex-wrap gap-1 pt-2 border-top">
-                                    <span class="badge bg-light text-dark border">@soBoMon Bộ môn</span>
-                                    <span class="badge bg-light text-dark border">@soLop Lớp</span>
-                                    <span class="badge bg-light text-dark border">@soCanBo Cán bộ</span>
-                                </div>
-                            </div>
-
-                            <!-- CÁC NHÁNH LÁ CON (BỘ MÔN, LỚP HỌC, CÁN BỘ) NỐI DỌC TỪ KHOA -->
-                            @if (isExpanded)
-                            {
-                                <div class="org-sub-tree">
-                                    <!-- Nhánh con 1: Các Bộ Môn thuộc Khoa -->
-                                    @if (khoa.BoMons != null && khoa.BoMons.Count > 0)
-                                    {
-                                        @foreach (var bm in khoa.BoMons)
-                                        {
-                                            <div class="org-leaf-node">
-                                                <div class="d-flex justify-content-between align-items-center">
-                                                    <span class="fw-semibold text-primary">
-                                                        <i class="bi bi-diagram-2 me-1"></i>@bm.TenBoMon
-                                                    </span>
-                                                    <span class="badge bg-light text-dark border font-monospace">@bm.MaBoMon</span>
-                                                </div>
-                                                <div class="text-muted small mt-1">
-                                                    Bộ môn chuyên ngành
-                                                </div>
-                                            </div>
-                                        }
-                                    }
-
-                                    <!-- Nhánh con 2: Các Lớp Đào Tạo thuộc Khoa -->
-                                    @if (khoa.LopHocs != null && khoa.LopHocs.Count > 0)
-                                    {
-                                        @foreach (var lop in khoa.LopHocs)
-                                        {
-                                            <div class="org-leaf-node" style="border-left: 3px solid #0284c7;">
-                                                <div class="d-flex justify-content-between align-items-center">
-                                                    <span class="fw-semibold text-dark">
-                                                        <i class="bi bi-mortarboard me-1 text-primary"></i>@lop.TenLop
-                                                    </span>
-                                                    <span class="badge bg-primary">@lop.NienKhoa</span>
-                                                </div>
-                                                <div class="text-muted small mt-1">
-                                                    Mã lớp: <code>@lop.MaLop</code> • Tối đa: @lop.SoLuongToiDa HV
-                                                </div>
-                                            </div>
-                                        }
-                                    }
-
-                                    <!-- Nhánh con 3: Đội ngũ Giảng viên / Cán bộ tiêu biểu -->
-                                    @if (khoa.NhanSus != null && khoa.NhanSus.Count > 0)
-                                    {
-                                        <div class="org-leaf-node bg-light">
-                                            <div class="fw-semibold text-primary mb-1">
-                                                <i class="bi bi-people-fill me-1"></i>Cán bộ / Giảng viên (@khoa.NhanSus.Count)
-                                            </div>
-                                            @foreach (var ns in khoa.NhanSus.Take(4))
-                                            {
-                                                <div class="d-flex justify-content-between align-items-center small py-1 border-top">
-                                                    <a href="NhanSu/ChiTiet/@ns.NhanSuId" class="text-decoration-none text-dark fw-medium">@ns.HoVaTen</a>
-                                                    <span class="text-muted" style="font-size: 0.72rem;">@(ns.ChucVu?.TenChucVu ?? "GV")</span>
-                                                </div>
-                                            }
-                                        </div>
-                                    }
-                                </div>
-                            }
-                        </div>
-                    }
-                </div>
+        <div class="tc-tong-quan" aria-label="Tổng quan toàn học viện">
+            <div><i class="bi bi-building" aria-hidden="true"></i><strong>@_goc.SoKhoa</strong><span>Khoa</span></div>
+            <div><i class="bi bi-diagram-2" aria-hidden="true"></i><strong>@_goc.SoBoMon</strong><span>Bộ môn</span></div>
+            <div><i class="bi bi-mortarboard" aria-hidden="true"></i><strong>@_goc.SoLop</strong><span>Lớp học</span></div>
+            <div><i class="bi bi-people" aria-hidden="true"></i><strong>@_goc.SoNhanSu</strong><span>Nhân sự</span></div>
+            <div><i class="bi bi-person-badge" aria-hidden="true"></i><strong>@_goc.SoHocVien</strong><span>Học viên đang học</span></div>
+        </div>
+        <section class="tc-bo-loc" aria-label="Tìm kiếm và lọc cây tổ chức">
+            <div class="tc-tim-kiem">
+                <label for="txtTimKiemToChuc">Tìm trong cơ cấu</label>
+                <div class="tc-o-tim"><i class="bi bi-search" aria-hidden="true"></i><input id="txtTimKiemToChuc" type="search" class="form-control" placeholder="Tên hoặc mã khoa, bộ môn, lớp, nhân sự…" @bind="_tuKhoa" @bind:event="oninput" @bind:after="ApDungBoLoc" /></div>
             </div>
+            <div><label for="cboLoaiToChuc">Loại bản ghi</label><select id="cboLoaiToChuc" class="form-select" @bind="_loai" @bind:after="ApDungBoLoc"><option value="">Tất cả loại</option><option>Khoa</option><option>Bộ môn</option><option>Lớp học</option><option>Nhân sự</option></select></div>
+            <div><label for="cboTrangThaiToChuc">Trạng thái</label><select id="cboTrangThaiToChuc" class="form-select" @bind="_trangThai" @bind:after="ApDungBoLoc"><option value="">Tất cả trạng thái</option><option value="hoat-dong">Đang hoạt động / công tác</option><option value="ngung">Ngừng hoạt động / đã nghỉ</option><option value="ra-soat">Cần rà soát phân đơn vị, sĩ số</option></select></div>
+            <button id="btnXoaBoLocToChuc" class="btn btn-outline-secondary" disabled="@(!CoBoLoc)" @onclick="XoaBoLoc">Xóa lọc</button>
+        </section>
+        <div class="tc-ket-qua" role="status" aria-live="polite">
+            @if (CoBoLoc) { <span><strong>@_nutKhop.Count</strong> bản ghi phù hợp. Giữ lại cấp trên để bạn thấy vị trí trong cơ cấu.</span> }
+            else { <span>Kéo và thu phóng canvas để xem cơ cấu. Chọn một thẻ để theo dõi chi tiết.</span> }
+            @if (_goc.SoCanRaSoat > 0) { <button class="tc-nut-ra-soat" id="btnLocCanRaSoat" @onclick="LocCanRaSoat"><i class="bi bi-exclamation-triangle" aria-hidden="true"></i> @_goc.SoCanRaSoat bản ghi cần rà soát</button> }
+        </div>
+        <div class="tc-khong-gian tc-khong-gian-canvas @(_coHienChiTiet ? "tc-co-chi-tiet" : null)">
+            <CanvasToChuc Goc="_goc" NutHienThi="_nutHienThi" NutMo="_nutMo" NutKhop="_nutKhop" DuongDanChon="_duongDanChon" KhoaNutChon="@_nutChon?.KhoaNut" CoBoLoc="CoBoLoc" LanCanKhung="_lanCanKhung" KhiChon="ChonNut" KhiDoiTrangThai="DoiTrangThaiNhanh" KhiMoTatCa="MoTatCa" KhiThuGon="ThuGon" />
+            @if (_coHienChiTiet)
+            {
+            <section class="tc-chi-tiet" id="pnlChiTietToChuc" aria-labelledby="lblDonViDangChon">
+                <div class="tc-dong-chi-tiet"><span>Thông tin đang chọn</span><button id="btnDongChiTietToChuc" type="button" class="btn btn-sm btn-outline-secondary" @onclick="() => _coHienChiTiet = false" aria-label="Đóng chi tiết, mở rộng canvas"><i class="bi bi-x-lg" aria-hidden="true"></i></button></div>
+                @if (_nutChon is { } nut)
+                {
+                    <nav class="tc-duong-dan" aria-label="Vị trí trong tổ chức"><ol>
+                        @foreach (var cha in LayDuongDan(nut))
+                        {
+                            <li>@if (cha.KhoaNut == nut.KhoaNut) { <span aria-current="location">@cha.Ten</span> } else { <button type="button" @onclick="() => ChonNut(cha)">@cha.Ten</button> }</li>
+                        }
+                    </ol></nav>
+                    <div class="tc-tieu-de-chi-tiet">
+                        <div class="tc-bieu-tuong"><i class="bi @nut.BieuTuong" aria-hidden="true"></i></div>
+                        <div class="tc-ten-chi-tiet">
+                            <span class="tc-loai">@nut.Loai @if (!string.IsNullOrEmpty(nut.Ma)) { <span>/ @nut.Ma</span> }</span><h2 id="lblDonViDangChon">@nut.Ten</h2>
+                            @if (!string.IsNullOrEmpty(nut.TrangThai)) { <span class="tc-trang-thai @(nut.CoHoatDong == true ? "tc-hoat-dong" : "tc-ngung")">@nut.TrangThai</span> }
+                        </div>
+                        @if (nut.DuongDan != null) { <a href="@nut.DuongDan" id="btnXemHoSoToChuc" class="btn btn-outline-primary btn-sm">Mở hồ sơ <i class="bi bi-box-arrow-up-right" aria-hidden="true"></i></a> }
+                    </div>
+                    @if (!string.IsNullOrEmpty(nut.MoTa)) { <p class="tc-mo-ta">@nut.MoTa</p> }
+                    @if (nut.CanhBao != null) { <div class="tc-canh-bao" role="note"><i class="bi bi-exclamation-triangle" aria-hidden="true"></i> @nut.CanhBao</div> }
+                    @if (nut.Loai != "Nhân sự")
+                    {
+                        <dl class="tc-thong-ke-nhanh">
+                            @if (nut.Loai == "Học viện") { <div><dt>Khoa</dt><dd>@nut.SoKhoa</dd></div> }
+                            @if (nut.Loai == "Học viện" || nut.Loai == "Khoa") { <div><dt>Bộ môn</dt><dd>@nut.SoBoMon</dd></div><div><dt>Lớp học</dt><dd>@nut.SoLop</dd></div> }
+                            @if (nut.Loai == "Nhóm") { <div><dt>Mục trực thuộc</dt><dd>@nut.Con.Count</dd></div> }
+                            @if (nut.Loai == "Học viện" || nut.Loai == "Khoa" || nut.Loai == "Bộ môn" || nut.SoNhanSu > 0) { <div><dt>Nhân sự</dt><dd>@nut.SoNhanSu</dd></div> }
+                            @if (nut.Loai == "Học viện" || nut.Loai == "Khoa" || nut.Loai == "Lớp học" || nut.SoHocVien > 0) { <div><dt>Học viên đang học</dt><dd>@nut.SoHocVien</dd></div> }
+                        </dl>
+                        <p class="tc-pham-vi">Số liệu toàn nhánh, không đổi theo bộ lọc. Đơn vị và nhân sự tính mọi trạng thái; học viên chỉ tính đang học.</p>
+                    }
+                    @if (nut.SucChua.HasValue)
+                    {
+                        <div class="tc-si-so"><div><strong>Sĩ số lớp</strong><span>@nut.SiSo / @nut.SucChua học viên</span></div><progress max="@Math.Max(nut.SucChua.Value, nut.SiSo)" value="@nut.SiSo" aria-label="Sĩ số lớp"></progress><small>@(nut.SiSo > nut.SucChua ? $"Vượt {nut.SiSo - nut.SucChua} học viên" : $"Còn {nut.SucChua - nut.SiSo} chỗ")</small></div>
+                    }
+                    @if (nut.Con.Count > 0)
+                    {
+                        var cacCon = nut.Con.Where(n => _nutHienThi.Contains(n.KhoaNut)).ToList();
+                        <div class="tc-danh-sach-header"><h3>Trực thuộc nhánh đang chọn</h3><span>@cacCon.Count / @nut.Con.Count mục</span></div>
+                        @if (cacCon.Count == 0) { <p class="tc-trong">Không có mục trực thuộc phù hợp với bộ lọc hiện tại.</p> }
+                        else
+                        {
+                            <div class="tc-bang-cuon"><table class="table tc-bang" id="dgvTrucThuocToChuc">
+                                <thead><tr><th scope="col">Đơn vị / hồ sơ</th><th scope="col">Thông tin</th><th scope="col">Trạng thái</th></tr></thead>
+                                <tbody>@foreach (var con in cacCon)
+                                {
+                                    <tr @key="con.KhoaNut">
+                                        <td><button type="button" class="tc-lien-ket" @onclick="() => ChonNut(con)"><i class="bi @con.BieuTuong" aria-hidden="true"></i> @con.Ten</button><small>@con.Loai @con.Ma</small></td>
+                                        <td>
+                                            @if (con.Loai == "Lớp học") { <span>@con.SiSo / @con.SucChua học viên</span><small>@con.MoTa</small> }
+                                            else if (con.Loai == "Nhân sự") { <span>@con.MoTa</span> }
+                                            else if (con.Loai == "Khoa") { <span>@con.SoBoMon bộ môn, @con.SoLop lớp</span><small>@con.SoNhanSu nhân sự</small> }
+                                            else if (con.Loai == "Bộ môn") { <span>@con.SoNhanSu nhân sự</span> }
+                                            else { <span>@con.Con.Count mục trực thuộc</span> }
+                                        </td>
+                                        <td>@if (con.CanhBao != null) { <span class="tc-can-ra-soat">Cần rà soát</span> } else if (con.CoHoatDong.HasValue) { <span class="tc-trang-thai @(con.CoHoatDong == true ? "tc-hoat-dong" : "tc-ngung")">@con.TrangThai</span> } else { <span class="text-muted">Nhóm điều hướng</span> }</td>
+                                    </tr>
+                                }</tbody>
+                            </table></div>
+                        }
+                    }
+                    else if (nut.Loai != "Nhân sự" && nut.Loai != "Lớp học") { <div class="tc-trong"><i class="bi bi-folder2-open" aria-hidden="true"></i><strong>Chưa có dữ liệu trực thuộc</strong><span>Nhánh này hiện chưa có đơn vị hoặc nhân sự.</span></div> }
+                }
+                else { <div class="tc-trong"><strong id="lblDonViDangChon">Chọn một đơn vị hoặc hồ sơ</strong><span>Chi tiết và vị trí trong cơ cấu sẽ xuất hiện tại đây.</span></div> }
+            </section>
+            }
         </div>
     }
 </div>
-
-@code {
-    private List<Khoa>? danhSachKhoa;
-    private Dictionary<int, bool> expandedMap = new();
-
-    protected override async Task OnInitializedAsync()
-    {
-        danhSachKhoa = await KhoaDichVu.LayDanhSachAsync();
-        if (danhSachKhoa != null)
-        {
-            foreach (var k in danhSachKhoa)
-            {
-                expandedMap[k.KhoaId] = true;
-            }
-        }
-    }
-
-    private void ToggleKhoa(int khoaId)
-    {
-        if (expandedMap.ContainsKey(khoaId))
-        {
-            expandedMap[khoaId] = !expandedMap[khoaId];
-        }
-        else
-        {
-            expandedMap[khoaId] = true;
-        }
-    }
-
-    private void SetAllExpand(bool expand)
-    {
-        if (danhSachKhoa == null) return;
-        foreach (var k in danhSachKhoa)
-        {
-            expandedMap[k.KhoaId] = expand;
-        }
-    }
-}

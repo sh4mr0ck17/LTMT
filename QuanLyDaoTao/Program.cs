@@ -112,6 +112,7 @@ builder.Services.AddSwaggerGen(c =>
 // Đăng ký các dịch vụ nghiệp vụ (3-Tier Services)
 builder.Services.AddScoped<INhatKyDichVu, NhatKyDichVu>();
 builder.Services.AddScoped<IKhoaDichVu, KhoaDichVu>();
+builder.Services.AddScoped<ICayToChucDichVu, CayToChucDichVu>();
 builder.Services.AddScoped<IBoMonDichVu, BoMonDichVu>();
 builder.Services.AddScoped<ILopHocDichVu, LopHocDichVu>();
 builder.Services.AddScoped<IHocVienDichVu, HocVienDichVu>();
