@@ -10,7 +10,6 @@
 @inject INhanSuDichVu NhanSuDichVu
 @inject IMonHocDichVu MonHocDichVu
 @inject IPhanCongGiangDayDichVu PhanCongDichVu
-@inject INhatKyDichVu NhatKyDichVu
 @inject IServiceScopeFactory ScopeFactory
 @inject IJSRuntime JSRuntime
 
@@ -21,10 +20,6 @@
         <div class="trang-chu-chao">
             <h1 id="lblTieuDeDashboard">Xin chào, @hoTenNguoiDung</h1>
             <span class="nhan-vung" id="lblWorkspaceRoleBadge">@tenWorkspace</span>
-            @if (hoSoGiangVien != null)
-            {
-                <span class="dt-chip dt-can-bo">Mã GV: @hoSoGiangVien.MaNhanSu</span>
-            }
             <span class="trang-chu-ngay">@DateTime.Now.ToString("dddd, dd/MM/yyyy", new System.Globalization.CultureInfo("vi-VN"))</span>
         </div>
         <div class="trang-chu-nut">
@@ -38,10 +33,6 @@
         </div>
     </header>
 
-    @if (daTaiXong)
-    {
-        <BangTinThongBao />
-    }
 
     @if (hienThiWorkspaceGiangVienRieng && hoSoGiangVien != null)
     {
@@ -109,8 +100,7 @@
                                 <table class="table table-hover align-middle mb-0" id="dgvLopQuanLyCuaGiangVien">
                                     <thead class="table-light">
                                         <tr>
-                                            <th class="ps-3">Mã Lớp</th>
-                                            <th>Tên Lớp Đào Tạo</th>
+                                            <th class="ps-3">Tên Lớp Đào Tạo</th>
                                             <th>Niên Khóa</th>
                                             <th class="text-center">Vai Trò</th>
                                         </tr>
@@ -127,8 +117,7 @@
                                             @foreach (var item in danhSachLopQuanLyCaNhan)
                                             {
                                                 <tr>
-                                                    <td class="ps-3 font-monospace fw-bold text-primary">@item.Lop.MaLop</td>
-                                                    <td>
+                                                    <td class="ps-3">
                                                         <div class="fw-semibold">@item.Lop.TenLop</div>
                                                         <small class="text-muted">Sĩ số tối đa: @item.Lop.SoLuongToiDa HV</small>
                                                     </td>
@@ -167,8 +156,7 @@
                                 <table class="table table-hover align-middle mb-0" id="dgvMonGiangDayCuaGiangVien">
                                     <thead class="table-light">
                                         <tr>
-                                            <th class="ps-3">Mã PC</th>
-                                            <th>Môn Học Giảng Dạy</th>
+                                            <th class="ps-3">Môn Học Giảng Dạy</th>
                                             <th class="text-center">Tín Chỉ</th>
                                             <th>Lớp Học</th>
                                             <th>Học Kỳ</th>
@@ -179,7 +167,7 @@
                                         @if (danhSachPhanCongCaNhan.Count == 0)
                                         {
                                             <tr>
-                                                <td colspan="6" class="text-center py-4 text-muted">Chưa có lịch phân công môn học trong học kỳ này</td>
+                                                <td colspan="5" class="text-center py-4 text-muted">Chưa có lịch phân công môn học trong học kỳ này</td>
                                             </tr>
                                         }
                                         else
@@ -187,10 +175,8 @@
                                             @foreach (var pc in danhSachPhanCongCaNhan)
                                             {
                                                 <tr>
-                                                    <td class="ps-3 font-monospace fw-semibold text-primary">@pc.MaPhanCong</td>
-                                                    <td>
+                                                    <td class="ps-3">
                                                         <div class="fw-semibold">@(pc.MonHoc?.TenMonHoc ?? "-")</div>
-                                                        <small class="text-muted">Mã MH: <code>@(pc.MonHoc?.MaMonHoc ?? "-")</code></small>
                                                     </td>
                                                     <td class="text-center">
                                                         <span class="badge bg-primary">@(pc.MonHoc?.SoTinChi ?? 3) TC</span>
@@ -208,6 +194,9 @@
                     </div>
                 </div>
             </div>
+            <div class="mt-4" id="pnlCayToChucToanBoGiangVien">
+                <CayToChucPage />
+            </div>
         </div>
     }
     else
@@ -224,98 +213,9 @@
             }
         </div>
 
-        <div class="luoi-trang-chu @(laSuperAdmin || laAdmin ? "co-nhat-ky" : null)">
-            <section class="khoi-trang-chu" id="pnlCanChuY" aria-labelledby="lblCanChuY">
-                <h2 id="lblCanChuY"><i class="bi bi-exclamation-triangle text-warning" aria-hidden="true"></i> Cần chú ý
-                    @if (danhSachCanChuY.Count > 0) { <span class="khoi-dem">@danhSachCanChuY.Count</span> }</h2>
-                @if (danhSachCanChuY.Count == 0)
-                {
-                    <p class="khoi-tot"><i class="bi bi-check-circle-fill" aria-hidden="true"></i> Dữ liệu đầy đủ, không có mục cần xử lý.</p>
-                }
-                else
-                {
-                    <div class="ds-can-chu-y">
-                        @foreach (var muc in danhSachCanChuY)
-                        {
-                            <a class="muc-can-chu-y tt-@muc.MucDo" href="@muc.DuongDan">
-                                <span class="muc-can-chu-y-so dt-chu">@muc.SoLuong.ToString("N0")</span>
-                                <span class="muc-can-chu-y-noi-dung">@muc.NoiDung</span>
-                                <span class="dt-chip @muc.MauDoiTuong">@muc.DoiTuong</span>
-                                <i class="bi bi-chevron-right" aria-hidden="true"></i>
-                            </a>
-                        }
-                    </div>
-                }
-            </section>
-
-            @if (laSuperAdmin || laAdmin)
-            {
-                <section class="khoi-trang-chu" id="pnlHoatDongGanDay" aria-labelledby="lblHoatDong">
-                    <h2 id="lblHoatDong"><i class="bi bi-clock-history" aria-hidden="true"></i> Hoạt động gần đây
-                        <a href="NhatKy" class="khoi-lien-ket" id="btnXemTatCaNhatKy">Xem nhật ký <i class="bi bi-arrow-right" aria-hidden="true"></i></a></h2>
-                    @if (hoatDongGanDay.Count == 0)
-                    {
-                        <p class="text-muted small mb-0">Chưa có hoạt động nào được ghi nhận.</p>
-                    }
-                    else
-                    {
-                        <ol class="ds-hoat-dong" id="dgvHoatDongGanDay">
-                            @foreach (var item in hoatDongGanDay)
-                            {
-                                <li>
-                                    <span class="dt-chip @MauHanhDong(item.HanhDong)">@item.HanhDong</span>
-                                    <span class="ds-hoat-dong-noi-dung">
-                                        <strong>@item.NguoiThucHien</strong>
-                                        <span class="dt-chip @MauDoiTuong.LayLop(item.BangDuLieu)">@item.BangDuLieu</span>
-                                        @if (!string.IsNullOrEmpty(item.KhoaBanGhi) && item.KhoaBanGhi.Length <= 12) { <span class="text-muted">#@item.KhoaBanGhi</span> }
-                                        @if (item.KetQua != "Thành công") { <span class="dt-chip tt-nguy">@item.KetQua</span> }
-                                    </span>
-                                    <time class="ds-hoat-dong-gio" title="@item.ThoiDiem.ToString("dd/MM/yyyy HH:mm:ss")">@ThoiGianTuongDoi(item.ThoiDiem)</time>
-                                </li>
-                            }
-                        </ol>
-                    }
-                </section>
-            }
-        </div>
-
-        <div class="luoi-bieu-do" id="pnlBieuDoThongKe">
-            <section class="khoi-trang-chu">
-                <h2><i class="bi bi-bar-chart" aria-hidden="true"></i> Học viên và lớp theo khoa</h2>
-                <p class="khoi-mo-ta">Khoa nào đang quản lý nhiều lớp, nhiều học viên nhất.</p>
-                <div class="khung-bieu-do"><canvas id="chartHocVienTheoKhoa" aria-label="Biểu đồ học viên và lớp theo khoa" role="img"></canvas></div>
-            </section>
-            <section class="khoi-trang-chu">
-                <h2><i class="bi bi-speedometer2" aria-hidden="true"></i> Lấp đầy chỉ tiêu từng lớp</h2>
-                <p class="khoi-mo-ta">
-                    <span class="dt-chip tt-tot">Dưới 90%</span> <span class="dt-chip tt-canh-bao">90–100%</span> <span class="dt-chip tt-nguy">Vượt chỉ tiêu</span>
-                </p>
-                <div class="khung-bieu-do"><canvas id="chartSiSoLopHoc" aria-label="Biểu đồ sĩ số và chỉ tiêu từng lớp" role="img"></canvas></div>
-            </section>
-            <section class="khoi-trang-chu">
-                <h2><i class="bi bi-mortarboard" aria-hidden="true"></i> Trình độ cán bộ đang công tác</h2>
-                @if (soCanBoDangLam == 0)
-                {
-                    <p class="khoi-trong">Chưa có hồ sơ cán bộ đang công tác.</p>
-                }
-                else
-                {
-                    <p class="khoi-mo-ta">Tổng @soCanBoDangLam cán bộ.</p>
-                    <div class="khung-bieu-do"><canvas id="chartTrinhDoChuyenMon" aria-label="Biểu đồ cơ cấu trình độ cán bộ" role="img"></canvas></div>
-                }
-            </section>
-            <section class="khoi-trang-chu">
-                <h2><i class="bi bi-award" aria-hidden="true"></i> Cán bộ theo chức vụ</h2>
-                @if (soCanBoDangLam == 0)
-                {
-                    <p class="khoi-trong">Chưa có hồ sơ cán bộ đang công tác.</p>
-                }
-                else
-                {
-                    <p class="khoi-mo-ta">Đối chiếu với chỉ tiêu lãnh đạo khoa, bộ môn.</p>
-                    <div class="khung-bieu-do"><canvas id="chartChucVuNhanSu" aria-label="Biểu đồ cán bộ theo chức vụ" role="img"></canvas></div>
-                }
-            </section>
+        <!-- BÊ NGUYÊN CƠ CẤU CÂY TỔ CHỨC LÊN KHÔNG GIAN LÀM VIỆC (ĐẦY ĐỦ CỘT/SƠ ĐỒ/TRA CỨU) -->
+        <div class="mt-3" id="pnlCayToChucToanBo">
+            <CayToChucPage />
         </div>
     }
 </div>
@@ -341,65 +241,15 @@
     private bool laGiaoVien;
     private bool laCanBo;
     private bool hienThiWorkspaceGiangVienRieng;
-    private bool daTaiXong;
     private string? vungQuanLy;
-    private List<MucCanChuY> danhSachCanChuY = new();
-
-    /// <summary>Một mục cảnh báo chất lượng dữ liệu: mức độ (nguy / canh-bao) quyết định màu.</summary>
-    private sealed record MucCanChuY(string DoiTuong, string MauDoiTuong, string NoiDung, int SoLuong, string DuongDan, string MucDo);
-
     /// <summary>Một thẻ chỉ số trên trang chủ.</summary>
     private sealed record ChiSo(string Id, string Ten, string So, string Phu, string BieuTuong, string Mau, string DuongDan, string? TrangThai = null);
 
     private List<ChiSo> danhSachChiSo = new();
     private int soCanBoDangLam;
-    private bool daVeBieuDo;
-    private string duLieuBieuDoJson = "{}";
-
-    /// <summary>Người có quyền sửa vùng đó được dẫn thẳng tới nhóm "cần xử lý" trong Dữ liệu &amp; danh mục; người khác tới trang xem.</summary>
-    private string LienKetXuLy(string bang, string nhom, string vung) =>
-        laSuperAdmin || laAdmin || (laCanBo && vungQuanLy == vung) ? $"QuanTriDuLieu?bang={bang}&can={nhom}" : bang;
 
     private static string? LopTrangThai(string? trangThai) => trangThai is null ? null : $"tt-{trangThai} dt-chu";
 
-    private static string MauHanhDong(string? hanhDong) => hanhDong switch
-    {
-        null => "dt-trung-tinh",
-        var h when h.Contains("Xóa", StringComparison.OrdinalIgnoreCase) => "tt-nguy",
-        var h when h.Contains("Thêm", StringComparison.OrdinalIgnoreCase) || h.Contains("Tạo", StringComparison.OrdinalIgnoreCase) || h.Contains("Nhập", StringComparison.OrdinalIgnoreCase) => "tt-tot",
-        var h when h.Contains("Sửa", StringComparison.OrdinalIgnoreCase) || h.Contains("Cập nhật", StringComparison.OrdinalIgnoreCase) => "tt-thong-tin",
-        _ => "dt-trung-tinh"
-    };
-
-    private static string ThoiGianTuongDoi(DateTime thoiDiem)
-    {
-        var khoang = DateTime.Now - (thoiDiem.Kind == DateTimeKind.Utc ? thoiDiem.ToLocalTime() : thoiDiem);
-        return khoang.TotalMinutes < 1 ? "vừa xong"
-            : khoang.TotalHours < 1 ? $"{(int)khoang.TotalMinutes} phút trước"
-            : khoang.TotalDays < 1 ? $"{(int)khoang.TotalHours} giờ trước"
-            : khoang.TotalDays < 7 ? $"{(int)khoang.TotalDays} ngày trước"
-            : thoiDiem.ToString("dd/MM/yyyy");
-    }
-
-
-    /// <summary>
-    /// Tổng hợp các điểm cần xử lý để người quản lý theo dõi chất lượng dữ liệu; chỉ hiện mục có số lượng lớn hơn 0.
-    /// </summary>
-    private void TinhDanhSachCanChuY(List<Khoa> khoas, List<LopHoc> lophocs, List<HocVien> hocviens, List<NhanSu> nhansus)
-    {
-        var dangLam = nhansus.Where(n => n.CoHoatDong).ToList();
-        var ung = new List<MucCanChuY>
-        {
-            new("Lớp", "dt-lop", "lớp vượt chỉ tiêu sĩ số", lophocs.Count(l => l.HocViens.Count > l.SoLuongToiDa), "LopHoc", "nguy"),
-            new("Học viên", "dt-hoc-vien", "học viên thiếu CCCD hoặc số điện thoại", hocviens.Count(h => string.IsNullOrEmpty(h.SoCCCD) || string.IsNullOrEmpty(h.SoDienThoai)), LienKetXuLy("HocVien", "thieu-dinh-danh", VungQuanLy.DaoTao), "canh-bao"),
-            new("Lớp", "dt-lop", "lớp có học viên nhưng chưa có B trưởng", lophocs.Count(l => l.HocViens.Count > 0 &&
-                !hocviens.Any(h => h.LopHocId == l.LopHocId && QuyTacNghiepVu.TachChucVuLop(h.ChucVuLop).Contains("BT"))), "LopHoc", "canh-bao"),
-            new("Lớp", "dt-lop", "lớp chưa khai báo khóa hoặc chuyên ngành", lophocs.Count(l => l.KhoaHoc == null || l.ChuyenNganh == null), LienKetXuLy("LopHoc", "chua-khoa-hoc", VungQuanLy.DaoTao), "canh-bao"),
-            new("Khoa", "dt-khoa", "khoa chưa có Trưởng khoa", khoas.Count(k => !dangLam.Any(n => n.KhoaId == k.KhoaId && n.ChucVu?.MaChucVu == "CV_TK")), "Khoa", "canh-bao"),
-            new("Cán bộ", "dt-can-bo", "cán bộ chưa gán bộ môn", dangLam.Count(n => n.BoMonId == null), LienKetXuLy("NhanSu", "chua-bo-mon", VungQuanLy.ToChuc), "canh-bao")
-        };
-        danhSachCanChuY = ung.Where(m => m.SoLuong > 0).OrderBy(m => m.MucDo == "nguy" ? 0 : 1).ThenByDescending(m => m.SoLuong).ToList();
-    }
 
     private NhanSu? hoSoGiangVien;
     private int soMonGiangDayCaNhan;
@@ -408,7 +258,7 @@
     private List<(LopHoc Lop, bool LaChuNhiem)> danhSachLopQuanLyCaNhan = new();
 
     private List<PhanCongGiangDay> danhSachPhanCongCaNhan = new();
-    private List<NhatKyHeThong> hoatDongGanDay = new();
+    // Đã bỏ nhật ký hệ thống ở không gian làm việc
 
     protected override async Task OnInitializedAsync()
     {
@@ -494,7 +344,6 @@
 
                 soLopChuNhiemCaNhan = danhSachLopQuanLyCaNhan.Count(x => x.LaChuNhiem);
             }
-            daTaiXong = true;
             return;
         }
 
@@ -528,10 +377,7 @@
         var hocviens = await HocVienDichVu.LayDanhSachAsync();
         var monhocs = await MonHocDichVu.LayDanhSachAsync();
 
-        if (laSuperAdmin || laAdmin)
-        {
-            hoatDongGanDay = await NhatKyDichVu.LayDanhSachNhatKyAsync(null, null, 6);
-        }
+        // Đã bỏ nhật ký hệ thống ở không gian làm việc
 
         tongSoKhoa = khoas.Count;
         tongSoBoMon = bomons.Count;
@@ -540,7 +386,6 @@
         tongSoNhanSu = nhansus.Count;
         tongSoMonHoc = monhocs.Count;
 
-        TinhDanhSachCanChuY(khoas, lophocs, hocviens, nhansus);
 
         // Số liệu thật cho thẻ chỉ số và biểu đồ (sĩ số tính từ hồ sơ học viên, không dùng số mẫu).
         var siSoTheoLop = hocviens.GroupBy(h => h.LopHocId).ToDictionary(g => g.Key, g => g.Count());
@@ -562,40 +407,7 @@
             new("lblTongSoMonHoc", "Môn học", tongSoMonHoc.ToString("N0"), $"{monhocs.Sum(m => m.SoTinChi)} tín chỉ", "bi-journal-bookmark", "dt-mon-hoc", "MonHoc")
         ];
 
-        var duLieuBieuDo = new
-        {
-            theoKhoa = khoas.Select(k => new
-            {
-                ten = k.TenKhoa,
-                lop = lophocs.Count(l => l.KhoaId == k.KhoaId),
-                hocVien = lophocs.Where(l => l.KhoaId == k.KhoaId).Sum(SiSo)
-            }).OrderByDescending(x => x.hocVien).ThenByDescending(x => x.lop).ToList(),
-            trinhDo = dangLam.GroupBy(n => n.TrinhDoChuyenMon?.TenTrinhDo ?? "Chưa khai báo")
-                .Select(g => new { ten = g.Key, soLuong = g.Count() }).OrderByDescending(x => x.soLuong).ToList(),
-            chucVu = dangLam.GroupBy(n => n.ChucVu?.TenChucVu ?? "Chưa có chức vụ")
-                .Select(g => new { ten = g.Key, soLuong = g.Count() }).OrderByDescending(x => x.soLuong).ToList(),
-            siSoLop = lophocs.OrderBy(l => l.MaLop.Length).ThenBy(l => l.MaLop, StringComparer.Ordinal)
-                .Select(l => new { ten = l.MaLop, siSo = SiSo(l), chiTieu = l.SoLuongToiDa }).ToList()
-        };
-        duLieuBieuDoJson = System.Text.Json.JsonSerializer.Serialize(duLieuBieuDo);
 
-        daTaiXong = true;
-    }
-
-    protected override async Task OnAfterRenderAsync(bool firstRender)
-    {
-        if (daTaiXong && !daVeBieuDo && !hienThiWorkspaceGiangVienRieng)
-        {
-            daVeBieuDo = true;
-            try
-            {
-                await JSRuntime.InvokeVoidAsync("khoiTaoBieuDoTrangChu", duLieuBieuDoJson);
-            }
-            catch (JSException)
-            {
-                // Thư viện biểu đồ chưa sẵn sàng: bỏ qua, số liệu dạng thẻ vẫn hiển thị.
-            }
-        }
     }
 
     private async Task BatDauTourHuongDan()

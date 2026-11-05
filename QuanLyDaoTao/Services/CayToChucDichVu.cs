@@ -21,19 +21,29 @@ public class CayToChucDichVu : ICayToChucDichVu
     }
 
     /// <inheritdoc />
-    public async Task<NutToChuc> LayCayAsync(CancellationToken cancellationToken = default)
+    public async Task<NutToChuc> LayCayAsync(int? khoaId = null, int? boMonId = null, bool chiLayDonVi = false, CancellationToken cancellationToken = default)
     {
         var goc = TaoGoc("to-chuc", "Cơ cấu tổ chức: khoa → bộ môn → cán bộ. Cán bộ chưa có bộ môn nằm trong nhóm riêng của khoa.");
-        var cacKhoa = await _coSoDuLieu.Khoas.AsNoTracking().OrderBy(k => k.MaKhoa)
+
+        var truyVanKhoa = _coSoDuLieu.Khoas.AsNoTracking();
+        if (khoaId.HasValue)
+        {
+            truyVanKhoa = truyVanKhoa.Where(k => k.KhoaId == khoaId.Value);
+        }
+        var cacKhoa = await truyVanKhoa.OrderBy(k => k.MaKhoa)
             .Select(k => new { k.KhoaId, k.MaKhoa, k.TenKhoa, k.DiaDiem, k.CoHoatDong }).ToListAsync(cancellationToken);
-        var cacBoMon = await _coSoDuLieu.BoMons.AsNoTracking().OrderBy(b => b.MaBoMon)
+
+        var truyVanBoMon = _coSoDuLieu.BoMons.AsNoTracking();
+        if (khoaId.HasValue)
+        {
+            truyVanBoMon = truyVanBoMon.Where(b => b.KhoaId == khoaId.Value);
+        }
+        if (boMonId.HasValue)
+        {
+            truyVanBoMon = truyVanBoMon.Where(b => b.BoMonId == boMonId.Value);
+        }
+        var cacBoMon = await truyVanBoMon.OrderBy(b => b.MaBoMon)
             .Select(b => new { b.BoMonId, b.KhoaId, b.MaBoMon, b.TenBoMon, b.CoHoatDong }).ToListAsync(cancellationToken);
-        var cacNhanSu = await _coSoDuLieu.NhanSus.AsNoTracking().OrderBy(n => n.HoVaTen).ThenBy(n => n.MaNhanSu)
-            .Select(n => new
-            {
-                n.NhanSuId, n.KhoaId, n.BoMonId, n.MaNhanSu, n.HoVaTen, n.TrangThai, n.CapBacHam,
-                ChucVu = n.ChucVu == null ? "Chưa cập nhật chức vụ" : n.ChucVu.TenChucVu
-            }).ToListAsync(cancellationToken);
 
         var nutKhoa = new Dictionary<int, NutToChuc>();
         var nutBoMon = new Dictionary<int, NutToChuc>();
@@ -66,6 +76,29 @@ public class CayToChucDichVu : ICayToChucDichVu
             khoa.Con.Add(nut);
         }
 
+        // Nếu chỉ lấy cấp đơn vị (khoa, bộ môn) để tải cực nhanh -> trả về ngay
+        if (chiLayDonVi)
+        {
+            return goc;
+        }
+
+        var truyVanNhanSu = _coSoDuLieu.NhanSus.AsNoTracking();
+        if (khoaId.HasValue)
+        {
+            truyVanNhanSu = truyVanNhanSu.Where(n => n.KhoaId == khoaId.Value);
+        }
+        if (boMonId.HasValue)
+        {
+            truyVanNhanSu = truyVanNhanSu.Where(n => n.BoMonId == boMonId.Value);
+        }
+
+        var cacNhanSu = await truyVanNhanSu.OrderBy(n => n.HoVaTen).ThenBy(n => n.MaNhanSu)
+            .Select(n => new
+            {
+                n.NhanSuId, n.KhoaId, n.BoMonId, n.MaNhanSu, n.HoVaTen, n.TrangThai, n.CapBacHam,
+                ChucVu = n.ChucVu == null ? "Chưa cập nhật chức vụ" : n.ChucVu.TenChucVu
+            }).ToListAsync(cancellationToken);
+
         var nhomChuaVaoBoMon = new Dictionary<int, NutToChuc>();
         NutToChuc? chuaPhanDonVi = null;
         var khoaCuaBoMon = cacBoMon.ToDictionary(b => b.BoMonId, b => b.KhoaId);
@@ -79,21 +112,21 @@ public class CayToChucDichVu : ICayToChucDichVu
                 CoHoatDong = nhanSu.TrangThai != "Đã khóa" && nhanSu.TrangThai != "Đã nghỉ việc",
                 DuongDan = $"NhanSu?khoa={nhanSu.KhoaId}"
             };
-            if (nhanSu.BoMonId is int boMonId && nutBoMon.TryGetValue(boMonId, out var boMon))
+            if (nhanSu.BoMonId is int bId && nutBoMon.TryGetValue(bId, out var boMon))
             {
                 boMon.Con.Add(nut);
-                if (nhanSu.KhoaId.HasValue && nhanSu.KhoaId != khoaCuaBoMon[boMonId])
+                if (nhanSu.KhoaId.HasValue && khoaCuaBoMon.TryGetValue(bId, out var kId) && nhanSu.KhoaId != kId)
                 {
                     var tenKhoaHoSo = nutKhoa.GetValueOrDefault(nhanSu.KhoaId.Value)?.Ten ?? "không xác định";
                     nut.CanhBao = $"Khoa trong hồ sơ ({tenKhoaHoSo}) khác khoa chủ quản bộ môn. Cần kiểm tra hồ sơ gốc.";
                 }
             }
-            else if (nhanSu.KhoaId is int khoaId && nutKhoa.TryGetValue(khoaId, out var khoa))
+            else if (nhanSu.KhoaId is int kId && nutKhoa.TryGetValue(kId, out var khoa))
             {
-                if (!nhomChuaVaoBoMon.TryGetValue(khoaId, out var nhom))
+                if (!nhomChuaVaoBoMon.TryGetValue(kId, out var nhom))
                 {
                     nhom = ThemNhom(khoa, "chua-bo-mon", "Cán bộ chưa vào bộ môn", "Cán bộ đã thuộc khoa nhưng chưa được phân vào bộ môn.");
-                    nhomChuaVaoBoMon.Add(khoaId, nhom);
+                    nhomChuaVaoBoMon.Add(kId, nhom);
                 }
 
                 nhom.Con.Add(nut);
@@ -114,19 +147,30 @@ public class CayToChucDichVu : ICayToChucDichVu
     }
 
     /// <inheritdoc />
-    public async Task<NutToChuc> LayCayDaoTaoAsync(CancellationToken cancellationToken = default)
+    public async Task<NutToChuc> LayCayDaoTaoAsync(string? he = null, string? khoaHoc = null, int? lopId = null, bool chiLayLop = false, CancellationToken cancellationToken = default)
     {
         var goc = TaoGoc("dao-tao", "Cơ cấu đào tạo: hệ → khóa → lớp → học viên. Mỗi lớp ghi rõ khoa quản lý.");
-        var cacLop = await _coSoDuLieu.LopHocs.AsNoTracking()
-            .Select(l => new
-            {
-                l.LopHocId, l.MaLop, l.TenLop, l.NienKhoa, l.CoHoatDong, l.HeDaoTao, l.KhoaHoc, l.ChuyenNganh, l.SoLuongToiDa,
-                TenKhoa = l.Khoa != null ? l.Khoa.TenKhoa : null,
-                SiSo = l.HocViens.Count(h => h.TrangThai == TrangThaiDangHoc)
-            }).ToListAsync(cancellationToken);
-        var cacHocVien = await _coSoDuLieu.HocViens.AsNoTracking().OrderBy(h => h.HoVaTen)
-            .Select(h => new { h.HocVienId, h.LopHocId, h.MaHocVien, h.HoVaTen, h.TrangThai, h.ChucVuLop })
-            .ToListAsync(cancellationToken);
+
+        var truyVanLop = _coSoDuLieu.LopHocs.AsNoTracking();
+        if (!string.IsNullOrWhiteSpace(he))
+        {
+            truyVanLop = truyVanLop.Where(l => l.HeDaoTao == he);
+        }
+        if (!string.IsNullOrWhiteSpace(khoaHoc))
+        {
+            truyVanLop = truyVanLop.Where(l => l.KhoaHoc == khoaHoc);
+        }
+        if (lopId.HasValue)
+        {
+            truyVanLop = truyVanLop.Where(l => l.LopHocId == lopId.Value);
+        }
+
+        var cacLop = await truyVanLop.Select(l => new
+        {
+            l.LopHocId, l.MaLop, l.TenLop, l.NienKhoa, l.CoHoatDong, l.HeDaoTao, l.KhoaHoc, l.ChuyenNganh, l.SoLuongToiDa,
+            TenKhoa = l.Khoa != null ? l.Khoa.TenKhoa : null,
+            SiSo = l.HocViens.Count(h => h.TrangThai == TrangThaiDangHoc)
+        }).ToListAsync(cancellationToken);
 
         var nutLop = new Dictionary<int, NutToChuc>();
         foreach (var nhomHe in cacLop.GroupBy(l => l.HeDaoTao).OrderBy(g => g.Key))
@@ -153,7 +197,6 @@ public class CayToChucDichVu : ICayToChucDichVu
                 };
                 nutHe.Con.Add(nutKhoaHoc);
 
-                // Sắp lớp theo số thứ tự tự nhiên (B2 trước B10).
                 foreach (var lop in nhomKhoaHoc.OrderBy(l => l.MaLop.Length).ThenBy(l => l.MaLop, StringComparer.Ordinal))
                 {
                     var nut = new NutToChuc
@@ -169,6 +212,26 @@ public class CayToChucDichVu : ICayToChucDichVu
                 }
             }
         }
+
+        if (chiLayLop)
+        {
+            return goc;
+        }
+
+        var truyVanHocVien = _coSoDuLieu.HocViens.AsNoTracking();
+        if (lopId.HasValue)
+        {
+            truyVanHocVien = truyVanHocVien.Where(h => h.LopHocId == lopId.Value);
+        }
+        else if (cacLop.Count > 0)
+        {
+            var danhSachLopId = cacLop.Select(l => l.LopHocId).ToList();
+            truyVanHocVien = truyVanHocVien.Where(h => danhSachLopId.Contains(h.LopHocId));
+        }
+
+        var cacHocVien = await truyVanHocVien.OrderBy(h => h.HoVaTen)
+            .Select(h => new { h.HocVienId, h.LopHocId, h.MaHocVien, h.HoVaTen, h.TrangThai, h.ChucVuLop })
+            .ToListAsync(cancellationToken);
 
         foreach (var hocVien in cacHocVien)
         {

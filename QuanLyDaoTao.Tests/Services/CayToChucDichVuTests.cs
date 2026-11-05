@@ -110,6 +110,20 @@ public class CayToChucDichVuTests
         Assert.Equal(0, goc.SoHocVien);
     }
 
+    [Fact]
+    public async Task LayCay_DatabaseThat_KhongLoi()
+    {
+        var opt = new DbContextOptionsBuilder<QuanLyDaoTaoDbContext>()
+            .UseSqlite("Data Source=../../../../QuanLyDaoTao/QuanLyDaoTao.db")
+            .Options;
+        using var db = new QuanLyDaoTaoDbContext(opt);
+        var dichVu = new CayToChucDichVu(db);
+        var cayToChuc = await dichVu.LayCayAsync();
+        Assert.NotNull(cayToChuc);
+        var cayDaoTao = await dichVu.LayCayDaoTaoAsync();
+        Assert.NotNull(cayDaoTao);
+    }
+
     /// <summary>Tìm kiếm tiếng Việt không dấu và không phân biệt hoa thường.</summary>
     [Theory]
     [InlineData("dao tao", true)]

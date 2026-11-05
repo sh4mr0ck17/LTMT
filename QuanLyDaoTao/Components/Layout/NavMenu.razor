@@ -4,19 +4,26 @@
 @inject IJSRuntime JSRuntime
 
 <ul class="sidebar-tree">
-    <!-- 1. Không Gian Làm Việc -->
+    <!-- KHÔNG GIAN LÀM VIỆC & THÔNG BÁO -->
     <li class="nav-item-Flyout">
-        <NavLink href="" Match="NavLinkMatch.All" class="tree-link" title="Không Gian Làm Việc" @onclick="OnItemClicked">
+        <NavLink href="" Match="NavLinkMatch.All" class="tree-link" title="Không Gian Làm Việc" @onclick="OnItemClicked" id="btnMenuWorkspace">
             <div class="d-flex align-items-center gap-2">
                 <i class="bi bi-grid-1x2-fill nav-icon"></i>
                 <span class="nav-label-text">Không gian làm việc</span>
             </div>
         </NavLink>
     </li>
-
-    <!-- Thông báo nội bộ (badge số chưa đọc) -->
     <li class="nav-item-Flyout">
-        <NavLink href="ThongBao" class="tree-link" title="Thông báo" @onclick="OnItemClicked" id="btnMenuThongBao">
+        <NavLink href="CayToChuc" class="tree-link" title="Cây tổ chức đơn vị" @onclick="OnItemClicked" id="btnMenuCayToChuc">
+            <div class="d-flex align-items-center gap-2">
+                <i class="bi bi-diagram-3-fill nav-icon"></i>
+                <span class="nav-label-text">Cây tổ chức đơn vị</span>
+            </div>
+        </NavLink>
+    </li>
+
+    <li class="nav-item-Flyout">
+        <NavLink href="ThongBao" class="tree-link" title="Thông Báo" @onclick="OnItemClicked" id="btnMenuThongBao">
             <div class="d-flex align-items-center gap-2">
                 <i class="bi bi-megaphone-fill nav-icon"></i>
                 <span class="nav-label-text">Thông báo</span>
@@ -25,31 +32,101 @@
         </NavLink>
     </li>
 
-    <!-- 2. Tra cứu: một nơi duy nhất để xem cơ cấu và hồ sơ (danh sách chi tiết mở từ khung chi tiết) -->
-    <li class="nav-item-Flyout">
-        <NavLink href="CayToChuc" class="tree-link" title="Tra cứu cơ cấu: Khoa → Bộ môn → Cán bộ, Hệ → Khóa → Lớp → Học viên" @onclick="OnItemClicked">
+    <!-- 1. QUẢN LÝ KHOA -->
+    <li class="nav-item-Flyout @(mobileOpenGroup == "Khoa" ? "mobile-open" : "")">
+        <button type="button" class="tree-branch-header" title="Quản Lý Khoa" @onclick='() => ToggleMobileGroup("Khoa")' id="btnMenuNhomKhoa">
             <div class="d-flex align-items-center gap-2">
-                <i class="bi bi-diagram-3-fill nav-icon"></i>
-                <span class="nav-label-text">Cây tổ chức &amp; tra cứu</span>
+                <i class="bi bi-bank nav-icon"></i>
+                <span class="nav-label-text">Quản lý khoa</span>
             </div>
-        </NavLink>
-    </li>
-
-    <!-- 7. Dữ liệu & danh mục: nơi DUY NHẤT chỉnh sửa dữ liệu nền; Quản lý thấy bảng thuộc vùng của mình -->
-    <AuthorizeView Roles="@VaiTroMacDinh.NhomCoQuyenGhi">
-        <Authorized>
-            <li class="nav-item-Flyout">
-                <NavLink href="QuanTriDuLieu" class="tree-link" id="btnMenuQuanTriDb" title="Dữ liệu & danh mục: chỉnh sửa trực tiếp dạng bảng tính" @onclick="OnItemClicked">
-                    <div class="d-flex align-items-center gap-2">
-                        <i class="bi bi-table nav-icon"></i>
-                        <span class="nav-label-text">Dữ liệu &amp; danh mục</span>
-                    </div>
+            <i class="bi bi-chevron-right branch-chevron small"></i>
+        </button>
+        <ul class="flyout-submenu">
+            <li class="flyout-header">Quản lý khoa</li>
+            <li>
+                <NavLink href="Khoa" class="tree-sublink" @onclick="OnItemClicked" id="btnMenuKhoa" title="Danh sách Khoa">
+                    <i class="bi bi-bank2"></i>
+                    <span>Danh sách Khoa</span>
                 </NavLink>
             </li>
-        </Authorized>
-    </AuthorizeView>
+            <li>
+                <NavLink href="BoMon" class="tree-sublink" @onclick="OnItemClicked" id="btnMenuBoMon" title="Danh sách Bộ môn">
+                    <i class="bi bi-diagram-2"></i>
+                    <span>Danh sách Bộ môn</span>
+                </NavLink>
+            </li>
+            <li>
+                <NavLink href="NhanSu" class="tree-sublink" @onclick="OnItemClicked" id="btnMenuNhanSu" title="Cán bộ & Giảng viên">
+                    <i class="bi bi-person-lines-fill"></i>
+                    <span>Cán bộ &amp; Giảng viên</span>
+                </NavLink>
+            </li>
+        </ul>
+    </li>
 
-    <!-- 6. Quản Trị Hệ Thống (Admin & Superadmin) -->
+    <!-- 2. QUẢN LÝ LỚP -->
+    <li class="nav-item-Flyout @(mobileOpenGroup == "Lop" ? "mobile-open" : "")">
+        <button type="button" class="tree-branch-header" title="Quản Lý Lớp" @onclick='() => ToggleMobileGroup("Lop")' id="btnMenuNhomLop">
+            <div class="d-flex align-items-center gap-2">
+                <i class="bi bi-people-fill nav-icon"></i>
+                <span class="nav-label-text">Quản lý lớp</span>
+            </div>
+            <i class="bi bi-chevron-right branch-chevron small"></i>
+        </button>
+        <ul class="flyout-submenu">
+            <li class="flyout-header">Quản lý lớp</li>
+            <li>
+                <NavLink href="LopHoc" class="tree-sublink" @onclick="OnItemClicked" id="btnMenuLopHoc" title="Danh sách Lớp đào tạo">
+                    <i class="bi bi-people"></i>
+                    <span>Lớp đào tạo</span>
+                </NavLink>
+            </li>
+            <li>
+                <NavLink href="HocVien" class="tree-sublink" @onclick="OnItemClicked" id="btnMenuHocVien" title="Hồ sơ Học viên">
+                    <i class="bi bi-person-badge"></i>
+                    <span>Hồ sơ Học viên</span>
+                </NavLink>
+            </li>
+        </ul>
+    </li>
+
+    <!-- 3. QUẢN LÝ ĐÀO TẠO -->
+    <li class="nav-item-Flyout @(mobileOpenGroup == "DaoTao" ? "mobile-open" : "")">
+        <button type="button" class="tree-branch-header" title="Quản Lý Đào Tạo" @onclick='() => ToggleMobileGroup("DaoTao")' id="btnMenuNhomDaoTao">
+            <div class="d-flex align-items-center gap-2">
+                <i class="bi bi-mortarboard-fill nav-icon"></i>
+                <span class="nav-label-text">Quản lý đào tạo</span>
+            </div>
+            <i class="bi bi-chevron-right branch-chevron small"></i>
+        </button>
+        <ul class="flyout-submenu">
+            <li class="flyout-header">Quản lý Đào tạo</li>
+            <li>
+                <NavLink href="MonHoc" class="tree-sublink" @onclick="OnItemClicked" id="btnMenuMonHoc" title="Môn học & Tín chỉ">
+                    <i class="bi bi-journal-bookmark"></i>
+                    <span>Môn học &amp; Tín chỉ</span>
+                </NavLink>
+            </li>
+            <li>
+                <NavLink href="PhanCongGiangDay" class="tree-sublink" @onclick="OnItemClicked" id="btnMenuPhanCong" title="Phân công giảng dạy">
+                    <i class="bi bi-calendar-check"></i>
+                    <span>Phân công giảng dạy</span>
+                </NavLink>
+            </li>
+            <AuthorizeView Roles="@VaiTroMacDinh.NhomCoQuyenGhi">
+                <Authorized>
+                    <li>
+                        <NavLink href="QuanTriDuLieu" class="tree-sublink" @onclick="OnItemClicked" id="btnMenuQuanTriDb" title="Dữ liệu & Danh mục đào tạo">
+                            <i class="bi bi-table"></i>
+                            <span>Dữ liệu &amp; Danh mục</span>
+                        </NavLink>
+                    </li>
+                </Authorized>
+            </AuthorizeView>
+        </ul>
+    </li>
+
+    <!-- QUẢN TRỊ HỆ THỐNG (Admin & Superadmin) -->
     <AuthorizeView Roles="@($"{VaiTroMacDinh.SuperAdmin},{VaiTroMacDinh.QuanTriVien}")">
         <Authorized>
             <li class="nav-item-Flyout @(mobileOpenGroup == "QuanTri" ? "mobile-open" : "")">
@@ -63,13 +140,13 @@
                 <ul class="flyout-submenu">
                     <li class="flyout-header">Quản trị hệ thống</li>
                     <li>
-                        <NavLink href="QuanTri/TaiKhoan" class="tree-sublink" @onclick="OnItemClicked">
+                        <NavLink href="QuanTri/TaiKhoan" class="tree-sublink" @onclick="OnItemClicked" id="btnMenuTaiKhoan" title="Tài khoản & Phân quyền">
                             <i class="bi bi-people-fill"></i>
                             <span>Tài khoản &amp; phân quyền</span>
                         </NavLink>
                     </li>
                     <li>
-                        <NavLink href="NhatKy" class="tree-sublink" @onclick="OnItemClicked">
+                        <NavLink href="NhatKy" class="tree-sublink" @onclick="OnItemClicked" id="btnMenuNhatKy" title="Nhật ký hệ thống">
                             <i class="bi bi-clock-history"></i>
                             <span>Nhật ký hệ thống</span>
                         </NavLink>
@@ -79,17 +156,8 @@
         </Authorized>
     </AuthorizeView>
 
-    <!-- 8. Hồ Sơ Cá Nhân (Profile Của Tôi) -->
-    <li class="nav-item-Flyout">
-        <NavLink href="HoSoCaNhan" class="tree-link" id="btnMenuProfile" title="Hồ Sơ Cá Nhân (Profile)" @onclick="OnItemClicked">
-            <div class="d-flex align-items-center gap-2">
-                <i class="bi bi-person-circle nav-icon"></i>
-                <span class="nav-label-text">Hồ sơ cá nhân</span>
-            </div>
-        </NavLink>
-    </li>
-
-    <!-- 9. Nút Bật Hướng Dẫn Tương Tác Từng Bước Qua Shadow Box (Interactive Spotlight Tour) -->
+    <!-- (Hồ sơ cá nhân đã có ở góc trái chân sidebar cạnh avatar) -->
+    <!-- HƯỚNG DẪN TƯƠNG TÁC -->
     <li class="nav-item-Flyout mt-2 pt-2 border-top" style="border-color: rgba(255,255,255,0.12) !important;">
         <button type="button" class="tree-link text-start w-100" id="btnMenuHuongDanTour" onclick="window.batDauTourHuongDan()" title="Hướng dẫn làm quen từng nút trên màn hình">
             <div class="d-flex align-items-center gap-2">

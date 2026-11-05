@@ -9,6 +9,7 @@ using QuanLyDaoTao.Models;
 using QuanLyDaoTao.Services;
 using Microsoft.AspNetCore.RateLimiting;
 using Radzen;
+using Microsoft.AspNetCore.HttpOverrides;
 
 // Định dạng ngày, số và so sánh chuỗi tiếng Việt thống nhất toàn hệ thống.
 System.Globalization.CultureInfo.DefaultThreadCurrentCulture = System.Globalization.CultureInfo.GetCultureInfo("vi-VN");
@@ -200,7 +201,10 @@ if (!app.Environment.IsDevelopment())
     app.UseExceptionHandler("/Home/Error");
     app.UseHsts();
 }
-
+app.UseForwardedHeaders(new ForwardedHeadersOptions
+{
+    ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto
+});
 app.UseHttpsRedirection();
 app.UseStaticFiles();
 

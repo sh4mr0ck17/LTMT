@@ -9,9 +9,9 @@ namespace QuanLyDaoTao.Services;
 /// </summary>
 public interface ICayToChucDichVu
 {
-    /// <summary>Cây tổ chức: Khoa → Bộ môn → Cán bộ (kể cả cán bộ chưa phân đơn vị).</summary>
-    Task<NutToChuc> LayCayAsync(CancellationToken cancellationToken = default);
+    /// <summary>Cây tổ chức: Khoa → Bộ môn → Cán bộ. Hỗ trợ tham số lọc khoaId, boMonId hoặc chỉ lấy cấp đơn vị để tăng tốc độ truy xuất.</summary>
+    Task<NutToChuc> LayCayAsync(int? khoaId = null, int? boMonId = null, bool chiLayDonVi = false, CancellationToken cancellationToken = default);
 
-    /// <summary>Cây đào tạo: Hệ → Khóa → Lớp → Học viên (lớp ghi rõ khoa quản lý).</summary>
-    Task<NutToChuc> LayCayDaoTaoAsync(CancellationToken cancellationToken = default);
+    /// <summary>Cây đào tạo: Hệ → Khóa → Lớp → Học viên. Hỗ trợ tham số lọc theo hệ, khóa, lớpId hoặc chỉ lấy cấp lớp để tăng tốc độ truy xuất.</summary>
+    Task<NutToChuc> LayCayDaoTaoAsync(string? he = null, string? khoaHoc = null, int? lopId = null, bool chiLayLop = false, CancellationToken cancellationToken = default);
 }

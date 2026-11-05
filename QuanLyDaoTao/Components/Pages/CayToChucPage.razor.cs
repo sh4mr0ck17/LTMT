@@ -37,6 +37,25 @@ public partial class CayToChucPage
     [SupplyParameterFromQuery(Name = "so-do")]
     public string? SoDoTuDuongDan { get; set; }
 
+    /// <summary>Chọn sơ đồ qua alias vung (?vung=to-chuc hoặc ?vung=dao-tao).</summary>
+    [SupplyParameterFromQuery(Name = "vung")]
+    public string? VungTuDuongDan { get; set; }
+
+    /// <summary>Truy xuất nhanh lọc trực tiếp theo KhoaId (?khoaId=1).</summary>
+    [SupplyParameterFromQuery(Name = "khoaId")]
+    public int? KhoaIdTuDuongDan { get; set; }
+
+    /// <summary>Truy xuất nhanh lọc trực tiếp theo BoMonId (?boMonId=1).</summary>
+    [SupplyParameterFromQuery(Name = "boMonId")]
+    public int? BoMonIdTuDuongDan { get; set; }
+
+    /// <summary>Truy xuất nhanh lọc trực tiếp theo LopId (?lopId=1).</summary>
+    [SupplyParameterFromQuery(Name = "lopId")]
+    public int? LopIdTuDuongDan { get; set; }
+
+    /// <summary>Truy xuất nhanh lọc trực tiếp theo Hệ đào tạo (?he=ChinhQuy).</summary>
+    [SupplyParameterFromQuery(Name = "he")]
+    public string? HeTuDuongDan { get; set; }
     [Inject] private ICayToChucDichVu CayToChucDichVu { get; set; } = default!;
     [Inject] private ILogger<CayToChucPage> NhatKy { get; set; } = default!;
     private NutToChuc? _goc;
@@ -161,7 +180,16 @@ public partial class CayToChucPage
     /// <inheritdoc />
     protected override async Task OnInitializedAsync()
     {
-        _nhanh = SoDoTuDuongDan == NhanhDaoTao ? NhanhDaoTao : NhanhToChuc;
+        if (!string.IsNullOrWhiteSpace(VungTuDuongDan))
+        {
+            _nhanh = VungTuDuongDan.Equals(NhanhDaoTao, StringComparison.OrdinalIgnoreCase) || VungTuDuongDan.Equals("DaoTao", StringComparison.OrdinalIgnoreCase)
+                ? NhanhDaoTao
+                : NhanhToChuc;
+        }
+        else
+        {
+            _nhanh = SoDoTuDuongDan == NhanhDaoTao ? NhanhDaoTao : NhanhToChuc;
+        }
         await TaiDuLieuAsync();
     }
 
@@ -206,7 +234,9 @@ public partial class CayToChucPage
         {
             var khoaNutCu = _nutChon?.KhoaNut;
             var lanDau = _goc == null;
-            var gocMoi = _nhanh == NhanhDaoTao ? await CayToChucDichVu.LayCayDaoTaoAsync() : await CayToChucDichVu.LayCayAsync();
+            var gocMoi = _nhanh == NhanhDaoTao
+                ? await CayToChucDichVu.LayCayDaoTaoAsync(he: HeTuDuongDan, lopId: LopIdTuDuongDan)
+                : await CayToChucDichVu.LayCayAsync(khoaId: KhoaIdTuDuongDan, boMonId: BoMonIdTuDuongDan);
             _goc = gocMoi;
             _cacNut.Clear();
             _chaCuaNut.Clear();
@@ -223,23 +253,18 @@ public partial class CayToChucPage
                 _lanCanKhung++;
             }
         }
-        catch (DbException loi)
+        catch (Exception loi)
         {
             NhatKy.LogError(loi, "Không thể tải cây tổ chức.");
-            _loiTaiDuLieu = "Không thể đọc dữ liệu tổ chức.";
-        }
-        catch (InvalidOperationException loi)
-        {
-            NhatKy.LogError(loi, "Không thể dựng cây tổ chức.");
-            _loiTaiDuLieu = "Không thể tải cơ cấu tổ chức lúc này.";
+            _loiTaiDuLieu = "Không thể tải cơ cấu tổ chức lúc này: " + loi.Message;
         }
         finally { _coDangTai = false; }
     }
 
     private void LapChiMuc(NutToChuc nut, NutToChuc? cha)
     {
-        _cacNut.Add(nut.KhoaNut, nut);
-        if (cha != null) { _chaCuaNut.Add(nut.KhoaNut, cha); }
+        _cacNut[nut.KhoaNut] = nut;
+        if (cha != null) { _chaCuaNut[nut.KhoaNut] = cha; }
         foreach (var con in nut.Con) { LapChiMuc(con, nut); }
     }
 

@@ -58,8 +58,9 @@
             <!-- Thân Sidebar -->
             <div class="app-sidebar-body">
                 <ul class="sidebar-tree">
+                    <!-- KHÔNG GIAN LÀM VIỆC & THÔNG BÁO -->
                     <li class="nav-item-Flyout">
-                        <a href="/" class="tree-link @(currentCtrl == "Home" ? "active" : "")" title="Không Gian Làm Việc">
+                        <a href="/" class="tree-link @(currentCtrl == "Home" ? "active" : "")" title="Không Gian Làm Việc" id="btnMenuWorkspace">
                             <div class="d-flex align-items-center gap-2">
                                 <i class="bi bi-grid-1x2-fill nav-icon"></i>
                                 <span class="nav-label-text">Không Gian Làm Việc</span>
@@ -67,29 +68,58 @@
                         </a>
                     </li>
                     <li class="nav-item-Flyout">
-                        <a href="/CayToChuc" class="tree-link @(currentCtrl == "CayToChuc" ? "active" : "")" title="Cây Tổ Chức">
+                        <a href="/CayToChuc" class="tree-link @(currentCtrl == "CayToChuc" ? "active" : "")" title="Cây Tổ Chức Đơn Vị" id="btnMenuCayToChuc">
                             <div class="d-flex align-items-center gap-2">
                                 <i class="bi bi-diagram-3-fill nav-icon"></i>
-                                <span class="nav-label-text">Cây Tổ Chức</span>
+                                <span class="nav-label-text">Cây Tổ Chức Đơn Vị</span>
                             </div>
                         </a>
                     </li>
                     <li class="nav-item-Flyout">
-                        <button type="button" class="tree-branch-header" onclick="this.parentElement.classList.toggle('mobile-open')" title="Cơ Cấu Đơn Vị">
+                        <a href="/ThongBao" class="tree-link @(currentCtrl == "ThongBao" ? "active" : "")" title="Thông Báo" id="btnMenuThongBao">
                             <div class="d-flex align-items-center gap-2">
-                                <i class="bi bi-building-fill nav-icon"></i>
-                                <span class="nav-label-text">Cơ Cấu Đơn Vị</span>
+                                <i class="bi bi-megaphone-fill nav-icon"></i>
+                                <span class="nav-label-text">Thông Báo</span>
+                            </div>
+                        </a>
+                    </li>
+
+                    <!-- 1. QUẢN LÝ KHOA -->
+                    <li class="nav-item-Flyout">
+                        <button type="button" class="tree-branch-header" onclick="this.parentElement.classList.toggle('mobile-open')" title="Quản Lý Khoa" id="btnMenuNhomKhoa">
+                            <div class="d-flex align-items-center gap-2">
+                                <i class="bi bi-bank nav-icon"></i>
+                                <span class="nav-label-text">Quản Lý Khoa</span>
                             </div>
                             <i class="bi bi-chevron-right branch-chevron small"></i>
                         </button>
                         <ul class="flyout-submenu">
-                            <li class="flyout-header">Cơ Cấu Đơn Vị</li>
-                            <li><a href="/Khoa" class="tree-sublink"><i class="bi bi-bank"></i><span>Danh sách Khoa</span></a></li>
-                            <li><a href="/BoMon" class="tree-sublink"><i class="bi bi-diagram-2"></i><span>Danh sách Bộ môn</span></a></li>
+                            <li class="flyout-header">Quản lý khoa</li>
+                            <li><a href="/Khoa" class="tree-sublink @(currentCtrl == "Khoa" ? "active" : "")" id="btnMenuKhoa"><i class="bi bi-bank2"></i><span>Danh sách Khoa</span></a></li>
+                            <li><a href="/BoMon" class="tree-sublink @(currentCtrl == "BoMon" ? "active" : "")" id="btnMenuBoMon"><i class="bi bi-diagram-2"></i><span>Danh sách Bộ môn</span></a></li>
+                            <li><a href="/NhanSu" class="tree-sublink @(currentCtrl == "NhanSu" ? "active" : "")" id="btnMenuNhanSu"><i class="bi bi-person-lines-fill"></i><span>Cán bộ &amp; Giảng viên</span></a></li>
                         </ul>
                     </li>
+
+                    <!-- 2. QUẢN LÝ LỚP -->
                     <li class="nav-item-Flyout">
-                        <button type="button" class="tree-branch-header" onclick="this.parentElement.classList.toggle('mobile-open')" title="Quản Lý Đào Tạo">
+                        <button type="button" class="tree-branch-header" onclick="this.parentElement.classList.toggle('mobile-open')" title="Quản Lý Lớp" id="btnMenuNhomLop">
+                            <div class="d-flex align-items-center gap-2">
+                                <i class="bi bi-people-fill nav-icon"></i>
+                                <span class="nav-label-text">Quản Lý Lớp</span>
+                            </div>
+                            <i class="bi bi-chevron-right branch-chevron small"></i>
+                        </button>
+                        <ul class="flyout-submenu">
+                            <li class="flyout-header">Quản lý lớp</li>
+                            <li><a href="/LopHoc" class="tree-sublink @(currentCtrl == "LopHoc" ? "active" : "")" id="btnMenuLopHoc"><i class="bi bi-people"></i><span>Lớp đào tạo</span></a></li>
+                            <li><a href="/HocVien" class="tree-sublink @(currentCtrl == "HocVien" ? "active" : "")" id="btnMenuHocVien"><i class="bi bi-person-badge"></i><span>Hồ sơ Học viên</span></a></li>
+                        </ul>
+                    </li>
+
+                    <!-- 3. QUẢN LÝ ĐÀO TẠO -->
+                    <li class="nav-item-Flyout">
+                        <button type="button" class="tree-branch-header" onclick="this.parentElement.classList.toggle('mobile-open')" title="Quản Lý Đào Tạo" id="btnMenuNhomDaoTao">
                             <div class="d-flex align-items-center gap-2">
                                 <i class="bi bi-mortarboard-fill nav-icon"></i>
                                 <span class="nav-label-text">Quản Lý Đào Tạo</span>
@@ -97,28 +127,16 @@
                             <i class="bi bi-chevron-right branch-chevron small"></i>
                         </button>
                         <ul class="flyout-submenu">
-                            <li class="flyout-header">Quản Lý Đào Tạo</li>
-                            <li><a href="/LopHoc" class="tree-sublink"><i class="bi bi-people"></i><span>Quản lý Lớp học</span></a></li>
-                            <li><a href="/HocVien" class="tree-sublink"><i class="bi bi-person-badge"></i><span>Quản lý Học viên</span></a></li>
-                            <li><a href="/MonHoc" class="tree-sublink"><i class="bi bi-journal-bookmark"></i><span>Môn học &amp; Tín chỉ</span></a></li>
-                            <li><a href="/PhanCongGiangDay" class="tree-sublink"><i class="bi bi-calendar-check"></i><span>Phân công giảng dạy</span></a></li>
+                            <li class="flyout-header">Quản lý đào tạo</li>
+                            <li><a href="/MonHoc" class="tree-sublink @(currentCtrl == "MonHoc" ? "active" : "")" id="btnMenuMonHoc"><i class="bi bi-journal-bookmark"></i><span>Môn học &amp; Tín chỉ</span></a></li>
+                            <li><a href="/PhanCongGiangDay" class="tree-sublink @(currentCtrl == "PhanCongGiangDay" ? "active" : "")" id="btnMenuPhanCong"><i class="bi bi-calendar-check"></i><span>Phân công giảng dạy</span></a></li>
+                            @if (User.IsInRole(VaiTroMacDinh.SuperAdmin) || User.IsInRole(VaiTroMacDinh.QuanTriVien) || User.IsInRole(VaiTroMacDinh.QuanLy))
+                            {
+                                <li><a href="/QuanTriDuLieu" class="tree-sublink @(currentCtrl == "QuanTriDuLieu" ? "active" : "")" id="btnMenuQuanTriDb"><i class="bi bi-table"></i><span>Dữ liệu &amp; Danh mục</span></a></li>
+                            }
                         </ul>
-                    </li>
-                    <li class="nav-item-Flyout">
-                        <button type="button" class="tree-branch-header" onclick="this.parentElement.classList.toggle('mobile-open')" title="Hồ Sơ Cán Bộ & GV">
-                            <div class="d-flex align-items-center gap-2">
-                                <i class="bi bi-person-vcard-fill nav-icon"></i>
-                                <span class="nav-label-text">Hồ Sơ Cán Bộ &amp; GV</span>
-                            </div>
-                            <i class="bi bi-chevron-right branch-chevron small"></i>
-                        </button>
-                        <ul class="flyout-submenu">
-                            <li class="flyout-header">Hồ Sơ &amp; Danh Mục</li>
-                            <li><a href="/NhanSu" class="tree-sublink"><i class="bi bi-person-lines-fill"></i><span>Danh sách Cán bộ / GV</span></a></li>
-                            <li><a href="/ChucVu" class="tree-sublink"><i class="bi bi-award"></i><span>Danh mục Chức vụ</span></a></li>
-                            <li><a href="/TrinhDoChuyenMon" class="tree-sublink"><i class="bi bi-patch-check"></i><span>Trình độ chuyên môn</span></a></li>
-                        </ul>
-                    </li>
+
+                    <!-- QUẢN TRỊ HỆ THỐNG (Admin & Superadmin) -->
                     @if (laAdmin)
                     {
                         <li class="nav-item-Flyout">
@@ -131,31 +149,15 @@
                             </button>
                             <ul class="flyout-submenu">
                                 <li class="flyout-header">Quản Trị &amp; Tài Khoản</li>
-                                <li><a asp-controller="TaiKhoan" asp-action="TaoMoi" class="tree-sublink"><i class="bi bi-person-plus-fill"></i><span>Tạo TK Giáo viên / Cán bộ</span></a></li>
-                                <li><a asp-controller="TaiKhoan" asp-action="DanhSach" class="tree-sublink"><i class="bi bi-people-fill"></i><span>Quản lý &amp; Xóa Tài khoản</span></a></li>
-                                <li><a href="/NhatKy" class="tree-sublink"><i class="bi bi-clock-history"></i><span>Nhật ký kiểm toán</span></a></li>
+                                <li><a href="/QuanTri/TaiKhoan" class="tree-sublink" id="btnMenuTaiKhoan"><i class="bi bi-people-fill"></i><span>Tài khoản &amp; Phân quyền</span></a></li>
+                                <li><a href="/NhatKy" class="tree-sublink @(currentCtrl == "NhatKy" ? "active" : "")" id="btnMenuNhatKy"><i class="bi bi-clock-history"></i><span>Nhật ký hệ thống</span></a></li>
                             </ul>
                         </li>
                     }
-                    @if (laSuperAdmin)
-                    {
-                        <li class="nav-item-Flyout">
-                            <a href="/QuanTriDuLieu" class="tree-link @(currentCtrl == "QuanTriDuLieu" ? "active" : "")" id="btnMenuQuanTriDb" title="Live CRUD Studio (Superadmin)">
-                                <div class="d-flex align-items-center gap-2">
-                                    <i class="bi bi-database-fill-gear nav-icon"></i>
-                                    <span class="nav-label-text">Live CRUD Studio</span>
-                                </div>
-                            </a>
-                        </li>
-                    }
-                    <li class="nav-item-Flyout">
-                        <a href="/HoSoCaNhan" class="tree-link" id="btnMenuProfile" title="Hồ Sơ Cá Nhân (Profile)">
-                            <div class="d-flex align-items-center gap-2">
-                                <i class="bi bi-person-circle nav-icon"></i>
-                                <span class="nav-label-text">Hồ Sơ Cá Nhân</span>
-                            </div>
-                        </a>
-                    </li>
+
+                    <!-- (Hồ sơ cá nhân đã có ở góc trái chân sidebar cạnh avatar) -->
+
+                    <!-- HƯỚNG DẪN TƯƠNG TÁC -->
                     <li class="nav-item-Flyout mt-2 pt-2 border-top" style="border-color: rgba(255,255,255,0.12) !important;">
                         <button type="button" class="tree-link text-start w-100" id="btnMenuHuongDanTour" onclick="window.batDauTourHuongDan('@roleLabel')" title="Hướng dẫn làm quen từng nút trên màn hình">
                             <div class="d-flex align-items-center gap-2">
@@ -213,7 +215,6 @@
                     </a>
                 </div>
             </div>
-
             <!-- Thông báo nhanh Flash Messages -->
             <div class="container-fluid px-3 px-md-4 mt-3" id="pnlThongBao">
                 @if (TempData["ThongBaoThanhCong"] != null)

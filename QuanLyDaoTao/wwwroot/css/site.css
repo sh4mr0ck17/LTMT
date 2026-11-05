@@ -983,3 +983,4 @@ h1:focus, h2:focus, h3:focus, h4:focus, h5:focus, h6:focus {
 /* Chữ số đều cột cho bảng, thẻ chỉ số, thời gian: dễ so sánh hàng dọc */
 table, .rz-datatable, .the-chi-so-so, .studio-luoi, time, .badge, .dt-chip { font-variant-numeric: tabular-nums; }
 h1, h2, h3, h4, h5, h6, .rz-dialog-titlebar { letter-spacing: -0.01em; }
+

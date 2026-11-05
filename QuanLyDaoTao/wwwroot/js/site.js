@@ -1,80 +1,4 @@
-﻿// C500 - Học viện An ninh Nhân dân: Script Biểu đồ Chart.js & Hệ thống Hướng Dẫn Tương Tác Qua Shadow Box (PC & Điện Thoại Workspace)
-
-// Biểu đồ trang chủ: số liệu THẬT do server tính (không có số giả); màu lấy từ hệ màu đối tượng (mau-doi-tuong.css)
-// để cùng một đối tượng có cùng màu ở thẻ thống kê, cây tổ chức và biểu đồ.
-window.khoiTaoBieuDoTrangChu = function (duLieuJson) {
-    if (typeof Chart === 'undefined') return;
-    let d;
-    try { d = JSON.parse(duLieuJson || '{}'); } catch (e) { console.error('Lỗi dữ liệu biểu đồ', e); return; }
-    const css = getComputedStyle(document.documentElement);
-    const mau = ten => css.getPropertyValue(ten).trim() || '#64748b';
-    const nhat = (hex, a) => {
-        const m = /^#?([\da-f]{2})([\da-f]{2})([\da-f]{2})$/i.exec(hex);
-        return m ? `rgba(${parseInt(m[1], 16)},${parseInt(m[2], 16)},${parseInt(m[3], 16)},${a})` : hex;
-    };
-    Chart.defaults.font.family = getComputedStyle(document.body).fontFamily;
-    Chart.defaults.font.size = 11;
-    Chart.defaults.color = '#475569';
-    const veMoi = (id, cauHinh) => {
-        const el = document.getElementById(id);
-        if (!el) return;
-        Chart.getChart(el)?.destroy();
-        new Chart(el, cauHinh);
-    };
-    const chung = { responsive: true, maintainAspectRatio: false, animation: { duration: 500 } };
-    // Bảng màu phân loại cho danh mục (trình độ, chức vụ): lần lượt theo các màu đối tượng dễ phân biệt.
-    const bangPhanLoai = ['--mau-khoa', '--mau-lop', '--mau-can-bo', '--mau-hoc-vien', '--mau-he', '--mau-nien-khoa', '--mau-mon-hoc', '--mau-bo-mon'].map(mau);
-
-    // 1. Học viên & lớp theo khoa (2 trục vì đơn vị chênh lệch lớn)
-    const khoa = d.theoKhoa || [];
-    veMoi('chartHocVienTheoKhoa', {
-        type: 'bar',
-        data: {
-            labels: khoa.map(k => k.ten),
-            datasets: [
-                { label: 'Học viên', data: khoa.map(k => k.hocVien), backgroundColor: mau('--mau-hoc-vien'), borderRadius: 4, maxBarThickness: 36, yAxisID: 'y' },
-                { label: 'Lớp', data: khoa.map(k => k.lop), backgroundColor: mau('--mau-lop'), borderRadius: 4, maxBarThickness: 36, yAxisID: 'y1' }
-            ]
-        },
-        options: { ...chung, plugins: { legend: { position: 'top', align: 'end' } },
-            scales: { y: { beginAtZero: true, ticks: { precision: 0 }, title: { display: true, text: 'Học viên' } },
-                      y1: { beginAtZero: true, position: 'right', grid: { drawOnChartArea: false }, ticks: { precision: 0 }, title: { display: true, text: 'Lớp' } } } }
-    });
-
-    // 2. Trình độ cán bộ (doughnut)
-    const trinhDo = d.trinhDo || [];
-    veMoi('chartTrinhDoChuyenMon', {
-        type: 'doughnut',
-        data: { labels: trinhDo.map(t => t.ten), datasets: [{ data: trinhDo.map(t => t.soLuong), backgroundColor: trinhDo.map((_, i) => bangPhanLoai[i % bangPhanLoai.length]), borderColor: '#fff', borderWidth: 2 }] },
-        options: { ...chung, cutout: '58%', plugins: { legend: { position: 'right' } } }
-    });
-
-    // 3. Cán bộ theo chức vụ (ngang)
-    const chucVu = d.chucVu || [];
-    veMoi('chartChucVuNhanSu', {
-        type: 'bar',
-        data: { labels: chucVu.map(c => c.ten), datasets: [{ label: 'Cán bộ', data: chucVu.map(c => c.soLuong), backgroundColor: mau('--mau-can-bo'), borderRadius: 4, maxBarThickness: 28 }] },
-        options: { ...chung, indexAxis: 'y', plugins: { legend: { display: false } }, scales: { x: { beginAtZero: true, ticks: { precision: 0 } } } }
-    });
-
-    // 4. Tỉ lệ lấp đầy từng lớp: màu theo trạng thái (đủ chỗ / gần đầy / vượt)
-    const lop = d.siSoLop || [];
-    const mauTrangThai = p => p > 100 ? mau('--tt-nguy') : p >= 90 ? mau('--tt-canh-bao') : mau('--tt-tot');
-    veMoi('chartSiSoLopHoc', {
-        type: 'bar',
-        data: {
-            labels: lop.map(l => l.ten),
-            datasets: [
-                { label: 'Sĩ số', data: lop.map(l => l.siSo), backgroundColor: lop.map(l => mauTrangThai(l.chiTieu ? l.siSo * 100 / l.chiTieu : 0)), borderRadius: 3, order: 1 },
-                { label: 'Chỉ tiêu', data: lop.map(l => l.chiTieu), backgroundColor: nhat(mau('--tt-trung-tinh'), 0.18), borderColor: nhat(mau('--tt-trung-tinh'), 0.5), borderWidth: 1, borderRadius: 3, grouped: false, order: 2 }
-            ]
-        },
-        options: { ...chung, plugins: { legend: { position: 'top', align: 'end' },
-                tooltip: { callbacks: { afterBody: items => { const l = lop[items[0].dataIndex]; return l.chiTieu ? `Lấp đầy: ${Math.round(l.siSo * 100 / l.chiTieu)}%` : ''; } } } },
-            scales: { x: { ticks: { autoSkip: false, maxRotation: 60, minRotation: 0 } }, y: { beginAtZero: true, ticks: { precision: 0 } } } }
-    });
-};
-
+﻿/* C500 - Học viện An ninh Nhân dân: Hệ thống Hướng Dẫn Tương Tác Qua Shadow Box (PC & Điện Thoại Workspace) */
 /* ==========================================================================
    HỆ THỐNG HƯỚNG DẪN TƯƠNG TÁC QUA SHADOW BOX (INTERACTIVE SPOTLIGHT TOUR)
    Hoạt động đồng bộ trên cả Máy Tính (Desktop) & Điện Thoại (Mobile Workspace)
@@ -417,3 +341,4 @@ window.cuonCuoiNgang = function (el) {
     const giam = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     el.scrollTo({ left: el.scrollWidth, behavior: giam ? 'auto' : 'smooth' });
 };
+
