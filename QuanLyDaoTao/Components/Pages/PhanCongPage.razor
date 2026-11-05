@@ -1,141 +1,169 @@
 @page "/PhanCongGiangDay"
+@attribute [Authorize]
+@inherits TrangNghiepVuCoSo
 @inject IPhanCongGiangDayDichVu PhanCongDichVu
 @inject INhanSuDichVu NhanSuDichVu
 @inject IMonHocDichVu MonHocDichVu
 @inject ILopHocDichVu LopHocDichVu
-@inject NavigationManager Navigation
 
-<PageTitle>Phân công giảng dạy - Học Viện An Ninh Nhân Dân</PageTitle>
+<PageTitle>Phân công giảng dạy | Quản lý đào tạo C500</PageTitle>
 
-<div class="container-fluid px-4 py-3" id="pnlDanhSachPhanCong">
-    <div class="d-flex justify-content-between align-items-center mb-3">
-        <div>
-            <h4 class="mb-1 text-primary fw-bold" id="lblTieuDe">
-                <i class="bi bi-calendar-check me-2"></i>Quản Lý Phân Công Giảng Dạy
-            </h4>
-            <span class="text-muted small">Phân công giảng viên, môn học, lớp đào tạo theo học kỳ C500</span>
-        </div>
-        <div class="d-flex gap-2">
-            <a href="Excel/XuatDuLieu?module=PhanCongGiangDay" class="btn btn-outline-primary" id="btnXuatExcel">
-                <i class="bi bi-file-earmark-excel me-1"></i>Xuất Excel
-            </a>
-            <AuthorizeView Roles="Superadmin,GiaoVien,Admin,DataManager,CanBo">
-                <Authorized>
-                    <a href="Excel/TaiTepMau?module=PhanCongGiangDay" class="btn btn-outline-secondary" id="btnTaiMauExcel">
-                        <i class="bi bi-download me-1"></i>Tải Mẫu Excel
-                    </a>
-                    <a href="Excel/NhapExcel?module=PhanCongGiangDay" class="btn btn-success" id="btnNhapExcel">
-                        <i class="bi bi-file-earmark-arrow-up me-1"></i>Nhập Excel
-                    </a>
-                    <a href="PhanCongGiangDay/ThemMoi" class="btn btn-primary" id="btnThemPhanCong">
-                        <i class="bi bi-plus-circle-fill me-1"></i>Thêm Phân Công
-                    </a>
-                </Authorized>
-            </AuthorizeView>
-        </div>
-    </div>
+<div class="trang-nghiep-vu" id="pnlDanhSachPhanCong">
+    <TieuDeTrang PhanHe="Đào tạo" TieuDe="Phân công giảng dạy" BieuTuong="bi-calendar-check"
+                 MoTa="Giảng viên → Môn học → Lớp theo học kỳ. Có thể đánh dấu giảng viên kiêm chủ nhiệm lớp.">
+        <a href="Excel/XuatDuLieu?module=PhanCongGiangDay" class="btn btn-outline-primary btn-sm" id="btnXuatExcel"><i class="bi bi-file-earmark-excel me-1"></i>Xuất Excel</a>
+        @if (_coQuyenGhi)
+        {
+            <a href="Excel/NhapExcel?module=PhanCongGiangDay" class="btn btn-outline-success btn-sm" id="btnNhapExcel"><i class="bi bi-file-earmark-arrow-up me-1"></i>Nhập Excel</a>
+            <RadzenButton Icon="add" Text="Phân công" ButtonStyle="ButtonStyle.Primary" Size="ButtonSize.Small" Click="ThemAsync" id="btnThemPhanCong" />
+        }
+    </TieuDeTrang>
 
-    <!-- Bảng danh sách Phân công -->
-    <div class="card shadow-sm border-0" id="pnlBangDuLieu">
-        <div class="card-body p-0">
-            <div class="table-responsive">
-                <table class="table table-hover table-striped align-middle mb-0" id="dgvDanhSachPhanCong">
-                    <thead class="table-light">
-                        <tr>
-                            <th class="ps-3" style="width: 50px;">#</th>
-                            <th style="width: 140px;">Mã Phân Công</th>
-                            <th>Giảng Viên Giảng Dạy</th>
-                            <th>Môn Học</th>
-                            <th>Lớp Đào Tạo</th>
-                            <th>Học Kỳ / Năm Học</th>
-                            <th>Vai Trò Giảng Dạy</th>
-                            <th class="text-center" style="width: 100px;">Chủ Nhiệm</th>
-                            <th>Ghi Chú</th>
-                            <th class="text-center" style="width: 140px;">Thao Tác</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @if (danhSachPhanCong == null || danhSachPhanCong.Count == 0)
-                        {
-                            <tr>
-                                <td colspan="10" class="text-center py-4 text-muted">
-                                    <i class="bi bi-inbox fs-2 d-block mb-2"></i>Chưa có phân công giảng dạy nào được ghi nhận
-                                </td>
-                            </tr>
-                        }
-                        else
-                        {
-                            int stt = 1;
-                            foreach (var pc in danhSachPhanCong)
-                            {
-                                <tr>
-                                    <td class="ps-3 fw-bold text-muted">@(stt++)</td>
-                                    <td><span class="badge bg-primary bg-opacity-10 text-primary font-monospace fs-6">@pc.MaPhanCong</span></td>
-                                    <td class="fw-semibold text-dark">@(pc.NhanSu?.HoVaTen ?? "-")</td>
-                                    <td><span class="badge bg-light text-dark border">@(pc.MonHoc?.TenMonHoc ?? "-")</span></td>
-                                    <td><span class="badge bg-light text-dark border">@(pc.LopHoc?.TenLop ?? "-")</span></td>
-                                    <td><span class="badge bg-light text-dark border"><i class="bi bi-calendar3 me-1"></i>@pc.HocKyNamHoc</span></td>
-                                    <td><span class="badge bg-info text-dark">@pc.VaiTroGiangDay</span></td>
-                                    <td class="text-center">
-                                        @if (pc.LaChuNhiem)
-                                        {
-                                            <span class="badge bg-success">GVCN</span>
-                                        }
-                                        else
-                                        {
-                                            <span class="text-muted">-</span>
-                                        }
-                                    </td>
-                                    <td><small class="text-muted">@(string.IsNullOrWhiteSpace(pc.GhiChu) ? "-" : pc.GhiChu)</small></td>
-                                    <td class="text-center">
-                                        <AuthorizeView Roles="Superadmin,GiaoVien,Admin,DataManager,CanBo">
-                                            <Authorized>
-                                                <div class="btn-group btn-group-sm">
-                                                    <a href="PhanCongGiangDay/ChinhSua/@pc.PhanCongId" class="btn btn-outline-primary" id="btnSua_@pc.PhanCongId">
-                                                        <i class="bi bi-pencil"></i>
-                                                    </a>
-                                                    <button type="button" class="btn btn-outline-danger" id="btnXoa_@pc.PhanCongId" @onclick="() => XoaPhanCong(pc.PhanCongId)">
-                                                        <i class="bi bi-trash"></i>
-                                                    </button>
-                                                </div>
-                                            </Authorized>
-                                            <NotAuthorized>
-                                                <span class="text-muted small">Chỉ xem</span>
-                                            </NotAuthorized>
-                                        </AuthorizeView>
-                                    </td>
-                                </tr>
-                            }
-                        }
-                    </tbody>
-                </table>
+    <div class="khung-danh-sach">
+        <div class="thanh-cong-cu" id="pnlBoLoc">
+            <div class="o-tim-kiem">
+                <i class="bi bi-search"></i>
+                <input class="form-control" id="txtTimKiem" placeholder="Tìm mã, giảng viên, môn, lớp, ghi chú..." value="@_tuKhoa" @oninput="@(e => _tuKhoa = e.Value?.ToString() ?? string.Empty)" />
             </div>
+            <RadzenDropDown TValue="string" Data="@HocKyGoiY" @bind-Value="_hocKyLoc" AllowClear="true" Placeholder="Tất cả học kỳ" class="bo-loc bo-loc-hep" id="cboHocKy" />
+            <RadzenDropDown TValue="int?" Data="@_giangVien" TextProperty="HoVaTen" ValueProperty="NhanSuId" @bind-Value="_giangVienLoc" AllowClear="true" AllowFiltering="true"
+                            FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" FilterOperator="StringFilterOperator.Contains" Placeholder="Tất cả giảng viên" class="bo-loc" id="cboGiangVien" />
+            <RadzenDropDown TValue="int?" Data="@_monHoc" TextProperty="TenMonHoc" ValueProperty="MonHocId" @bind-Value="_monLoc" AllowClear="true" AllowFiltering="true"
+                            FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" FilterOperator="StringFilterOperator.Contains" Placeholder="Tất cả môn" class="bo-loc" id="cboMonHoc" />
+            <RadzenDropDown TValue="int?" Data="@_lop" TextProperty="MaLop" ValueProperty="LopHocId" @bind-Value="_lopLoc" AllowClear="true" AllowFiltering="true"
+                            FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" FilterOperator="StringFilterOperator.Contains" Placeholder="Tất cả lớp" class="bo-loc bo-loc-hep" id="cboChonLop" />
+            <RadzenButton Text="Bỏ lọc" Icon="filter_alt_off" ButtonStyle="ButtonStyle.Light" Size="ButtonSize.Small" Click="BoLoc" id="btnBoLoc" />
         </div>
+
+        <div class="the-thong-ke-nho">
+            <div><span>phân công</span><strong>@DanhSachHienThi.Count() / @_tatCa.Count</strong></div>
+            <div><span>giảng viên</span><strong>@DanhSachHienThi.Select(p => p.NhanSuId).Distinct().Count()</strong></div>
+            <div><span>lớp được phân công</span><strong>@DanhSachHienThi.Select(p => p.LopHocId).Distinct().Count() / @_lop.Count</strong></div>
+            <div><span>lớp chưa có chủ nhiệm</span><strong class="text-warning">@_lop.Count(l => !_tatCa.Any(p => p.LopHocId == l.LopHocId && p.LaChuNhiem))</strong></div>
+        </div>
+
+        <RadzenDataGrid TItem="PhanCongGiangDay" Data="@DanhSachHienThi" IsLoading="@DangTai" AllowPaging="true" PageSize="20" AllowSorting="true" AllowColumnResize="true"
+                        EmptyText="Không có phân công phù hợp." class="bang-du-lieu" id="dgvDanhSachPhanCong">
+            <Columns>
+                <RadzenDataGridColumn TItem="PhanCongGiangDay" Property="MaPhanCong" Title="Mã" Width="120px"><Template Context="p"><span class="ma-ban-ghi">@p.MaPhanCong</span> <NhanBanGhi NgayTao="p.NgayTao" /></Template></RadzenDataGridColumn>
+                <RadzenDataGridColumn TItem="PhanCongGiangDay" Property="HocKyNamHoc" Title="Học kỳ" Width="140px" />
+                <RadzenDataGridColumn TItem="PhanCongGiangDay" Property="NhanSu.HoVaTen" Title="Giảng viên" Width="190px"><Template Context="p"><strong>@p.NhanSu?.HoVaTen</strong></Template></RadzenDataGridColumn>
+                <RadzenDataGridColumn TItem="PhanCongGiangDay" Property="MonHoc.TenMonHoc" Title="Môn học" Width="220px" />
+                <RadzenDataGridColumn TItem="PhanCongGiangDay" Property="LopHoc.MaLop" Title="Lớp" Width="95px" />
+                <RadzenDataGridColumn TItem="PhanCongGiangDay" Property="VaiTroGiangDay" Title="Vai trò" Width="150px" />
+                <RadzenDataGridColumn TItem="PhanCongGiangDay" Property="LaChuNhiem" Title="Chủ nhiệm" Width="100px" TextAlign="TextAlign.Center">
+                    <Template Context="p">@if (p.LaChuNhiem) { <i class="bi bi-star-fill text-warning" title="Chủ nhiệm lớp"></i> }</Template>
+                </RadzenDataGridColumn>
+                <RadzenDataGridColumn TItem="PhanCongGiangDay" Property="GhiChu" Title="Ghi chú" Width="180px" />
+                @if (_coQuyenGhi)
+                {
+                    <RadzenDataGridColumn TItem="PhanCongGiangDay" Title="Thao tác" Width="95px" Sortable="false" TextAlign="TextAlign.Center" Frozen="true" FrozenPosition="FrozenColumnPosition.Right">
+                        <Template Context="p">
+                            <div class="o-thao-tac">
+                                <RadzenButton Icon="edit" ButtonStyle="ButtonStyle.Light" Size="ButtonSize.ExtraSmall" Click="@(() => SuaAsync(p))" title="Sửa" id="@($"btnSua_{p.PhanCongId}")" />
+                                <RadzenButton Icon="delete" ButtonStyle="ButtonStyle.Danger" Variant="Variant.Text" Size="ButtonSize.ExtraSmall" Click="@(() => XoaAsync(p))" title="Xóa" id="@($"btnXoa_{p.PhanCongId}")" />
+                            </div>
+                        </Template>
+                    </RadzenDataGridColumn>
+                }
+            </Columns>
+        </RadzenDataGrid>
     </div>
 </div>
 
 @code {
-    private List<PhanCongGiangDay>? danhSachPhanCong;
+    private List<PhanCongGiangDay> _tatCa = [];
+    private List<NhanSu> _giangVien = [];
+    private List<MonHoc> _monHoc = [];
+    private List<LopHoc> _lop = [];
+    private string _tuKhoa = string.Empty;
+    private string? _hocKyLoc;
+    private int? _giangVienLoc;
+    private int? _monLoc;
+    private int? _lopLoc;
+    private bool _coQuyenGhi;
 
-    protected override async Task OnInitializedAsync()
+    /// <summary>Lọc sẵn theo môn (?mon=ID).</summary>
+    [SupplyParameterFromQuery(Name = "mon")]
+    public int? MonTuDuongDan { get; set; }
+
+    /// <summary>Lọc sẵn theo giảng viên (?gv=ID).</summary>
+    [SupplyParameterFromQuery(Name = "gv")]
+    public int? GiangVienTuDuongDan { get; set; }
+
+    /// <inheritdoc />
+    protected override IReadOnlyCollection<string> BangTheoDoi { get; } = ["PhanCongGiangDay", "MonHoc", "LopHoc", "NhanSu"];
+
+    /// <inheritdoc />
+    protected override void OnParametersSet()
     {
-        await LoadData();
+        _monLoc = MonTuDuongDan ?? _monLoc;
+        _giangVienLoc = GiangVienTuDuongDan ?? _giangVienLoc;
     }
 
-    private async Task LoadData()
+    private IReadOnlyList<string> HocKyGoiY => _tatCa.Select(p => p.HocKyNamHoc).Distinct().OrderByDescending(h => h).ToList();
+
+    private IEnumerable<PhanCongGiangDay> DanhSachHienThi => _tatCa.Where(p =>
+        (_hocKyLoc is null || p.HocKyNamHoc == _hocKyLoc) && (_giangVienLoc is null || p.NhanSuId == _giangVienLoc) &&
+        (_monLoc is null || p.MonHocId == _monLoc) && (_lopLoc is null || p.LopHocId == _lopLoc) &&
+        (QuyTacNghiepVu.ChuaTuKhoa(p.MaPhanCong, _tuKhoa) || QuyTacNghiepVu.ChuaTuKhoa(p.NhanSu?.HoVaTen, _tuKhoa) ||
+         QuyTacNghiepVu.ChuaTuKhoa(p.MonHoc?.TenMonHoc, _tuKhoa) || QuyTacNghiepVu.ChuaTuKhoa(p.LopHoc?.MaLop, _tuKhoa) || QuyTacNghiepVu.ChuaTuKhoa(p.GhiChu, _tuKhoa)));
+
+    /// <inheritdoc />
+    protected override async Task TaiDuLieuAsync()
     {
-        danhSachPhanCong = await PhanCongDichVu.LayDanhSachAsync();
+        _giangVien = (await NhanSuDichVu.LayDanhSachAsync(coHoatDong: true)).OrderBy(n => QuyTacNghiepVu.KhoaSapXepTen(n.HoVaTen), StringComparer.Ordinal).ToList();
+        _monHoc = await MonHocDichVu.LayDanhSachAsync(coHoatDong: true);
+        _lop = await LopHocDichVu.LayDanhSachAsync();
+        _tatCa = (await PhanCongDichVu.LayDanhSachAsync()).OrderByDescending(p => p.HocKyNamHoc).ThenBy(p => p.LopHoc?.MaLop).ToList();
+        _coQuyenGhi = NguoiDung.CoQuyenGhi(VungQuanLy.DaoTao, null);
     }
 
-    private async Task XoaPhanCong(int id)
+    private void BoLoc()
     {
-        try
+        _tuKhoa = string.Empty;
+        _hocKyLoc = null;
+        _giangVienLoc = null;
+        _monLoc = null;
+        _lopLoc = null;
+    }
+
+    private Dictionary<string, object?> ThamSo(PhanCongGiangDay? goc) => new()
+    {
+        [nameof(BieuMauPhanCong.PhanCongGoc)] = goc,
+        [nameof(BieuMauPhanCong.DanhSachGiangVien)] = _giangVien,
+        [nameof(BieuMauPhanCong.DanhSachMonHoc)] = _monHoc,
+        [nameof(BieuMauPhanCong.DanhSachLop)] = _lop,
+        [nameof(BieuMauPhanCong.HocKyGoiY)] = HocKyGoiY
+    };
+
+    private async Task ThemAsync()
+    {
+        var ketQua = await HopThoai.OpenAsync<BieuMauPhanCong>("Phân công giảng dạy", ThamSo(null), new DialogOptions { Width = "720px", CloseDialogOnOverlayClick = false });
+        if (ketQua is KetQuaBieuMau daLuu)
         {
-            await PhanCongDichVu.XoaPhanCongAsync(id);
-            await LoadData();
+            BaoThanhCong(daLuu.ThongDiep);
+            await NapLaiAsync();
+            BoLoc();
+            _tuKhoa = daLuu.MaBanGhi ?? string.Empty;
         }
-        catch
+    }
+
+    private async Task SuaAsync(PhanCongGiangDay pc)
+    {
+        var ketQua = await HopThoai.OpenAsync<BieuMauPhanCong>($"Sửa phân công {pc.MaPhanCong}", ThamSo(pc), new DialogOptions { Width = "720px", CloseDialogOnOverlayClick = false });
+        if (ketQua is KetQuaBieuMau daLuu)
         {
+            BaoThanhCong(daLuu.ThongDiep);
+            await NapLaiAsync();
+        }
+    }
+
+    private async Task XoaAsync(PhanCongGiangDay pc)
+    {
+        if (await XacNhanXoaAsync($"phân công {pc.MaPhanCong}"))
+        {
+            await ThucHienAsync(() => PhanCongDichVu.XoaPhanCongAsync(pc.PhanCongId), $"Đã xóa phân công {pc.MaPhanCong}.");
         }
     }
 }

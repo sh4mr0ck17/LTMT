@@ -77,6 +77,23 @@ public class HocVien
     public string TrangThai { get; set; } = "Đang học";
 
     /// <summary>
+    /// Số căn cước công dân (12 chữ số). Duy nhất trên toàn bộ học viên và cán bộ.
+    /// </summary>
+    [StringLength(12, ErrorMessage = "Số CCCD gồm đúng 12 chữ số.")]
+    public string? SoCCCD { get; set; }
+
+    /// <summary>
+    /// Chức vụ trong lớp (B trưởng, A trưởng, BTCĐ...). Có thể ghép nhiều chức vụ bằng dấu phẩy.
+    /// </summary>
+    [StringLength(100, ErrorMessage = "Chức vụ không được vượt quá 100 ký tự.")]
+    public string? ChucVuLop { get; set; }
+
+    /// <summary>
+    /// Thời điểm cập nhật gần nhất.
+    /// </summary>
+    public DateTime? NgayCapNhat { get; set; }
+
+    /// <summary>
     /// Ngày tạo bản ghi.
     /// </summary>
     public DateTime NgayTao { get; set; } = DateTime.UtcNow;

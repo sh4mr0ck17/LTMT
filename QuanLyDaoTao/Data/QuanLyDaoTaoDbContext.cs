@@ -79,6 +79,21 @@ public class QuanLyDaoTaoDbContext : IdentityDbContext<TaiKhoan, VaiTro, string>
     public DbSet<GiaTriTruongTuyChinh> GiaTriTruongTuyChinhs => Set<GiaTriTruongTuyChinh>();
 
     /// <summary>
+    /// Bảng tin thông báo nội bộ.
+    /// </summary>
+    public DbSet<ThongBao> ThongBaos => Set<ThongBao>();
+
+    /// <summary>
+    /// Lượt đọc thông báo.
+    /// </summary>
+    public DbSet<ThongBaoDaDoc> ThongBaoDaDocs => Set<ThongBaoDaDoc>();
+
+    /// <summary>
+    /// Tệp đính kèm thông báo.
+    /// </summary>
+    public DbSet<TepDinhKemThongBao> TepDinhKemThongBaos => Set<TepDinhKemThongBao>();
+
+    /// <summary>
     /// Cấu hình các ràng buộc, chỉ mục và mối quan hệ giữa các thực thể.
     /// </summary>
     /// <param name="modelBuilder">Đối tượng ModelBuilder để cấu hình lược đồ.</param>
@@ -121,6 +136,7 @@ public class QuanLyDaoTaoDbContext : IdentityDbContext<TaiKhoan, VaiTro, string>
             entity.HasIndex(l => l.MaLop).IsUnique();
             entity.HasIndex(l => l.TenLop);
             entity.HasIndex(l => l.NienKhoa);
+            entity.HasIndex(l => new { l.HeDaoTao, l.KhoaHoc });
 
             entity.HasOne(l => l.Khoa)
                   .WithMany(k => k.LopHocs)
@@ -137,6 +153,8 @@ public class QuanLyDaoTaoDbContext : IdentityDbContext<TaiKhoan, VaiTro, string>
             entity.HasIndex(hv => hv.MaHocVien).IsUnique();
             entity.HasIndex(hv => hv.HoVaTen);
             entity.HasIndex(hv => hv.LopHocId);
+            entity.HasIndex(hv => hv.SoCCCD);
+            entity.HasIndex(hv => hv.SoDienThoai);
 
             entity.HasOne(hv => hv.LopHoc)
                   .WithMany(l => l.HocViens)
@@ -189,6 +207,8 @@ public class QuanLyDaoTaoDbContext : IdentityDbContext<TaiKhoan, VaiTro, string>
             entity.HasIndex(ns => ns.KhoaId);
             entity.HasIndex(ns => ns.BoMonId);
             entity.HasIndex(ns => ns.ChucVuId);
+            entity.HasIndex(ns => ns.SoCCCD);
+            entity.HasIndex(ns => ns.SoDienThoai);
 
             entity.HasOne(ns => ns.Khoa)
                   .WithMany(k => k.NhanSus)
@@ -255,6 +275,33 @@ public class QuanLyDaoTaoDbContext : IdentityDbContext<TaiKhoan, VaiTro, string>
             entity.HasKey(t => t.TruongTuyChinhId);
             entity.HasIndex(t => new { t.TenBang, t.MaTruong }).IsUnique();
             entity.HasIndex(t => t.TenBang);
+        });
+
+        modelBuilder.Entity<ThongBao>(entity =>
+        {
+            entity.HasKey(tb => tb.ThongBaoId);
+            entity.HasIndex(tb => tb.NgayDang);
+            entity.HasIndex(tb => tb.LoaiVanBan);
+        });
+
+        modelBuilder.Entity<TepDinhKemThongBao>(entity =>
+        {
+            entity.HasKey(t => t.TepDinhKemThongBaoId);
+            entity.HasOne(t => t.ThongBao)
+                  .WithMany(tb => tb.TepDinhKem)
+                  .HasForeignKey(t => t.ThongBaoId)
+                  .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<ThongBaoDaDoc>(entity =>
+        {
+            entity.HasKey(d => d.ThongBaoDaDocId);
+            entity.HasIndex(d => new { d.ThongBaoId, d.TenDangNhap }).IsUnique();
+            entity.HasIndex(d => d.TenDangNhap);
+            entity.HasOne(d => d.ThongBao)
+                  .WithMany(tb => tb.LuotDoc)
+                  .HasForeignKey(d => d.ThongBaoId)
+                  .OnDelete(DeleteBehavior.Cascade);
         });
 
         modelBuilder.Entity<GiaTriTruongTuyChinh>(entity =>

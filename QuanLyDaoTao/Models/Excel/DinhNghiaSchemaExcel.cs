@@ -58,8 +58,11 @@ public static class DinhNghiaSchemaExcel
     {
         new() { TenCot = "Mã lớp", CacTenGoiKhac = new[] { "MaLop", "Mã Lớp" }, LaBatBuoc = true, KieuDuLieu = KieuDuLieuExcel.VanBan, DoDaiToiDa = 50, MoTa = "Mã lớp học duy nhất", ViDu = "CNTT_K20A" },
         new() { TenCot = "Tên lớp", CacTenGoiKhac = new[] { "TenLop", "Tên Lớp" }, LaBatBuoc = true, KieuDuLieu = KieuDuLieuExcel.VanBan, DoDaiToiDa = 200, MoTa = "Tên lớp học đầy đủ", ViDu = "Công nghệ Thông tin K20A" },
-        new() { TenCot = "Niên khóa", CacTenGoiKhac = new[] { "NienKhoa", "Khóa học" }, LaBatBuoc = true, KieuDuLieu = KieuDuLieuExcel.VanBan, DoDaiToiDa = 50, MoTa = "Niên khóa đào tạo (ví dụ: 2024-2028)", ViDu = "2024-2028" },
+        new() { TenCot = "Niên khóa", CacTenGoiKhac = new[] { "NienKhoa" }, LaBatBuoc = true, KieuDuLieu = KieuDuLieuExcel.VanBan, DoDaiToiDa = 50, MoTa = "Niên khóa đào tạo (ví dụ: 2024-2028)", ViDu = "2024-2028" },
         new() { TenCot = "Mã khoa", CacTenGoiKhac = new[] { "MaKhoa", "Khoa quản lý" }, LaBatBuoc = true, KieuDuLieu = KieuDuLieuExcel.KhoaNgoai, DoDaiToiDa = 50, MoTa = "Mã khoa quản lý lớp (phải tồn tại)", ViDu = "KHOA_CNTT" },
+        new() { TenCot = "Hệ đào tạo", CacTenGoiKhac = new[] { "HeDaoTao", "Hệ" }, LaBatBuoc = false, KieuDuLieu = KieuDuLieuExcel.VanBan, DoDaiToiDa = 50, MoTa = "Chính quy / Văn bằng 2 / Liên thông / Bồi dưỡng (mặc định Chính quy)", ViDu = "Chính quy" },
+        new() { TenCot = "Khóa", CacTenGoiKhac = new[] { "KhoaHoc", "Khóa học", "Khóa đào tạo" }, LaBatBuoc = false, KieuDuLieu = KieuDuLieuExcel.VanBan, DoDaiToiDa = 20, MoTa = "Mã khóa (D57, K6...). Bỏ trống để tự suy từ mã lớp", ViDu = "D57" },
+        new() { TenCot = "Chuyên ngành", CacTenGoiKhac = new[] { "ChuyenNganh" }, LaBatBuoc = false, KieuDuLieu = KieuDuLieuExcel.VanBan, DoDaiToiDa = 150, MoTa = "Chuyên ngành đào tạo của lớp", ViDu = "Điều tra hình sự" },
         new() { TenCot = "Số lượng tối đa", CacTenGoiKhac = new[] { "SoLuongToiDa", "Sĩ số tối đa" }, LaBatBuoc = false, KieuDuLieu = KieuDuLieuExcel.SoNguyen, DoDaiToiDa = 10, MoTa = "Sĩ số học viên tối đa (mặc định 50)", ViDu = "60" },
         new() { TenCot = "Trạng thái", CacTenGoiKhac = new[] { "TrangThai" }, LaBatBuoc = false, KieuDuLieu = KieuDuLieuExcel.Logic, DoDaiToiDa = 20, MoTa = "Hoạt động hoặc Đã khóa", ViDu = "Hoạt động" }
     };
@@ -75,8 +78,10 @@ public static class DinhNghiaSchemaExcel
         new() { TenCot = "Giới tính", CacTenGoiKhac = new[] { "GioiTinh" }, LaBatBuoc = true, KieuDuLieu = KieuDuLieuExcel.VanBan, DoDaiToiDa = 20, MoTa = "Nam hoặc Nữ", ViDu = "Nam" },
         new() { TenCot = "Email", CacTenGoiKhac = new[] { "DiaChiEmail" }, LaBatBuoc = false, KieuDuLieu = KieuDuLieuExcel.Email, DoDaiToiDa = 100, MoTa = "Địa chỉ email cá nhân", ViDu = "an.nguyen@email.local" },
         new() { TenCot = "Số điện thoại", CacTenGoiKhac = new[] { "SoDienThoai", "SĐT" }, LaBatBuoc = false, KieuDuLieu = KieuDuLieuExcel.SoDienThoai, DoDaiToiDa = 20, MoTa = "Số điện thoại di động", ViDu = "0912345678" },
-        new() { TenCot = "Địa chỉ", CacTenGoiKhac = new[] { "DiaChi", "Hộ khẩu" }, LaBatBuoc = false, KieuDuLieu = KieuDuLieuExcel.VanBan, DoDaiToiDa = 255, MoTa = "Địa chỉ cư trú", ViDu = "Hà Nội" },
+        new() { TenCot = "Số CCCD", CacTenGoiKhac = new[] { "SoCCCD", "CCCD" }, LaBatBuoc = false, KieuDuLieu = KieuDuLieuExcel.VanBan, DoDaiToiDa = 12, MoTa = "Số CCCD 12 chữ số (duy nhất trên học viên và cán bộ)", ViDu = "001205001234" },
+        new() { TenCot = "Địa chỉ", CacTenGoiKhac = new[] { "DiaChi", "Hộ khẩu", "Quê quán" }, LaBatBuoc = false, KieuDuLieu = KieuDuLieuExcel.VanBan, DoDaiToiDa = 255, MoTa = "Quê quán / địa chỉ thường trú", ViDu = "Hà Nội" },
         new() { TenCot = "Mã lớp", CacTenGoiKhac = new[] { "MaLop", "Lớp học" }, LaBatBuoc = true, KieuDuLieu = KieuDuLieuExcel.KhoaNgoai, DoDaiToiDa = 50, MoTa = "Mã lớp học thuộc về (phải tồn tại)", ViDu = "CNTT_K20A" },
+        new() { TenCot = "Chức vụ", CacTenGoiKhac = new[] { "ChucVu", "ChucVuLop", "Chức vụ lớp" }, LaBatBuoc = false, KieuDuLieu = KieuDuLieuExcel.VanBan, DoDaiToiDa = 100, MoTa = "Chức vụ trong lớp (BT, BP, AT, AP, BTCĐ...), ghép bằng dấu phẩy", ViDu = "AT" },
         new() { TenCot = "Trạng thái", CacTenGoiKhac = new[] { "TrangThai" }, LaBatBuoc = false, KieuDuLieu = KieuDuLieuExcel.Logic, DoDaiToiDa = 20, MoTa = "Hoạt động hoặc Đã khóa", ViDu = "Hoạt động" }
     };
 
@@ -98,6 +103,9 @@ public static class DinhNghiaSchemaExcel
         new() { TenCot = "Mã chức vụ", CacTenGoiKhac = new[] { "MaChucVu", "Chức vụ" }, LaBatBuoc = false, KieuDuLieu = KieuDuLieuExcel.KhoaNgoai, DoDaiToiDa = 50, MoTa = "Mã chức vụ công tác", ViDu = "CV_GV" },
         new() { TenCot = "Mã trình độ", CacTenGoiKhac = new[] { "MaTrinhDo", "Trình độ" }, LaBatBuoc = false, KieuDuLieu = KieuDuLieuExcel.KhoaNgoai, DoDaiToiDa = 50, MoTa = "Mã trình độ chuyên môn", ViDu = "TD_TS" },
         new() { TenCot = "Chuyên môn đào tạo", CacTenGoiKhac = new[] { "ChuyenMon", "Chuyên ngành" }, LaBatBuoc = false, KieuDuLieu = KieuDuLieuExcel.VanBan, DoDaiToiDa = 255, MoTa = "Tóm tắt chuyên môn và trường đào tạo", ViDu = "An ninh mạng - Học viện ANND" },
+        new() { TenCot = "Cấp bậc hàm", CacTenGoiKhac = new[] { "CapBacHam", "Cấp bậc" }, LaBatBuoc = false, KieuDuLieu = KieuDuLieuExcel.VanBan, DoDaiToiDa = 50, MoTa = "Đại tá, Thượng tá, Trung tá...", ViDu = "Trung tá" },
+        new() { TenCot = "Học hàm", CacTenGoiKhac = new[] { "HocHam" }, LaBatBuoc = false, KieuDuLieu = KieuDuLieuExcel.VanBan, DoDaiToiDa = 50, MoTa = "Giáo sư / Phó giáo sư", ViDu = "Phó giáo sư" },
+        new() { TenCot = "Quê quán", CacTenGoiKhac = new[] { "QueQuan" }, LaBatBuoc = false, KieuDuLieu = KieuDuLieuExcel.VanBan, DoDaiToiDa = 100, MoTa = "Tỉnh/thành quê quán", ViDu = "Nghệ An" },
         new() { TenCot = "Trạng thái", CacTenGoiKhac = new[] { "TrangThai", "Trạng thái công tác", "TrangThaiCongTac" }, LaBatBuoc = false, KieuDuLieu = KieuDuLieuExcel.VanBan, DoDaiToiDa = 50, MoTa = "Đang làm việc / Tạm nghỉ / Đã nghỉ việc / Đã khóa", ViDu = "Đang làm việc" },
         new() { TenCot = "Ghi chú", CacTenGoiKhac = new[] { "GhiChu", "Lưu ý" }, LaBatBuoc = false, KieuDuLieu = KieuDuLieuExcel.VanBan, DoDaiToiDa = 500, MoTa = "Ghi chú chuyên môn hoặc tiểu sử", ViDu = "Giảng viên chính C500" }
     };

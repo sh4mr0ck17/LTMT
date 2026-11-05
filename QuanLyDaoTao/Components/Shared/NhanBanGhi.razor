@@ -1,0 +1,41 @@
+@implements IDisposable
+@* Nhãn "Mới" (15 phút sau khi tạo) và "Vừa cập nhật" (2 phút sau khi sửa); hết hạn chỉ ẩn nhãn, không đổi dữ liệu. *@
+@if (LaMoi)
+{
+    <span class="nhan-ban-ghi nhan-moi" title="Tạo lúc @NgayTao.ToLocalTime().ToString("HH:mm dd/MM")">Mới</span>
+}
+else if (LaVuaCapNhat)
+{
+    <span class="nhan-ban-ghi nhan-cap-nhat" title="Cập nhật lúc @NgayCapNhat!.Value.ToLocalTime().ToString("HH:mm dd/MM")">Vừa cập nhật</span>
+}
+
+@code {
+    private const int ChuKyKiemTraMiliGiay = 30_000;
+    private Timer? _boHenGio;
+
+    /// <summary>Thời điểm tạo (UTC).</summary>
+    [Parameter] public DateTime NgayTao { get; set; }
+
+    /// <summary>Thời điểm cập nhật gần nhất (UTC).</summary>
+    [Parameter] public DateTime? NgayCapNhat { get; set; }
+
+    private bool LaMoi => DateTime.UtcNow - NgayTao < TimeSpan.FromMinutes(QuyTacNghiepVu.SoPhutNhanMoi);
+
+    private bool LaVuaCapNhat => NgayCapNhat.HasValue &&
+        DateTime.UtcNow - NgayCapNhat.Value < TimeSpan.FromMinutes(QuyTacNghiepVu.SoPhutNhanVuaCapNhat);
+
+    /// <inheritdoc />
+    protected override void OnParametersSet()
+    {
+        _boHenGio?.Dispose();
+        _boHenGio = null;
+        // Chỉ tạo bộ hẹn giờ khi nhãn đang hiển thị để tự ẩn khi hết hạn.
+        if (LaMoi || LaVuaCapNhat)
+        {
+            _boHenGio = new Timer(_ => InvokeAsync(StateHasChanged), null, ChuKyKiemTraMiliGiay, ChuKyKiemTraMiliGiay);
+        }
+    }
+
+    /// <inheritdoc />
+    public void Dispose() => _boHenGio?.Dispose();
+}

@@ -1,0 +1,478 @@
+﻿@page "/ThongBao"
+@attribute [Authorize]
+@inherits TrangNghiepVuCoSo
+@inject IThongBaoDichVu DichVuThongBao
+@inject ILopHocDichVu LopHocDichVu
+@inject NavigationManager DieuHuong
+
+<PageTitle>Thông báo | Quản lý đào tạo C500</PageTitle>
+
+<div class="trang-nghiep-vu cong-thong-bao" id="pnlThongBao">
+    <TieuDeTrang PhanHe="Cổng thông tin" TieuDe="Thông báo – Văn bản" BieuTuong="bi-megaphone"
+                 MoTa="Thông báo, kế hoạch, quyết định, công văn nội bộ gửi theo phạm vi (toàn hệ thống, khoa, hệ, khóa, lớp). Mở văn bản sẽ tự đánh dấu đã đọc.">
+        @if (_soChuaDoc > 0)
+        {
+            <RadzenButton Text="@($"Đánh dấu đã đọc ({_soChuaDoc})")" Icon="done_all" ButtonStyle="ButtonStyle.Light" Size="ButtonSize.Small" Click="DocTatCaAsync" id="btnDocTatCa" />
+        }
+        @if (_coTheDang)
+        {
+            <RadzenButton Text="Đăng văn bản" Icon="campaign" ButtonStyle="ButtonStyle.Primary" Size="ButtonSize.Small" Click="MoBieuMauAsync" id="btnDangThongBao" />
+        }
+    </TieuDeTrang>
+
+    @* Bố cục cổng tin (tham khảo kiến trúc thông tin báo điện tử): chuyên mục ngang → dải chủ đề → tiêu điểm + tin mới
+       → khối từng chuyên mục + cột "Xem nhiều". Chọn chuyên mục / tìm kiếm thì chuyển sang danh sách đầy đủ. *@
+    <nav class="cong-thanh-chuyen-muc" aria-label="Chuyên mục" id="pnlChuyenMuc">
+        <button type="button" class="@(LaTrangTin ? "dang-chon" : null)" @onclick="VeTrangTinAsync" id="btnChuyenMucTatCa"><i class="bi bi-house-door"></i> Trang tin</button>
+        @foreach (var loai in LoaiVanBanThongBao.TatCa)
+        {
+            var so = _tatCa.Count(d => d.ThongBao.LoaiVanBan == loai);
+            <button type="button" class="@(_loc.LoaiVanBan == loai ? "dang-chon" : null)" @onclick="() => ChonChuyenMucAsync(loai, false)" disabled="@(so == 0)">
+                @loai <span>@so</span>
+            </button>
+        }
+        <button type="button" class="cong-chuyen-muc-chua-doc @(_loc.ChiChuaDoc ? "dang-chon" : null)" @onclick="() => ChonChuyenMucAsync(null, true)" id="btnChuyenMucChuaDoc">
+            <i class="bi bi-envelope"></i> Chưa đọc <span class="@(_soChuaDoc > 0 ? "co-moi" : null)">@_soChuaDoc</span>
+        </button>
+        <div class="o-tim-kiem cong-tim">
+            <i class="bi bi-search"></i>
+            <input class="form-control form-control-sm" id="txtTimKiem" type="search" placeholder="Tìm tiêu đề, số/ký hiệu, trích yếu, nội dung…" value="@_tuKhoa"
+                   @oninput="@(e => { _tuKhoa = e.Value?.ToString() ?? string.Empty; _trang = 0; })" />
+        </div>
+    </nav>
+
+    <div class="cong-chu-de" id="pnlBoLoc" aria-label="Chủ đề và bộ lọc">
+        <span class="cong-chu-de-nhan">Chủ đề:</span>
+        <button type="button" class="@(_loc.MucDo == MucDoThongBao.Khan ? "dang-chon" : null) muc-do-khan" @onclick="() => DoiMucDoAsync(MucDoThongBao.Khan)">Khẩn <b>@_tatCa.Count(d => d.ThongBao.MucDo == MucDoThongBao.Khan)</b></button>
+        <button type="button" class="@(_loc.MucDo == MucDoThongBao.QuanTrong ? "dang-chon" : null) muc-do-quan-trong" @onclick="() => DoiMucDoAsync(MucDoThongBao.QuanTrong)">Quan trọng <b>@_tatCa.Count(d => d.ThongBao.MucDo == MucDoThongBao.QuanTrong)</b></button>
+        <RadzenDropDown TValue="string" Data="@_danhMucPhamVi" TextProperty="Ten" ValueProperty="Ma" @bind-Value="_loc.PhamVi" Change="@(_ => NapLaiAsync())"
+                        AllowClear="true" AllowFiltering="true" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" FilterOperator="StringFilterOperator.Contains"
+                        Placeholder="Mọi đối tượng nhận" class="bo-loc" id="cboLocPhamVi" />
+        <select id="cboNam" class="form-select form-select-sm cong-chon-nam" @onchange="DoiNamAsync" aria-label="Năm">
+            <option value="">Mọi năm</option>
+            @foreach (var nam in _cacNam)
+            {
+                <option value="@nam" selected="@(_loc.Nam == nam)">@nam</option>
+            }
+        </select>
+        @if (_coTheDang)
+        {
+            <RadzenCheckBox @bind-Value="_loc.ChiCuaToi" Change="@((bool _) => NapLaiAsync())" id="chkCuaToi" Name="chkCuaToi" />
+            <label for="chkCuaToi" class="small mb-0">Tôi đăng</label>
+            <RadzenCheckBox @bind-Value="_loc.HienHetHan" Change="@((bool _) => NapLaiAsync())" id="chkHetHan" Name="chkHetHan" />
+            <label for="chkHetHan" class="small mb-0">Cả hết hạn</label>
+        }
+        @if (!LaTrangTin)
+        {
+            <div class="cong-che-do ms-auto" role="group" aria-label="Kiểu hiển thị">
+                <button type="button" class="@(_cheDoBang ? null : "dang-chon")" @onclick="() => _cheDoBang = false" id="btnCheDoDanhSach" title="Dạng tin"><i class="bi bi-list-ul"></i></button>
+                <button type="button" class="@(_cheDoBang ? "dang-chon" : null)" @onclick="() => _cheDoBang = true" id="btnCheDoBang" title="Bảng văn bản"><i class="bi bi-table"></i></button>
+            </div>
+        }
+    </div>
+
+    @if (LaTrangTin)
+    {
+        var tieuDiem = TieuDiem;
+        <div class="cong-trang-tin" id="pnlTrangTin">
+            @if (tieuDiem is null)
+            {
+                <div class="tin-trong" id="lblKhongCoThongBao"><i class="bi bi-inbox fs-3 d-block mb-1"></i>@(DangTai ? "Đang tải…" : "Chưa có văn bản nào.")</div>
+            }
+            else
+            {
+                var tb0 = tieuDiem.ThongBao;
+                <div class="cong-tieu-diem">
+                    <article class="cong-tieu-diem-chinh muc-do-@MaMucDo(tb0.MucDo)">
+                        <button type="button" class="cong-nhan-chuyen-muc" @onclick="() => ChonChuyenMucAsync(tb0.LoaiVanBan, false)">@tb0.LoaiVanBan</button>
+                        @if (tb0.DaGhim) { <span class="cong-ghim"><i class="bi bi-pin-angle-fill"></i> Tiêu điểm</span> }
+                        @if (tb0.MucDo != MucDoThongBao.Thuong) { <span class="chip-muc-do muc-do-@MaMucDo(tb0.MucDo)">@tb0.MucDo</span> }
+                        <h2><a href="@($"ThongBao/{tb0.ThongBaoId}")" id="lnkNoiBat">@tb0.TieuDe</a></h2>
+                        <p class="cong-sapo">@TrichYeu(tb0)</p>
+                        <div class="cong-meta">
+                            <time>@ThoiGian(tb0)</time>
+                            @if (tb0.SoKyHieu is not null) { <span>Số: <b>@tb0.SoKyHieu</b></span> }
+                            <span>@(tb0.CoQuanBanHanh ?? ThongBaoDichVu.CoQuanMacDinh)</span>
+                            @if (tieuDiem.SoTep > 0) { <span><i class="bi bi-paperclip"></i> @tieuDiem.SoTep tệp</span> }
+                        </div>
+                        <div class="cong-tieu-diem-phu">
+                            @foreach (var phu in TieuDiemPhu)
+                            {
+                                <a href="@($"ThongBao/{phu.ThongBao.ThongBaoId}")" class="@(phu.DaDoc ? null : "chua-doc")">
+                                    <span class="cong-loai">@phu.ThongBao.LoaiVanBan</span>
+                                    <strong>@phu.ThongBao.TieuDe</strong>
+                                    <time>@ThoiGian(phu.ThongBao)</time>
+                                </a>
+                            }
+                        </div>
+                    </article>
+                    <aside class="cong-tin-moi-nhat" aria-label="Tin mới cập nhật">
+                        <h3>Tin mới cập nhật</h3>
+                        <ol>
+                            @foreach (var dong in TinMoiNhat)
+                            {
+                                <li class="@(dong.DaDoc ? null : "chua-doc")">
+                                    <time>@ThoiGian(dong.ThongBao)</time>
+                                    <a href="@($"ThongBao/{dong.ThongBao.ThongBaoId}")" id="@($"lnkThongBao_{dong.ThongBao.ThongBaoId}")">@dong.ThongBao.TieuDe</a>
+                                </li>
+                            }
+                        </ol>
+                    </aside>
+                </div>
+
+                <div class="cong-khoi-trang-tin">
+                    <div class="cong-cac-chuyen-muc">
+                        @foreach (var nhom in KhoiChuyenMuc)
+                        {
+                            var dan = nhom.First();
+                            <section class="cong-khoi-chuyen-muc" aria-labelledby="@($"lblKhoi_{nhom.Key.GetHashCode():x}")">
+                                <h3 id="@($"lblKhoi_{nhom.Key.GetHashCode():x}")">
+                                    <button type="button" @onclick="() => ChonChuyenMucAsync(nhom.Key, false)"><i class="bi @BieuTuongLoai(nhom.Key)"></i> @nhom.Key</button>
+                                    <span class="cong-khoi-dem">@nhom.Count()</span>
+                                    <button type="button" class="cong-xem-het" @onclick="() => ChonChuyenMucAsync(nhom.Key, false)">Xem tất cả <i class="bi bi-chevron-right"></i></button>
+                                </h3>
+                                <div class="cong-khoi-than">
+                                    <a class="cong-khoi-dan @(dan.DaDoc ? null : "chua-doc")" href="@($"ThongBao/{dan.ThongBao.ThongBaoId}")">
+                                        <strong>@dan.ThongBao.TieuDe</strong>
+                                        <span class="cong-sapo">@TrichYeu(dan.ThongBao)</span>
+                                        <time>@ThoiGian(dan.ThongBao)</time>
+                                    </a>
+                                    <ul>
+                                        @foreach (var dong in nhom.Skip(1).Take(4))
+                                        {
+                                            <li class="@(dong.DaDoc ? null : "chua-doc")"><a href="@($"ThongBao/{dong.ThongBao.ThongBaoId}")">@dong.ThongBao.TieuDe</a><time>@dong.ThongBao.NgayDang.ToLocalTime().ToString("dd/MM")</time></li>
+                                        }
+                                    </ul>
+                                </div>
+                            </section>
+                        }
+                    </div>
+                    <aside class="cong-cot-phu">
+                        <section class="cong-hop-phu">
+                            <h3><i class="bi bi-graph-up-arrow"></i> Xem nhiều</h3>
+                            <ol class="cong-xem-nhieu">
+                                @foreach (var (dong, thuTu) in XemNhieu.Select((d, i) => (d, i + 1)))
+                                {
+                                    <li><span class="cong-so-thu-tu">@thuTu</span><a href="@($"ThongBao/{dong.ThongBao.ThongBaoId}")">@dong.ThongBao.TieuDe</a><small>@dong.SoNguoiDoc lượt xem</small></li>
+                                }
+                            </ol>
+                        </section>
+                        @if (KhanConHieuLuc.Count > 0)
+                        {
+                            <section class="cong-hop-phu cong-hop-khan">
+                                <h3><i class="bi bi-exclamation-octagon"></i> Khẩn – còn hiệu lực</h3>
+                                <ul>
+                                    @foreach (var dong in KhanConHieuLuc)
+                                    {
+                                        <li><a href="@($"ThongBao/{dong.ThongBao.ThongBaoId}")">@dong.ThongBao.TieuDe</a>
+                                            <small>@(dong.ThongBao.HetHanLuc is { } han ? $"Hiệu lực đến {han.ToLocalTime():dd/MM/yyyy}" : "Không thời hạn")</small></li>
+                                    }
+                                </ul>
+                            </section>
+                        }
+                        @if (_soChuaDoc > 0)
+                        {
+                            <button type="button" class="btn btn-sm btn-outline-secondary w-100" @onclick="DocTatCaAsync" id="btnDocTatCaPhu"><i class="bi bi-check2-all"></i> Đánh dấu đã đọc tất cả (@_soChuaDoc)</button>
+                        }
+                    </aside>
+                </div>
+            }
+        </div>
+    }
+    else
+    {
+    <div class="cong-bo-cuc cong-bo-cuc-danh-sach">
+        <section class="cong-noi-dung" aria-live="polite">
+            <h2 class="cong-tieu-de-danh-sach">@TieuDeDanhSach <span>@KetQua.Count văn bản</span></h2>
+
+            @if (KetQua.Count == 0)
+            {
+                <div class="tin-trong" id="lblKhongCoThongBao">
+                    <i class="bi bi-inbox fs-3 d-block mb-1"></i>
+                    @(DangTai ? "Đang tải..." : "Không có văn bản phù hợp. Hãy đổi chuyên mục, từ khóa hoặc bộ lọc.")
+                </div>
+            }
+            else if (_cheDoBang)
+            {
+                <RadzenDataGrid TItem="DongThongBao" Data="@KetQua" AllowPaging="true" PageSize="15" AllowSorting="true" class="bang-du-lieu" id="dgvDanhSachVanBan">
+                    <Columns>
+                        <RadzenDataGridColumn TItem="DongThongBao" Property="ThongBao.SoKyHieu" Title="Số / Ký hiệu" Width="140px">
+                            <Template Context="d"><span class="ma-ban-ghi">@(d.ThongBao.SoKyHieu ?? "—")</span></Template>
+                        </RadzenDataGridColumn>
+                        <RadzenDataGridColumn TItem="DongThongBao" Property="ThongBao.NgayBanHanh" Title="Ngày ban hành" Width="115px">
+                            <Template Context="d">@((d.ThongBao.NgayBanHanh ?? d.ThongBao.NgayDang).ToLocalTime().ToString("dd/MM/yyyy"))</Template>
+                        </RadzenDataGridColumn>
+                        <RadzenDataGridColumn TItem="DongThongBao" Property="ThongBao.TieuDe" Title="Trích yếu">
+                            <Template Context="d">
+                                <a href="@($"ThongBao/{d.ThongBao.ThongBaoId}")" class="@(d.DaDoc ? null : "fw-bold")">@(d.ThongBao.TrichYeu ?? d.ThongBao.TieuDe)</a>
+                                @if (d.ThongBao.MucDo != MucDoThongBao.Thuong) { <span class="chip-muc-do muc-do-@MaMucDo(d.ThongBao.MucDo) ms-1">@d.ThongBao.MucDo</span> }
+                            </Template>
+                        </RadzenDataGridColumn>
+                        <RadzenDataGridColumn TItem="DongThongBao" Property="ThongBao.LoaiVanBan" Title="Loại" Width="110px" />
+                        <RadzenDataGridColumn TItem="DongThongBao" Property="ThongBao.CoQuanBanHanh" Title="Cơ quan ban hành" Width="190px" />
+                        <RadzenDataGridColumn TItem="DongThongBao" Property="SoTep" Title="Tệp" Width="65px" TextAlign="TextAlign.Center">
+                            <Template Context="d">@if (d.SoTep > 0) { <span title="@d.SoTep tệp đính kèm"><i class="bi bi-paperclip"></i>@d.SoTep</span> }</Template>
+                        </RadzenDataGridColumn>
+                    </Columns>
+                </RadzenDataGrid>
+            }
+            else
+            {
+                @if (_trang == 0 && NoiBat is { } noiBat)
+                {
+                    var tb = noiBat.ThongBao;
+                    <a class="cong-noi-bat muc-do-@MaMucDo(tb.MucDo)" href="@($"ThongBao/{tb.ThongBaoId}")" id="lnkNoiBat">
+                        <span class="cong-noi-bat-nhan">
+                            @if (tb.DaGhim) { <i class="bi bi-pin-angle-fill"></i> }
+                            @(tb.DaGhim ? "Tiêu điểm" : tb.MucDo) · @tb.LoaiVanBan
+                        </span>
+                        <strong>@tb.TieuDe</strong>
+                        <span class="cong-trich-yeu">@TrichYeu(tb)</span>
+                        <span class="cong-meta">@NgayHienThi(tb) @(tb.SoKyHieu is null ? "" : $"· Số {tb.SoKyHieu}") · @(tb.CoQuanBanHanh ?? ThongBaoDichVu.CoQuanMacDinh)</span>
+                    </a>
+                }
+
+                <ol class="cong-danh-sach" id="pnlDanhSachThongBao">
+                    @foreach (var dong in TrangHienTai)
+                    {
+                        var tb = dong.ThongBao;
+                        var ngay = (tb.NgayBanHanh ?? tb.NgayDang).ToLocalTime();
+                        <li class="cong-muc @(dong.DaDoc ? null : "chua-doc")">
+                            <div class="cong-ngay" aria-hidden="true"><strong>@ngay.ToString("dd")</strong><span>Th @ngay.ToString("MM")</span><small>@ngay.Year</small></div>
+                            <div class="cong-than">
+                                <div class="cong-nhan">
+                                    <span class="cong-loai">@tb.LoaiVanBan</span>
+                                    @if (tb.MucDo != MucDoThongBao.Thuong) { <span class="chip-muc-do muc-do-@MaMucDo(tb.MucDo)">@tb.MucDo</span> }
+                                    @if (tb.LaMoi(_bayGio)) { <span class="nhan-ban-ghi nhan-moi">Mới</span> }
+                                    @if (tb.LaHetHan(_bayGio)) { <span class="chip-pham-vi">Hết hạn</span> }
+                                    @if (!dong.DaDoc) { <span class="cham-chua-doc" title="Chưa đọc"></span> }
+                                </div>
+                                <a class="cong-tieu-de" href="@($"ThongBao/{tb.ThongBaoId}")" id="@($"lnkThongBao_{tb.ThongBaoId}")">@tb.TieuDe</a>
+                                <p class="cong-trich-yeu">@TrichYeu(tb)</p>
+                                <div class="cong-meta">
+                                    @if (tb.SoKyHieu is not null) { <span>Số: <b>@tb.SoKyHieu</b></span> }
+                                    <span>@(tb.CoQuanBanHanh ?? ThongBaoDichVu.CoQuanMacDinh)</span>
+                                    @if (dong.SoTep > 0) { <span><i class="bi bi-paperclip"></i> @dong.SoTep tệp</span> }
+                                    @if (LaNguoiQuanLyTin(tb)) { <span><i class="bi bi-eye"></i> @dong.SoNguoiDoc đã xem</span> }
+                                </div>
+                            </div>
+                        </li>
+                    }
+                </ol>
+                @if (SoTrang > 1)
+                {
+                    <RadzenPager Count="@DanhSachThuong.Count" PageSize="@SoTinMoiTrang" PageNumbersCount="5" PageChanged="@(a => _trang = a.PageIndex)" id="pgrThongBao" />
+                }
+            }
+        </section>
+    </div>
+    }
+</div>
+
+@code {
+    private const int SoTinMoiTrang = 10;
+    private readonly LocThongBao _loc = new();
+    private List<DongThongBao> _tatCa = [];
+    private List<DongThongBao> _danhSach = [];
+    private List<PhamViThongBao> _danhMucPhamVi = [];
+    private List<LopHoc> _danhSachLop = [];
+    private List<int> _cacNam = [];
+    private string _tuKhoa = string.Empty;
+    private int _soChuaDoc;
+    private int _trang;
+    private bool _coTheDang;
+    private bool _cheDoBang;
+    private DateTime _bayGio = DateTime.UtcNow;
+
+    /// <summary>Mở thẳng một chuyên mục (?loai=Kế hoạch), dùng cho breadcrumb và "Xem tất cả".</summary>
+    [SupplyParameterFromQuery(Name = "loai")] public string? LoaiTuDuongDan { get; set; }
+
+    /// <inheritdoc />
+    protected override void OnParametersSet()
+    {
+        if (LoaiTuDuongDan is not null && LoaiVanBanThongBao.TatCa.Contains(LoaiTuDuongDan))
+        {
+            _loc.LoaiVanBan = LoaiTuDuongDan;
+        }
+    }
+
+    /// <inheritdoc />
+    protected override IReadOnlyCollection<string> BangTheoDoi { get; } = [ThongBaoDichVu.TenBang, ThongBaoDichVu.TenBangDaDoc];
+
+    /// <summary>Kết quả sau lọc từ khóa (lọc phía giao diện để gõ tức thì).</summary>
+    private List<DongThongBao> KetQua => _danhSach
+        .Where(d => QuyTacNghiepVu.ChuaTuKhoa(d.ThongBao.TieuDe, _tuKhoa) || QuyTacNghiepVu.ChuaTuKhoa(d.ThongBao.SoKyHieu, _tuKhoa) ||
+                    QuyTacNghiepVu.ChuaTuKhoa(d.ThongBao.TrichYeu, _tuKhoa) || QuyTacNghiepVu.ChuaTuKhoa(d.ThongBao.NoiDung, _tuKhoa))
+        .ToList();
+
+    /// <summary>Tin nổi bật: ghim hoặc khẩn mới nhất.</summary>
+    private DongThongBao? NoiBat => KetQua.FirstOrDefault(d => d.ThongBao.DaGhim) ?? KetQua.FirstOrDefault(d => d.ThongBao.MucDo == MucDoThongBao.Khan);
+
+    /// <summary>Các tin còn lại (không gồm tin nổi bật), dùng chung cho phân trang và hiển thị.</summary>
+    private List<DongThongBao> DanhSachThuong
+    {
+        get
+        {
+            var noiBat = NoiBat;
+            return KetQua.Where(d => d != noiBat).ToList();
+        }
+    }
+
+    private int SoTrang => (int)Math.Ceiling(DanhSachThuong.Count / (double)SoTinMoiTrang);
+
+    private IEnumerable<DongThongBao> TrangHienTai => DanhSachThuong.Skip(_trang * SoTinMoiTrang).Take(SoTinMoiTrang);
+
+    /// <inheritdoc />
+    protected override async Task TaiDuLieuAsync()
+    {
+        _bayGio = DateTime.UtcNow;
+        if (_danhMucPhamVi.Count == 0)
+        {
+            _danhMucPhamVi = await DichVuThongBao.LayDanhMucPhamViAsync();
+            _danhSachLop = await LopHocDichVu.LayDanhSachAsync();
+            _coTheDang = await DichVuThongBao.CoTheDangAsync();
+        }
+
+        _tatCa = await DichVuThongBao.LayDanhSachAsync(new LocThongBao { HienHetHan = _loc.HienHetHan, ChiCuaToi = _loc.ChiCuaToi });
+        _cacNam = _tatCa.Select(d => d.ThongBao.NgayDang.ToLocalTime().Year).Distinct().OrderDescending().ToList();
+        _soChuaDoc = _tatCa.Count(d => !d.DaDoc);
+        _danhSach = await DichVuThongBao.LayDanhSachAsync(_loc);
+    }
+
+    /// <summary>Trang tin (bố cục cổng tin) khi chưa chọn chuyên mục, chủ đề, bộ lọc hay từ khóa nào.</summary>
+    private bool LaTrangTin => _loc.LoaiVanBan is null && !_loc.ChiChuaDoc && _loc.MucDo is null && _loc.PhamVi is null && _loc.Nam is null
+        && !_loc.ChiCuaToi && string.IsNullOrWhiteSpace(_tuKhoa);
+
+    /// <summary>Tiêu điểm: tin ghim → khẩn → mới nhất.</summary>
+    private DongThongBao? TieuDiem => KetQua.FirstOrDefault(d => d.ThongBao.DaGhim)
+        ?? KetQua.FirstOrDefault(d => d.ThongBao.MucDo == MucDoThongBao.Khan)
+        ?? KetQua.OrderByDescending(d => d.ThongBao.NgayDang).FirstOrDefault();
+
+    /// <summary>Ba tin quan trọng kế tiếp dưới tiêu điểm.</summary>
+    private IEnumerable<DongThongBao> TieuDiemPhu
+    {
+        get
+        {
+            var tieuDiem = TieuDiem;
+            return KetQua.Where(d => d != tieuDiem)
+                .OrderByDescending(d => d.ThongBao.DaGhim)
+                .ThenByDescending(d => MucDoThongBao.TatCa.ToList().IndexOf(d.ThongBao.MucDo))
+                .ThenByDescending(d => d.ThongBao.NgayDang)
+                .Take(3);
+        }
+    }
+
+    private IEnumerable<DongThongBao> TinMoiNhat => KetQua.OrderByDescending(d => d.ThongBao.NgayDang).Take(8);
+
+    /// <summary>Khối theo chuyên mục, đúng thứ tự danh mục loại văn bản; trong khối mới nhất lên đầu.</summary>
+    private IEnumerable<IGrouping<string, DongThongBao>> KhoiChuyenMuc => KetQua
+        .OrderByDescending(d => d.ThongBao.NgayDang)
+        .GroupBy(d => d.ThongBao.LoaiVanBan)
+        .OrderBy(g => LoaiVanBanThongBao.TatCa.ToList().IndexOf(g.Key));
+
+    private IEnumerable<DongThongBao> XemNhieu => KetQua.Where(d => d.SoNguoiDoc > 0).OrderByDescending(d => d.SoNguoiDoc).ThenByDescending(d => d.ThongBao.NgayDang).Take(5);
+
+    private List<DongThongBao> KhanConHieuLuc => KetQua.Where(d => d.ThongBao.MucDo == MucDoThongBao.Khan && !d.ThongBao.LaHetHan(_bayGio)).Take(5).ToList();
+
+    private string TieuDeDanhSach =>
+        _loc.LoaiVanBan ?? (_loc.ChiChuaDoc ? "Chưa đọc" : _loc.MucDo is not null ? $"Văn bản {_loc.MucDo.ToLowerInvariant()}"
+            : !string.IsNullOrWhiteSpace(_tuKhoa) ? $"Kết quả tìm “{_tuKhoa}”" : "Văn bản theo bộ lọc");
+
+    /// <summary>Thời điểm đăng đầy đủ dd/MM/yyyy HH:mm.</summary>
+    private static string ThoiGian(ThongBao tb) => tb.NgayDang.ToLocalTime().ToString("dd/MM/yyyy HH:mm");
+
+    private async Task VeTrangTinAsync()
+    {
+        _loc.LoaiVanBan = null;
+        _loc.ChiChuaDoc = false;
+        _loc.MucDo = null;
+        _loc.PhamVi = null;
+        _loc.Nam = null;
+        _loc.ChiCuaToi = false;
+        _tuKhoa = string.Empty;
+        _trang = 0;
+        await NapLaiAsync();
+    }
+
+    private async Task DoiMucDoAsync(string mucDo)
+    {
+        _loc.MucDo = _loc.MucDo == mucDo ? null : mucDo;
+        _trang = 0;
+        await NapLaiAsync();
+    }
+
+    private async Task ChonChuyenMucAsync(string? loai, bool chiChuaDoc)
+    {
+        _loc.LoaiVanBan = loai;
+        _loc.ChiChuaDoc = chiChuaDoc;
+        _trang = 0;
+        await NapLaiAsync();
+    }
+
+    private async Task DoiNamAsync(ChangeEventArgs e)
+    {
+        _loc.Nam = int.TryParse(e.Value?.ToString(), out var nam) ? nam : null;
+        _trang = 0;
+        await NapLaiAsync();
+    }
+
+    private Task DocTatCaAsync() => ThucHienAsync(() => DichVuThongBao.DanhDauTatCaDaDocAsync(), "Đã đánh dấu tất cả là đã đọc.");
+
+    private bool LaNguoiQuanLyTin(ThongBao tb) => NguoiDung.LaQuanTri || tb.NguoiDang == NguoiDung.TenDangNhap;
+
+    private static string TrichYeu(ThongBao tb)
+    {
+        const int DoDaiTrichDan = 220;
+        if (!string.IsNullOrWhiteSpace(tb.TrichYeu))
+        {
+            return tb.TrichYeu;
+        }
+
+        var dong = tb.NoiDung.Replace('\n', ' ');
+        return dong.Length <= DoDaiTrichDan ? dong : dong[..DoDaiTrichDan] + "…";
+    }
+
+    private static string NgayHienThi(ThongBao tb) => (tb.NgayBanHanh ?? tb.NgayDang).ToLocalTime().ToString("dd/MM/yyyy");
+
+    /// <summary>Mã CSS của mức độ.</summary>
+    public static string MaMucDo(string mucDo) => mucDo switch
+    {
+        MucDoThongBao.Khan => "khan",
+        MucDoThongBao.QuanTrong => "quan-trong",
+        _ => "thuong"
+    };
+
+    /// <summary>Biểu tượng theo loại văn bản.</summary>
+    public static string BieuTuongLoai(string loai) => loai switch
+    {
+        LoaiVanBanThongBao.KeHoach => "bi-calendar2-range",
+        LoaiVanBanThongBao.QuyetDinh => "bi-file-earmark-check",
+        LoaiVanBanThongBao.CongVan => "bi-envelope-paper",
+        LoaiVanBanThongBao.HuongDan => "bi-signpost-2",
+        LoaiVanBanThongBao.LichCongTac => "bi-calendar-week",
+        _ => "bi-megaphone"
+    };
+
+    private async Task MoBieuMauAsync()
+    {
+        var ketQua = await HopThoai.OpenAsync<BieuMauThongBao>("Đăng văn bản",
+            new Dictionary<string, object?>
+            {
+                [nameof(BieuMauThongBao.DanhMucPhamVi)] = _danhMucPhamVi,
+                [nameof(BieuMauThongBao.DanhSachLop)] = _danhSachLop,
+                [nameof(BieuMauThongBao.LaQuanTri)] = NguoiDung.LaQuanTri
+            },
+            new DialogOptions { Width = "860px", CloseDialogOnOverlayClick = false });
+        if (ketQua is KetQuaBieuMau daLuu)
+        {
+            BaoThanhCong(daLuu.ThongDiep);
+            if (int.TryParse(daLuu.MaBanGhi, out var id))
+            {
+                DieuHuong.NavigateTo($"ThongBao/{id}");
+                return;
+            }
+
+            await NapLaiAsync();
+        }
+    }
+}

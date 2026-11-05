@@ -63,7 +63,7 @@ public class HocVienController : Controller
     /// Hiển thị biểu mẫu thêm mới một học viên.
     /// </summary>
     [HttpGet]
-    [Authorize(Roles = $"{VaiTroMacDinh.SuperAdmin},{VaiTroMacDinh.GiaoVien},{VaiTroMacDinh.QuanTriVien},{VaiTroMacDinh.QuanLyDaoTao}")]
+    [Authorize(Roles = VaiTroMacDinh.NhomCoQuyenGhi)]
     public async Task<IActionResult> ThemMoi()
     {
         ViewBag.DanhSachLop = await _lopHocDichVu.LayDanhSachAsync(null, null, null, true, HttpContext.RequestAborted);
@@ -74,7 +74,7 @@ public class HocVienController : Controller
     /// Xử lý lưu thông tin học viên mới.
     /// </summary>
     [HttpPost]
-    [Authorize(Roles = $"{VaiTroMacDinh.SuperAdmin},{VaiTroMacDinh.GiaoVien},{VaiTroMacDinh.QuanTriVien},{VaiTroMacDinh.QuanLyDaoTao}")]
+    [Authorize(Roles = VaiTroMacDinh.NhomCoQuyenGhi)]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> ThemMoi(HocVien hocVien)
     {
@@ -116,7 +116,7 @@ public class HocVienController : Controller
     /// Hiển thị biểu mẫu chỉnh sửa thông tin học viên.
     /// </summary>
     [HttpGet]
-    [Authorize(Roles = $"{VaiTroMacDinh.SuperAdmin},{VaiTroMacDinh.GiaoVien},{VaiTroMacDinh.QuanTriVien},{VaiTroMacDinh.QuanLyDaoTao}")]
+    [Authorize(Roles = VaiTroMacDinh.NhomCoQuyenGhi)]
     public async Task<IActionResult> ChinhSua(int id)
     {
         var hocVien = await _hocVienDichVu.LayTheoIdAsync(id, HttpContext.RequestAborted);
@@ -134,7 +134,7 @@ public class HocVienController : Controller
     /// Xử lý cập nhật thông tin học viên.
     /// </summary>
     [HttpPost]
-    [Authorize(Roles = $"{VaiTroMacDinh.SuperAdmin},{VaiTroMacDinh.GiaoVien},{VaiTroMacDinh.QuanTriVien},{VaiTroMacDinh.QuanLyDaoTao}")]
+    [Authorize(Roles = VaiTroMacDinh.NhomCoQuyenGhi)]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> ChinhSua(int id, HocVien hocVien)
     {
@@ -185,7 +185,7 @@ public class HocVienController : Controller
     /// Xóa một học viên khỏi hệ thống.
     /// </summary>
     [HttpPost]
-    [Authorize(Roles = $"{VaiTroMacDinh.SuperAdmin},{VaiTroMacDinh.GiaoVien},{VaiTroMacDinh.QuanTriVien},{VaiTroMacDinh.QuanLyDaoTao}")]
+    [Authorize(Roles = VaiTroMacDinh.NhomCoQuyenGhi)]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> Xoa(int id)
     {

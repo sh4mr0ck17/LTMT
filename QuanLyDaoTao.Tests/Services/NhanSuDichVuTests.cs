@@ -24,8 +24,8 @@ public class NhanSuDichVuTests
             HoVaTen = "Nguyễn Văn Tuấn",
             NgaySinh = new DateTime(1985, 3, 10),
             GioiTinh = "Nam",
-            EmailCongViec = "tuan.nv@test.local",
-            TrangThaiCongTac = "Đang làm việc"
+            Email = "tuan.nv@test.local",
+            TrangThai = "Đang làm việc"
         };
 
         // Act
@@ -50,7 +50,7 @@ public class NhanSuDichVuTests
             HoVaTen = "Người 1",
             NgaySinh = new DateTime(1985, 1, 1),
             GioiTinh = "Nam",
-            EmailCongViec = "email1@test.local"
+            Email = "email1@test.local"
         });
 
         var nsTrung = new NhanSu
@@ -59,7 +59,7 @@ public class NhanSuDichVuTests
             HoVaTen = "Người 2",
             NgaySinh = new DateTime(1986, 2, 2),
             GioiTinh = "Nữ",
-            EmailCongViec = "email2@test.local"
+            Email = "email2@test.local"
         };
 
         // Act & Assert
@@ -80,7 +80,7 @@ public class NhanSuDichVuTests
             HoVaTen = "Người 1",
             NgaySinh = new DateTime(1985, 1, 1),
             GioiTinh = "Nam",
-            EmailCongViec = "trung.email@test.local"
+            Email = "trung.email@test.local"
         });
 
         var nsTrungEmail = new NhanSu
@@ -89,7 +89,7 @@ public class NhanSuDichVuTests
             HoVaTen = "Người 2",
             NgaySinh = new DateTime(1986, 2, 2),
             GioiTinh = "Nữ",
-            EmailCongViec = "trung.email@test.local"
+            Email = "trung.email@test.local"
         };
 
         // Act & Assert
@@ -110,7 +110,7 @@ public class NhanSuDichVuTests
             HoVaTen = "Giảng viên A",
             NgaySinh = new DateTime(1980, 1, 1),
             GioiTinh = "Nam",
-            EmailCongViec = "gv.a@test.local"
+            Email = "gv.a@test.local"
         });
 
         var khoa = new Khoa { MaKhoa = "K_01", TenKhoa = "Khoa 1" };

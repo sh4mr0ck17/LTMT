@@ -1,4 +1,5 @@
 @page "/HoSoCaNhan"
+@attribute [Authorize]
 @using System.Security.Claims
 @using Microsoft.AspNetCore.Identity
 @using Microsoft.Extensions.DependencyInjection
@@ -225,9 +226,14 @@
 
                 if (laSuperAdmin) vaiTroHienThi = "Superadmin (Toàn quyền + Live CRUD)";
                 else if (laAdmin) vaiTroHienThi = "Quản trị viên (Admin Workspace)";
-                else if (user.IsInRole(VaiTroMacDinh.GiaoVien)) vaiTroHienThi = "Giảng viên (Giảng viên Workspace)";
-                else if (user.IsInRole(VaiTroMacDinh.CanBo)) vaiTroHienThi = "Cán bộ Quản lý (Cán bộ Workspace)";
-                else vaiTroHienThi = "Người dùng Tra cứu (User Workspace)";
+                else if (user.IsInRole(VaiTroMacDinh.QuanLy))
+                {
+                    vaiTroHienThi = $"Quản lý · {VungQuanLy.LayNhan(user.FindFirst(LoaiClaimTuyChinh.VungQuanLy)?.Value)}";
+                }
+                else
+                {
+                    vaiTroHienThi = "Người xem (chỉ tra cứu)";
+                }
 
                 using var scope = ScopeFactory.CreateScope();
                 var userManager = scope.ServiceProvider.GetRequiredService<UserManager<TaiKhoan>>();

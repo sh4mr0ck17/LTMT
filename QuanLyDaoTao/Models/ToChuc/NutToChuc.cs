@@ -52,6 +52,9 @@ public class NutToChuc
         "Bộ môn" => "bi-diagram-2",
         "Lớp học" => "bi-mortarboard",
         "Nhân sự" => "bi-person",
+        "Học viên" => "bi-person-badge",
+        "Hệ đào tạo" => "bi-collection",
+        "Khóa" => "bi-calendar3",
         _ => "bi-folder2"
     };
 

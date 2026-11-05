@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { gioiHanTiLe, tinhVuaKhung, tinhPhongTai, khoiTao } from '../../QuanLyDaoTao/wwwroot/js/canvas-to-chuc.js';
+import { gioiHanTiLe, tinhVuaKhung, tinhPhongTai, khoiTao, tinhMucChiTiet, tinhTiLeVuaKhungGoc, GioiHan, NguongChiTiet } from '../../QuanLyDaoTao/wwwroot/js/canvas-to-chuc.js';
 
 test('Thu phóng giữ nguyên điểm sơ đồ dưới con trỏ', () => {
     const cu = { x: -140, y: 70, tiLe: 0.7 };
@@ -18,7 +18,8 @@ test('Thu rồi phóng ngược lại không làm khung nhìn trôi', () => {
 });
 
 test('Tỉ lệ luôn trong giới hạn và vẫn neo đúng con trỏ khi chạm giới hạn', () => {
-    assert.equal(gioiHanTiLe(0), 0.05);
+    assert.equal(gioiHanTiLe(0), GioiHan.nhoNhat);
+    assert.ok(GioiHan.nhoNhat >= 0.45 && GioiHan.nhoNhat <= 0.55);
     assert.equal(gioiHanTiLe(10), 2);
     const cu = { x: 10, y: 30, tiLe: 1 };
     const moi = tinhPhongTai(cu, 10, 200, 100);
@@ -28,16 +29,31 @@ test('Tỉ lệ luôn trong giới hạn và vẫn neo đúng con trỏ khi ch�
 });
 
 test('Vừa khung hiển thị trọn sơ đồ và chừa lề', () => {
-    const khung = tinhVuaKhung(800, 500, 1300, 900);
+    const khung = tinhVuaKhung(1100, 800, 1300, 900);
     assert.ok(khung.x >= 31.99);
     assert.ok(khung.y >= 31.99);
-    assert.ok(khung.x + 1300 * khung.tiLe <= 768.01);
-    assert.ok(khung.y + 900 * khung.tiLe <= 468.01);
+    assert.ok(khung.tiLe > GioiHan.nhoNhat);
+    assert.ok(khung.x + 1300 * khung.tiLe <= 1068.01);
+    assert.ok(khung.y + 900 * khung.tiLe <= 768.01);
 });
 
 test('Sơ đồ nhỏ không tự phóng quá 100% khi căn khung', () => {
     const khung = tinhVuaKhung(1000, 600, 400, 200);
     assert.deepEqual(khung, { tiLe: 1, x: 300, y: 200 });
+});
+
+test('Mức chi tiết đổi theo tỉ lệ thu phóng', () => {
+    assert.equal(tinhMucChiTiet(GioiHan.nhoNhat), 'thap');
+    assert.equal(tinhMucChiTiet(NguongChiTiet.thap - 0.01), 'thap');
+    assert.equal(tinhMucChiTiet(NguongChiTiet.thap), 'vua');
+    assert.equal(tinhMucChiTiet(NguongChiTiet.cao - 0.01), 'vua');
+    assert.equal(tinhMucChiTiet(NguongChiTiet.cao), 'cao');
+    assert.equal(tinhMucChiTiet(1.5), 'cao');
+});
+
+test('Sơ đồ quá lớn được nhận biết để không thu nhỏ dưới mức đọc được', () => {
+    assert.ok(tinhTiLeVuaKhungGoc(800, 500, 12000, 9000) < GioiHan.nhoNhat);
+    assert.equal(tinhVuaKhung(800, 500, 12000, 9000).tiLe, GioiHan.nhoNhat);
 });
 
 test('Canvas trống và kích thước tạm bằng không không gây NaN', () => {
@@ -80,7 +96,7 @@ function taoMoiTruong(t) {
     t.after(() => { globalThis.document = docCu; globalThis.ResizeObserver = resizeCu; });
     const khung = new PhanTu(); const panel = new PhanTu(); const workspace = new PhanTu(); const san = new PhanTu();
     san.offsetWidth = 1200; san.offsetHeight = 800;
-    const nut = new PhanTu(); Object.assign(nut, { offsetLeft: 700, offsetTop: 400, offsetWidth: 256, offsetHeight: 152 });
+    const nut = new PhanTu(); Object.assign(nut, { offsetLeft: 700, offsetTop: 400, offsetWidth: 240, offsetHeight: 112 });
     nut.dataset.canvasNode = 'khoa';
     const cacNut = new Map(['phong-to', 'thu-nho', 'vua-khung', 'nut-dang-chon', 'toan-man-hinh'].map(ten => {
         const n = new PhanTu(); n.dataset.canvasAction = ten; n.closest = () => n; return [ten, n];
@@ -121,7 +137,7 @@ test('Nút định vị làm thẻ đọc được; đổi kích thước giữ 
     await mt.bam('nut-dang-chon');
     const cu = mt.docViTri();
     assert.ok(cu[2] >= 0.75);
-    assert.ok(Math.abs(cu[0] + 828 * cu[2] - 400) < 1e-9);
+    assert.ok(Math.abs(cu[0] + 820 * cu[2] - 400) < 1e-9);
     mt.khung.clientWidth = 600;
     mt.observer.callback();
     assert.ok(Math.abs(mt.docViTri()[0] - cu[0] + 100) < 1e-9);

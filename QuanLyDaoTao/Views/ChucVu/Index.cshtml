@@ -3,7 +3,7 @@
 @{
     ViewData["Title"] = "Danh mục Chức vụ";
     Layout = "_Layout";
-    bool laQuanTri = User.IsInRole(VaiTroMacDinh.SuperAdmin) || User.IsInRole(VaiTroMacDinh.GiaoVien) || User.IsInRole(VaiTroMacDinh.QuanTriVien) || User.IsInRole(VaiTroMacDinh.QuanLyDaoTao);
+    bool laQuanTri = User.IsInRole(VaiTroMacDinh.SuperAdmin) || User.IsInRole(VaiTroMacDinh.QuanTriVien) || User.IsInRole(VaiTroMacDinh.QuanLy);
 }
 
 <div class="container py-3" id="pnlDanhSachChucVu">

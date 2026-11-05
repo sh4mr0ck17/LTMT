@@ -1,161 +1,78 @@
-// C500 - Học viện An ninh Nhân dân: Script Biểu đồ Chart.js & Hệ thống Hướng Dẫn Tương Tác Qua Shadow Box (PC & Điện Thoại Workspace)
+﻿// C500 - Học viện An ninh Nhân dân: Script Biểu đồ Chart.js & Hệ thống Hướng Dẫn Tương Tác Qua Shadow Box (PC & Điện Thoại Workspace)
 
-window.khoiTaoBieuDoDashboard = function (khoasJson, lopsJson) {
+// Biểu đồ trang chủ: số liệu THẬT do server tính (không có số giả); màu lấy từ hệ màu đối tượng (mau-doi-tuong.css)
+// để cùng một đối tượng có cùng màu ở thẻ thống kê, cây tổ chức và biểu đồ.
+window.khoiTaoBieuDoTrangChu = function (duLieuJson) {
     if (typeof Chart === 'undefined') return;
-
-    let dsKhoa = [];
-    let dsLop = [];
-    try {
-        dsKhoa = JSON.parse(khoasJson || '[]');
-        dsLop = JSON.parse(lopsJson || '[]');
-    } catch (e) {
-        console.error("Lỗi parse JSON biểu đồ", e);
-    }
-
-    const greenPalette = {
-        forestDark: '#0b4627',
-        forestMedium: '#15803d',
-        emerald: '#059669',
-        sage: '#34d399',
-        slate: '#64748b',
-        slateLight: '#cbd5e1'
+    let d;
+    try { d = JSON.parse(duLieuJson || '{}'); } catch (e) { console.error('Lỗi dữ liệu biểu đồ', e); return; }
+    const css = getComputedStyle(document.documentElement);
+    const mau = ten => css.getPropertyValue(ten).trim() || '#64748b';
+    const nhat = (hex, a) => {
+        const m = /^#?([\da-f]{2})([\da-f]{2})([\da-f]{2})$/i.exec(hex);
+        return m ? `rgba(${parseInt(m[1], 16)},${parseInt(m[2], 16)},${parseInt(m[3], 16)},${a})` : hex;
     };
+    Chart.defaults.font.family = getComputedStyle(document.body).fontFamily;
+    Chart.defaults.font.size = 11;
+    Chart.defaults.color = '#475569';
+    const veMoi = (id, cauHinh) => {
+        const el = document.getElementById(id);
+        if (!el) return;
+        Chart.getChart(el)?.destroy();
+        new Chart(el, cauHinh);
+    };
+    const chung = { responsive: true, maintainAspectRatio: false, animation: { duration: 500 } };
+    // Bảng màu phân loại cho danh mục (trình độ, chức vụ): lần lượt theo các màu đối tượng dễ phân biệt.
+    const bangPhanLoai = ['--mau-khoa', '--mau-lop', '--mau-can-bo', '--mau-hoc-vien', '--mau-he', '--mau-nien-khoa', '--mau-mon-hoc', '--mau-bo-mon'].map(mau);
 
-    // 1. Biểu đồ Cột: Học viên & Lớp theo Khoa
-    const ctxKhoa = document.getElementById('chartHocVienTheoKhoa');
-    if (ctxKhoa) {
-        const existing = Chart.getChart(ctxKhoa);
-        if (existing) existing.destroy();
+    // 1. Học viên & lớp theo khoa (2 trục vì đơn vị chênh lệch lớn)
+    const khoa = d.theoKhoa || [];
+    veMoi('chartHocVienTheoKhoa', {
+        type: 'bar',
+        data: {
+            labels: khoa.map(k => k.ten),
+            datasets: [
+                { label: 'Học viên', data: khoa.map(k => k.hocVien), backgroundColor: mau('--mau-hoc-vien'), borderRadius: 4, maxBarThickness: 36, yAxisID: 'y' },
+                { label: 'Lớp', data: khoa.map(k => k.lop), backgroundColor: mau('--mau-lop'), borderRadius: 4, maxBarThickness: 36, yAxisID: 'y1' }
+            ]
+        },
+        options: { ...chung, plugins: { legend: { position: 'top', align: 'end' } },
+            scales: { y: { beginAtZero: true, ticks: { precision: 0 }, title: { display: true, text: 'Học viên' } },
+                      y1: { beginAtZero: true, position: 'right', grid: { drawOnChartArea: false }, ticks: { precision: 0 }, title: { display: true, text: 'Lớp' } } } }
+    });
 
-        new Chart(ctxKhoa, {
-            type: 'bar',
-            data: {
-                labels: dsKhoa.map(k => k.TenKhoa || k.tenKhoa),
-                datasets: [
-                    {
-                        label: 'Học viên',
-                        data: dsKhoa.map(k => k.SoHocVien || k.soHocVien || 0),
-                        backgroundColor: greenPalette.forestDark,
-                        borderColor: greenPalette.forestDark,
-                        borderWidth: 1,
-                        borderRadius: 6
-                    },
-                    {
-                        label: 'Lớp học',
-                        data: dsKhoa.map(k => k.SoLop || k.soLop || 0),
-                        backgroundColor: greenPalette.emerald,
-                        borderColor: greenPalette.emerald,
-                        borderWidth: 1,
-                        borderRadius: 6
-                    }
-                ]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: { legend: { position: 'top' } },
-                scales: { y: { beginAtZero: true, ticks: { precision: 0 } } }
-            }
-        });
-    }
+    // 2. Trình độ cán bộ (doughnut)
+    const trinhDo = d.trinhDo || [];
+    veMoi('chartTrinhDoChuyenMon', {
+        type: 'doughnut',
+        data: { labels: trinhDo.map(t => t.ten), datasets: [{ data: trinhDo.map(t => t.soLuong), backgroundColor: trinhDo.map((_, i) => bangPhanLoai[i % bangPhanLoai.length]), borderColor: '#fff', borderWidth: 2 }] },
+        options: { ...chung, cutout: '58%', plugins: { legend: { position: 'right' } } }
+    });
 
-    // 2. Biểu đồ Tròn: Cơ cấu Trình độ chuyên môn
-    const ctxTrinhDo = document.getElementById('chartTrinhDoChuyenMon');
-    if (ctxTrinhDo) {
-        const existing = Chart.getChart(ctxTrinhDo);
-        if (existing) existing.destroy();
+    // 3. Cán bộ theo chức vụ (ngang)
+    const chucVu = d.chucVu || [];
+    veMoi('chartChucVuNhanSu', {
+        type: 'bar',
+        data: { labels: chucVu.map(c => c.ten), datasets: [{ label: 'Cán bộ', data: chucVu.map(c => c.soLuong), backgroundColor: mau('--mau-can-bo'), borderRadius: 4, maxBarThickness: 28 }] },
+        options: { ...chung, indexAxis: 'y', plugins: { legend: { display: false } }, scales: { x: { beginAtZero: true, ticks: { precision: 0 } } } }
+    });
 
-        new Chart(ctxTrinhDo, {
-            type: 'doughnut',
-            data: {
-                labels: ['Tiến sĩ', 'Thạc sĩ', 'Kỹ sư', 'Cử nhân'],
-                datasets: [{
-                    data: [12, 28, 15, 10],
-                    backgroundColor: [
-                        '#0b4627',
-                        '#15803d',
-                        '#059669',
-                        '#64748b'
-                    ],
-                    borderWidth: 2,
-                    borderColor: '#ffffff'
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: { legend: { position: 'right' } }
-            }
-        });
-    }
-
-    // 3. Biểu đồ Ngang: Phân bổ chức vụ
-    const ctxChucVu = document.getElementById('chartChucVuNhanSu');
-    if (ctxChucVu) {
-        const existing = Chart.getChart(ctxChucVu);
-        if (existing) existing.destroy();
-
-        new Chart(ctxChucVu, {
-            type: 'bar',
-            data: {
-                labels: ['Trưởng khoa', 'Phó trưởng khoa', 'Trưởng bộ môn', 'Giảng viên', 'Chuyên viên'],
-                datasets: [{
-                    axis: 'y',
-                    label: 'Số lượng cán bộ',
-                    data: [3, 5, 8, 32, 14],
-                    backgroundColor: '#15803d',
-                    borderColor: '#0b4627',
-                    borderWidth: 1,
-                    borderRadius: 5
-                }]
-            },
-            options: {
-                indexAxis: 'y',
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: { legend: { display: false } },
-                scales: { x: { beginAtZero: true, ticks: { precision: 0 } } }
-            }
-        });
-    }
-
-    // 4. Biểu đồ Nhóm: Sĩ số lớp học
-    const ctxLop = document.getElementById('chartSiSoLopHoc');
-    if (ctxLop) {
-        const existing = Chart.getChart(ctxLop);
-        if (existing) existing.destroy();
-
-        new Chart(ctxLop, {
-            type: 'bar',
-            data: {
-                labels: dsLop.map(l => l.TenLop || l.tenLop),
-                datasets: [
-                    {
-                        label: 'Sĩ số thực tế',
-                        data: dsLop.map(l => l.SoHocVien || l.soHocVien || 0),
-                        backgroundColor: '#059669',
-                        borderColor: '#059669',
-                        borderWidth: 1,
-                        borderRadius: 5
-                    },
-                    {
-                        label: 'Chỉ tiêu tối đa',
-                        data: dsLop.map(l => l.SoLuongToiDa || l.soLuongToiDa || 50),
-                        backgroundColor: '#cbd5e1',
-                        borderColor: '#94a3b8',
-                        borderWidth: 1,
-                        borderRadius: 5
-                    }
-                ]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: { legend: { position: 'top' } },
-                scales: { y: { beginAtZero: true, ticks: { precision: 0 } } }
-            }
-        });
-    }
+    // 4. Tỉ lệ lấp đầy từng lớp: màu theo trạng thái (đủ chỗ / gần đầy / vượt)
+    const lop = d.siSoLop || [];
+    const mauTrangThai = p => p > 100 ? mau('--tt-nguy') : p >= 90 ? mau('--tt-canh-bao') : mau('--tt-tot');
+    veMoi('chartSiSoLopHoc', {
+        type: 'bar',
+        data: {
+            labels: lop.map(l => l.ten),
+            datasets: [
+                { label: 'Sĩ số', data: lop.map(l => l.siSo), backgroundColor: lop.map(l => mauTrangThai(l.chiTieu ? l.siSo * 100 / l.chiTieu : 0)), borderRadius: 3, order: 1 },
+                { label: 'Chỉ tiêu', data: lop.map(l => l.chiTieu), backgroundColor: nhat(mau('--tt-trung-tinh'), 0.18), borderColor: nhat(mau('--tt-trung-tinh'), 0.5), borderWidth: 1, borderRadius: 3, grouped: false, order: 2 }
+            ]
+        },
+        options: { ...chung, plugins: { legend: { position: 'top', align: 'end' },
+                tooltip: { callbacks: { afterBody: items => { const l = lop[items[0].dataIndex]; return l.chiTieu ? `Lấp đầy: ${Math.round(l.siSo * 100 / l.chiTieu)}%` : ''; } } } },
+            scales: { x: { ticks: { autoSkip: false, maxRotation: 60, minRotation: 0 } }, y: { beginAtZero: true, ticks: { precision: 0 } } } }
+    });
 };
 
 /* ==========================================================================
@@ -493,37 +410,10 @@ window.khoiTaoBieuDoDashboard = function (khoasJson, lopsJson) {
         }
     });
 })();
-// ========================================================
-// HỆ THỐNG DEBOUNCE / DELAY CHO TẤT CẢ CÁC Ô TÌM KIẾM (350MS)
-// ========================================================
-(function() {
-    function setupSearchDebounce() {
-        const searchInputs = document.querySelectorAll('input[type="search"], input[name="tuKhoa"], input#txtTimKiem, input#txtTimKiemNhanSu, .input-search-debounce');
-        searchInputs.forEach(input => {
-            if (input._hasDebounce) return;
-            input._hasDebounce = true;
-            let timer = null;
-            input.addEventListener('input', function(e) {
-                clearTimeout(timer);
-                const form = input.closest('form');
-                if (form && !input.getAttribute('oninput') && !input.getAttribute('@oninput')) {
-                    timer = setTimeout(() => {
-                        const submitBtn = form.querySelector('button[type="submit"], #btnTimKiem');
-                        if (submitBtn) {
-                            submitBtn.click();
-                        } else {
-                            form.submit();
-                        }
-                    }, 350);
-                }
-            });
-        });
-    }
 
-    if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', setupSearchDebounce);
-    } else {
-        setupSearchDebounce();
-    }
-    window.addEventListener('load', setupSearchDebounce);
-})();
+// Cuộn ngang mượt tới cuối vùng (cây dạng cột: luôn thấy cột vừa mở).
+window.cuonCuoiNgang = function (el) {
+    if (!el) return;
+    const giam = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    el.scrollTo({ left: el.scrollWidth, behavior: giam ? 'auto' : 'smooth' });
+};

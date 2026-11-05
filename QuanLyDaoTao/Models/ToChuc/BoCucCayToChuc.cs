@@ -1,4 +1,4 @@
-using System.Globalization;
+﻿using System.Globalization;
 
 namespace QuanLyDaoTao.Models.ToChuc;
 
@@ -22,12 +22,30 @@ public record DuongNoiToChuc(string Cha, string Con, string DuongVe);
 public class BoCucCayToChuc
 {
     /// <summary>Chiều rộng mỗi thẻ.</summary>
-    public const int ChieuRongNut = 256;
+    public const int ChieuRongNut = 240;
     /// <summary>Chiều cao mỗi thẻ.</summary>
-    public const int ChieuCaoNut = 152;
-    private const int KhoangCachNgang = 80;
-    private const int KhoangCachDoc = 24;
+    public const int ChieuCaoNut = 112;
+    private const int KhoangCachNgang = 56;
+    private const int KhoangCachDoc = 14;
     private const int LeCanvas = 36;
+
+    /// <summary>Số con tối đa vẽ cho mỗi nhánh đang mở trước khi gom phần còn lại vào thẻ "+ N mục nữa".</summary>
+    public const int SoConToiDaMoiNhanh = 8;
+
+    /// <summary>Ngưỡng cứng số thẻ trên canvas để sơ đồ còn đọc được ở 100%.</summary>
+    public const int SoNutToiDaTrenCanvas = 60;
+
+    /// <summary>Loại nút ảo "+ N mục nữa".</summary>
+    public const string LoaiNutThemMuc = "Xem thêm";
+
+    /// <summary>Hậu tố khóa của nút ảo, khóa nút ảo = khóa nút cha + hậu tố.</summary>
+    public const string HauToNutThemMuc = "::them";
+
+    /// <summary>Các loại bản ghi cá nhân không vẽ thành thẻ trên canvas (xem qua bảng ở panel chi tiết).</summary>
+    public static readonly IReadOnlySet<string> CacLoaiKhongVe = new HashSet<string> { "Nhân sự", "Học viên" };
+
+    /// <summary>Bản ghi cá nhân (cán bộ, học viên) chỉ hiện trong bảng, không thành thẻ.</summary>
+    public static bool LaLoaiKhongVe(string loai) => CacLoaiKhongVe.Contains(loai);
     /// <summary>Thẻ đang hiển thị, không bao gồm con của nhánh đã thu gọn.</summary>
     public List<ViTriNutToChuc> CacNut { get; } = new();
     /// <summary>Các quan hệ được hiển thị.</summary>
@@ -42,8 +60,33 @@ public class BoCucCayToChuc
     public string DauBoCuc => string.Join(";", CacNut.Select(n => string.Join(":", n.Nut.KhoaNut,
         n.X.ToString(CultureInfo.InvariantCulture), n.Y.ToString(CultureInfo.InvariantCulture))));
 
+    /// <summary>Kiểm tra một khóa có phải nút ảo "+ N mục nữa".</summary>
+    public static bool LaNutThemMuc(string khoaNut) =>
+        khoaNut.EndsWith(HauToNutThemMuc, StringComparison.Ordinal);
+
+    /// <summary>Lấy khóa nút cha từ khóa nút ảo "+ N mục nữa".</summary>
+    public static string LayKhoaChaCuaNutThemMuc(string khoaNut) => khoaNut[..^HauToNutThemMuc.Length];
+
+    /// <summary>Các con được vẽ trên canvas (bỏ nhân sự) của một nút, theo bộ lọc hiển thị.</summary>
+    public static IEnumerable<NutToChuc> LayConVeDuoc(NutToChuc nut, ISet<string> nutHienThi)
+    {
+        ArgumentNullException.ThrowIfNull(nut);
+        ArgumentNullException.ThrowIfNull(nutHienThi);
+        return nut.Con.Where(n => !LaLoaiKhongVe(n.Loai) && nutHienThi.Contains(n.KhoaNut));
+    }
+
     /// <summary>Tính bố cục cho phần cây phù hợp với bộ lọc và trạng thái mở nhánh.</summary>
-    public static BoCucCayToChuc Tao(NutToChuc goc, ISet<string> nutHienThi, ISet<string> nutMo)
+    /// <param name="goc">Nút gốc.</param>
+    /// <param name="nutHienThi">Các nút qua bộ lọc.</param>
+    /// <param name="nutMo">Các nhánh đang mở.</param>
+    /// <param name="soConHienThi">Số con hiển thị riêng từng nhánh (mặc định <see cref="SoConToiDaMoiNhanh"/>).</param>
+    /// <param name="nutLuonHien">Nút luôn phải vẽ dù vượt ngưỡng (đường dẫn tới nút chọn, nút khớp bộ lọc).</param>
+    public static BoCucCayToChuc Tao(
+        NutToChuc goc,
+        ISet<string> nutHienThi,
+        ISet<string> nutMo,
+        IReadOnlyDictionary<string, int>? soConHienThi = null,
+        ISet<string>? nutLuonHien = null)
     {
         ArgumentNullException.ThrowIfNull(goc);
         ArgumentNullException.ThrowIfNull(nutHienThi);
@@ -53,10 +96,32 @@ public class BoCucCayToChuc
         var chieuCaoNhanh = new Dictionary<string, double>();
         var cacCon = new Dictionary<string, List<NutToChuc>>();
 
+        List<NutToChuc> ChonConVe(NutToChuc nut)
+        {
+            var tatCa = LayConVeDuoc(nut, nutHienThi).ToList();
+            var gioiHan = soConHienThi?.GetValueOrDefault(nut.KhoaNut, SoConToiDaMoiNhanh) ?? SoConToiDaMoiNhanh;
+            if (tatCa.Count <= gioiHan) { return tatCa; }
+            // Giữ thứ tự gốc: phần đầu theo ngưỡng + các nút bắt buộc hiện nằm ngoài ngưỡng.
+            var duocVe = tatCa.Where((n, i) => i < gioiHan || (nutLuonHien?.Contains(n.KhoaNut) ?? false)).ToList();
+            var conLai = tatCa.Count - duocVe.Count;
+            if (conLai > 0)
+            {
+                duocVe.Add(new NutToChuc
+                {
+                    KhoaNut = nut.KhoaNut + HauToNutThemMuc,
+                    Loai = LoaiNutThemMuc,
+                    Ten = $"+ {conLai} mục nữa",
+                    MoTa = $"Bấm để hiện thêm hoặc xem danh sách đầy đủ của {nut.Ten}.",
+                    SiSo = conLai
+                });
+            }
+
+            return duocVe;
+        }
+
         double DoNhanh(NutToChuc nut)
         {
-            var con = nutMo.Contains(nut.KhoaNut)
-                ? nut.Con.Where(n => nutHienThi.Contains(n.KhoaNut)).ToList() : new List<NutToChuc>();
+            var con = nutMo.Contains(nut.KhoaNut) ? ChonConVe(nut) : new List<NutToChuc>();
             cacCon.Add(nut.KhoaNut, con);
             var chieuCao = con.Count == 0 ? ChieuCaoNut
                 : Math.Max(ChieuCaoNut, con.Sum(DoNhanh) + (con.Count - 1) * KhoangCachDoc);

@@ -8,7 +8,7 @@ namespace QuanLyDaoTao.Controllers;
 /// <summary>
 /// Bộ điều khiển tra cứu và xem Nhật ký kiểm toán hệ thống.
 /// </summary>
-[Authorize(Roles = $"{VaiTroMacDinh.SuperAdmin},{VaiTroMacDinh.GiaoVien},{VaiTroMacDinh.QuanTriVien},{VaiTroMacDinh.QuanLyDaoTao}")]
+[Authorize(Roles = VaiTroMacDinh.NhomCoQuyenGhi)]
 public class NhatKyController : Controller
 {
     private readonly INhatKyDichVu _nhatKyDichVu;

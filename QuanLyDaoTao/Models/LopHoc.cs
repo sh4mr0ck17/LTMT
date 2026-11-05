@@ -45,6 +45,30 @@ public class LopHoc
     public virtual Khoa? Khoa { get; set; }
 
     /// <summary>
+    /// Hệ đào tạo (Chính quy, Văn bằng 2, Liên thông...). Kết hợp với Khóa học tạo thành nhánh Hệ → Khóa → Lớp.
+    /// </summary>
+    [Required(ErrorMessage = "Hệ đào tạo là bắt buộc.")]
+    [StringLength(50, ErrorMessage = "Hệ đào tạo không được vượt quá 50 ký tự.")]
+    public string HeDaoTao { get; set; } = "Chính quy";
+
+    /// <summary>
+    /// Mã khóa học (ví dụ D57 với hệ Chính quy, K6 với hệ Văn bằng 2).
+    /// </summary>
+    [StringLength(20, ErrorMessage = "Khóa học không được vượt quá 20 ký tự.")]
+    public string? KhoaHoc { get; set; }
+
+    /// <summary>
+    /// Chuyên ngành đào tạo của lớp.
+    /// </summary>
+    [StringLength(150, ErrorMessage = "Chuyên ngành không được vượt quá 150 ký tự.")]
+    public string? ChuyenNganh { get; set; }
+
+    /// <summary>
+    /// Thời điểm cập nhật gần nhất (hiển thị nhãn "Vừa cập nhật").
+    /// </summary>
+    public DateTime? NgayCapNhat { get; set; }
+
+    /// <summary>
     /// Số lượng học viên tối đa của lớp.
     /// </summary>
     [Range(1, 500, ErrorMessage = "Số lượng tối đa phải từ 1 đến 500.")]

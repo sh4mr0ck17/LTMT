@@ -15,7 +15,7 @@ Xây dựng hệ thống quản lý phẳng (Pragmatic 3-Tier) phục vụ công
 - **Cơ sở Dữ liệu**: SQLite 3 qua Entity Framework Core 8.0 (`Microsoft.EntityFrameworkCore.Sqlite` 8.0.11), tương thích hoàn toàn môi trường Server và Container.
 - **Xử lý Tệp Excel**: ClosedXML (`ClosedXML` 0.105.1) + OpenXML, tối ưu hóa tài nguyên (MemoryStream dispose, streaming đọc/ghi an toàn).
 - **Xác thực & Phân quyền**: ASP.NET Core Identity tích hợp (RBAC - Role-Based Access Control) với bảng phân quyền người dùng, Cookie Authentication an toàn và AntiForgery Token.
-- **Kiểm thử**: xUnit (`151/151 tests pass 100%`), `Microsoft.AspNetCore.Mvc.Testing` (Integration Tests).
+- **Kiểm thử**: xUnit (`178/178 tests pass`), `Microsoft.AspNetCore.Mvc.Testing` (Integration Tests).
 - **CSS / UI Controls**: Bootstrap 5.1.0 (local asset, không phụ thuộc CDN bên ngoài), Bootstrap Icons 1.11.3.
 
 ---
@@ -87,20 +87,52 @@ erDiagram
 
 ---
 
-## 4. HỆ THỐNG PHÂN QUYỀN CHUẨN HÓA 3 VAI TRÒ (RBAC)
+## 4. HỆ THỐNG PHÂN QUYỀN (v4 — hợp nhất với LTMT-demo)
 
-Hệ thống đã được quy hoạch gọn gàng thành **3 vai trò chuẩn mực**:
-1. **`SuperAdmin` ("Superadmin")**: Có toàn quyền tối cao trong hệ thống. Độc quyền Live CRUD Database Studio, quản lý tài khoản, phân quyền, cấu hình hệ thống và thực hiện mọi thao tác thêm/sửa/xóa.
-2. **`GiaoVien` ("GiaoVien")**: Giáo viên / Giảng viên / Cán bộ đào tạo. Có toàn quyền quản lý nghiệp vụ: Nhập / Xuất / Sửa / Xóa với Excel, quản lý Bộ môn, Khoa, Lớp học, Học viên, Môn học và Phân công giảng dạy.
-3. **`User` ("User" - `VaiTroMacDinh.NguoiDung`)**: Người dùng thông thường / Học viên. **Chỉ có chức năng Xem (Read-only)**. Hệ thống ẩn hoàn toàn mọi nút Thêm, Sửa, Xóa, Nhập Excel trên cả giao diện MVC Views lẫn Blazor Server Components.
-### Tài khoản Mặc định Khởi tạo:
-| Tài khoản Email | Vai trò | Mật khẩu mặc định | Mục đích sử dụng |
+### 4.1. Hai vùng quản lý
+Khoa vẫn quản lý cả hai nhánh, nhưng dữ liệu được tách thành hai **vùng** để giao quyền rõ ràng:
+
+| Vùng | Mã | Dữ liệu |
+|---|---|---|
+| Tổ chức - Cán bộ | `ToChuc` | Khoa, Bộ môn (tổ chuyên môn), Cán bộ giảng viên |
+| Đào tạo | `DaoTao` | Lớp (Hệ → Khóa → Chuyên ngành), Học viên, Môn học, Phân công |
+
+### 4.2. Bốn vai trò (`VaiTroMacDinh`)
+| Vai trò | Giá trị | Quyền ghi | Thông tin cá nhân |
 |---|---|---|---|
-| `superadmin@quanlydaotao.local` | `SuperAdmin` | `Admin@123456` | Toàn quyền kiểm trị tối cao, Live CRUD Studio |
-| `admin@quanlydaotao.local` | `QuanTriVien` | `Admin@123456` | Quản trị vận hành hệ thống |
-| `giaovien@quanlydaotao.local` | `GiaoVien` | `Admin@123456` | Giảng viên đào tạo |
-| `canbo@quanlydaotao.local` | `CanBo` | `Admin@123456` | Cán bộ giáo vụ |
-| `user@quanlydaotao.local` | `NguoiDung` | `Admin@123456` | Học viên / Người dùng tra cứu |
+| Siêu quản trị | `Superadmin` | Toàn bộ + Live CRUD Studio | Thấy đầy đủ |
+| Quản trị viên | `Admin` | Toàn bộ nghiệp vụ, tài khoản, danh mục | Thấy đầy đủ |
+| Quản lý | `Manager` | Chỉ vùng được giao (`VungQuanLy`), có thể giới hạn thêm một khoa (`KhoaPhuTrachId`) | Chỉ thấy trong phạm vi quản lý |
+| Người xem | `Viewer` | Không | CCCD, SĐT chỉ còn 3 số cuối; email, địa chỉ bị ẩn |
+
+- Quyền được kiểm tra **tại tầng dịch vụ** (`IPhanQuyenDichVu`), không chỉ ẩn nút trên giao diện. Xuất Excel cũng che dữ liệu theo quyền.
+- Tạo/xóa Khoa, sửa danh mục Chức vụ/Trình độ: chỉ quản trị viên.
+- Vai trò cũ tự chuyển khi khởi động: `DataManager` → Manager (Đào tạo), `CanBo` → Manager (Tổ chức), `GiaoVien`/`User` → Viewer.
+- Đổi vai trò, khóa tài khoản → SecurityStamp đổi, phiên cũ hết hiệu lực trong vòng 1 phút.
+- Đăng nhập sai 5 lần → khóa tạm 15 phút (quản trị viên mở được tại trang Tài khoản). Có giới hạn tần suất đăng nhập.
+
+### 4.3. Tài khoản mẫu (chỉ dùng phát triển, mật khẩu `Admin@123456`)
+| Email | Vai trò |
+|---|---|
+| `superadmin@quanlydaotao.local` | Superadmin |
+| `admin@quanlydaotao.local` | Admin |
+| `quanly.tochuc@quanlydaotao.local` | Manager · Tổ chức - Cán bộ |
+| `quanly.daotao@quanlydaotao.local` | Manager · Đào tạo |
+| `nguoixem@quanlydaotao.local` | Viewer |
+
+Ngoài môi trường Development: thông tin tài khoản mẫu bị ẩn khỏi trang đăng nhập và bắt buộc cấu hình `Jwt:SecretKey`.
+
+### 4.4. Quy tắc nghiệp vụ v4 (`QuyTacNghiepVu`, các `*DichVu`)
+- CCCD 12 số, SĐT di động 10 số (03/05/07/08/09); **không trùng chéo** giữa học viên và cán bộ.
+- Chỉ tiêu chức vụ trong lớp: BT 1, BP 2, AT 4, AP 4, BTCĐ 1, PBTCĐ 2, UVĐ 3 (hỗ trợ viết tắt và chức vụ ghép "AP, PBTLCĐ").
+- Sĩ số tối đa của lớp; không hạ sĩ số tối đa xuống dưới sĩ số thực tế.
+- Lãnh đạo: 1 Trưởng khoa, 2 Phó trưởng khoa mỗi khoa; 1 Trưởng bộ môn, 1 Phó trưởng bộ môn mỗi bộ môn.
+- Bộ môn phải thuộc đúng khoa; không chuyển bộ môn sang khoa khác khi còn cán bộ.
+- Lớp Chính quy khai báo khóa `Dxx` phải có mã `B{số}Dxx`; bỏ trống khóa thì hệ thống tự suy từ mã lớp.
+- Mọi thao tác ghi đều được ghi nhật ký (giá trị cũ → mới) và phát tín hiệu để các tab đang mở tự làm mới.
+
+### 4.5. Giao diện thống nhất (Blazor + Radzen)
+Các trang Khoa, Bộ môn, Lớp, Học viên, Cán bộ dùng chung một khung: tiêu đề phân hệ, thẻ thống kê nhanh, tìm kiếm tức thì (không phân biệt dấu), bộ lọc gõ để tìm, "Kết quả x / y", bảng phân trang/sắp xếp, biểu mẫu dạng hộp thoại (giữ bản nháp khi lỗi, chặn bấm lưu lặp), thông báo toast, nhãn **Mới** (15 phút) / **Vừa cập nhật** (2 phút). Trang chủ có **Bảng tin** gắn phạm vi (toàn hệ thống / khoa / hệ / khóa / lớp) và khối **Cần chú ý** liệt kê dữ liệu thiếu hoặc vượt ngưỡng. Các trang MVC CRUD cũ vẫn còn route nhưng giao diện không còn trỏ tới.
 
 ---
 
@@ -149,28 +181,7 @@ sequenceDiagram
 
 ---
 
-## 6. GIAO DIỆN & TRẢI NGHIỆM NGƯỜI DÙNG (UI/UX)
-
-### 6.1. Nhận diện Thương hiệu & Logo Thống nhất
-- Logo góc trái hiển thị đầy đủ tên trang trọng: **"Học viện An ninh Nhân dân"** trên cùng một font chữ đồng nhất (`.brand-text-title`), loại bỏ hoàn toàn việc phân mảnh font hoặc kích thước không đồng bộ.
-
-### 6.2. Họa tiết Trống đồng Đông Sơn Ẩn Dưới Side Panel
-- Side panel (`.app-sidebar`) được tích hợp hoa văn hình **Trống đồng Đông Sơn** chìm mờ (`::before` SVG watermark) với ngôi sao mặt trời trung tâm, các vòng tròn đồng tâm và họa tiết cổ truyền phản chiếu ánh vàng kim nhạt trên nền xanh lá đậm C500, tạo phong thái trang nghiêm, hào hùng đậm chất truyền thống lực lượng Công an Nhân dân.
-
-### 6.3. Tối ưu Live CRUD Studio
-- Đã loại bỏ hoàn toàn banner header cồng kềnh phía trên.
-- Tích hợp toàn bộ cụm nút chức năng: **Thêm Dòng [+]**, **Bớt Dòng [-]**, **+/- Cột Tùy Chỉnh**, **Lưu Dữ Liệu**, **Undo / Redo** trực tiếp ngay bên dưới bảng (`card-footer` chân bảng), giúp bảng dữ liệu rộng rãi, liền mạch và thao tác trực quan.
-
-### 6.4. Cơ Chế Debounce / Delay Cho Tìm Kiếm (350ms)
-- Tất cả các ô tìm kiếm trên Blazor Components (`HocVienPage`, `KhoaPage`, `BoMonPage`, `LopHocPage`, `NhanSuPage`) và MVC Views được trang bị cơ chế **Debounce 350ms** qua `System.Threading.Timer` và `site.js`. Việc gõ phím nhanh không còn gửi request liên tục, loại bỏ hiện tượng giật lag và tối ưu hóa 100% tài nguyên CPU/Database.
-
-### 6.5. Đăng ký & Đăng nhập Bảo đảm An toàn Thông tin
-- Mở cổng Đăng ký tài khoản mới (`/TaiKhoan/DangKy`) với cơ chế kiểm tra mật khẩu phức tạp, chống XSS, băm mật khẩu chuẩn PBKDF2 của Identity.
-- Mọi tài khoản tự đăng ký mặc định nhận vai trò **`User` (Chỉ xem)**, bảo đảm an toàn dữ liệu quản trị tuyệt đối.
-
----
-
-## 7. MODULE ĐÀO TẠO & HỌC VIÊN KHÓA D57 ĐÃ NẠP TRONG CSDL
+## 6. MODULE ĐÀO TẠO & HỌC VIÊN KHÓA D57 ĐÃ NẠP TRONG CSDL
 
 ### 6.1. Danh mục 15 Lớp Học Khóa D57
 Đã khởi tạo và chuẩn hóa 15 lớp đào tạo thuộc Khóa D57 (niên khóa 2025-2029) trực thuộc Khoa Công nghệ Thông tin:
@@ -185,7 +196,7 @@ sequenceDiagram
 
 ---
 
-## 8. CẤU TRÚC THƯ MỤC DỰ ÁN
+## 7. CẤU TRÚC THƯ MỤC DỰ ÁN
 
 ```
 LTMT3/
@@ -243,7 +254,7 @@ LTMT3/
 
 ---
 
-## 9. HƯỚNG DẪN KHỞI CHẠY & VẬN HÀNH DÀNH CHO DEVELOPER TIẾP QUẢN
+## 8. HƯỚNG DẪN KHỞI CHẠY & VẬN HÀNH DÀNH CHO DEVELOPER TIẾP QUẢN
 
 ### 8.1. Lệnh Biên dịch & Chạy Test
 Developer tiếp quản cần kiểm tra trạng thái toàn vẹn trước khi chỉnh sửa:
@@ -268,7 +279,7 @@ cloudflared tunnel --url http://127.0.0.1:5219
 
 ---
 
-## 10. ĐỊNH HƯỚNG PHÁT TRIỂN TIẾP THEO (BACKLOG / ROADMAP)
+## 9. ĐỊNH HƯỚNG PHÁT TRIỂN TIẾP THEO (BACKLOG / ROADMAP)
 
 1. **Dashboard Biểu đồ Trực quan (Analytics & Charts)**:
    - Thêm biểu đồ cơ cấu học viên theo Lớp, theo Dân tộc, theo Giới tính bằng Chart.js / Canvas local.

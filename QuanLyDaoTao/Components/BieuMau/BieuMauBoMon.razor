@@ -1,0 +1,92 @@
+@inject DialogService HopThoai
+@inject IBoMonDichVu BoMonDichVu
+@* Biểu mẫu thêm/sửa bộ môn (tổ chuyên môn) trực thuộc khoa. *@
+
+<RadzenTemplateForm TItem="BoMon" Data="@_banNhap" Submit="LuuAsync">
+    <div class="luoi-bieu-mau">
+        <RadzenFormField Text="Mã bộ môn *" Variant="Variant.Outlined">
+            <RadzenTextBox Name="txtMaBoMon" id="txtMaBoMon" @bind-Value="_banNhap.MaBoMon" MaxLength="50" />
+        </RadzenFormField>
+        <RadzenFormField Text="Tên bộ môn *" Variant="Variant.Outlined">
+            <RadzenTextBox Name="txtTenBoMon" id="txtTenBoMon" @bind-Value="_banNhap.TenBoMon" MaxLength="200" />
+        </RadzenFormField>
+        <RadzenFormField Text="Khoa chủ quản *" Variant="Variant.Outlined" class="o-rong">
+            <RadzenDropDown TValue="int" Name="cboChonKhoa" id="cboChonKhoa" Data="@DanhSachKhoa" TextProperty="TenKhoa" ValueProperty="KhoaId" @bind-Value="_banNhap.KhoaId"
+                            AllowFiltering="true" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" FilterOperator="StringFilterOperator.Contains" />
+        </RadzenFormField>
+        <RadzenFormField Text="Mô tả" Variant="Variant.Outlined" class="o-rong">
+            <RadzenTextArea Name="txtMoTa" id="txtMoTa" @bind-Value="_banNhap.MoTa" MaxLength="500" Rows="3" />
+        </RadzenFormField>
+        <div class="o-rong d-flex align-items-center gap-2">
+            <RadzenSwitch @bind-Value="_banNhap.CoHoatDong" Name="swHoatDong" id="swHoatDong" />
+            <label for="swHoatDong" class="mb-0">Bộ môn đang hoạt động</label>
+        </div>
+    </div>
+
+    @if (!string.IsNullOrEmpty(_loi))
+    {
+        <RadzenAlert AlertStyle="AlertStyle.Danger" Variant="Variant.Flat" AllowClose="false" class="mt-3 mb-0" id="lblThongBaoLoi">@_loi</RadzenAlert>
+    }
+
+    <RadzenRequiredValidator Component="txtMaBoMon" Text="Vui lòng nhập mã bộ môn." Popup="false" />
+    <RadzenRequiredValidator Component="txtTenBoMon" Text="Vui lòng nhập tên bộ môn." Popup="false" />
+
+    <div class="d-flex justify-content-end gap-2 mt-3">
+        <RadzenButton Text="Hủy" ButtonStyle="ButtonStyle.Light" Disabled="@_dangLuu" Click="@(() => HopThoai.Close())" id="btnHuy" />
+        <RadzenButton Text="Lưu bộ môn" Icon="save" ButtonType="ButtonType.Submit" ButtonStyle="ButtonStyle.Primary" IsBusy="@_dangLuu" BusyText="Đang lưu..." id="btnLuuBoMon" />
+    </div>
+</RadzenTemplateForm>
+
+@code {
+    private BoMon _banNhap = new();
+    private bool _dangLuu;
+    private string? _loi;
+
+    /// <summary>Bộ môn gốc khi sửa.</summary>
+    [Parameter] public BoMon? BoMonGoc { get; set; }
+
+    /// <summary>Danh sách khoa được phép chọn.</summary>
+    [Parameter] public IReadOnlyList<Khoa> DanhSachKhoa { get; set; } = [];
+
+    /// <summary>Khoa mặc định khi thêm.</summary>
+    [Parameter] public int? KhoaMacDinhId { get; set; }
+
+    /// <inheritdoc />
+    protected override void OnInitialized()
+    {
+        _banNhap = BoMonGoc is null
+            ? new BoMon { KhoaId = KhoaMacDinhId ?? DanhSachKhoa.FirstOrDefault()?.KhoaId ?? 0 }
+            : new BoMon
+            {
+                BoMonId = BoMonGoc.BoMonId, MaBoMon = BoMonGoc.MaBoMon, TenBoMon = BoMonGoc.TenBoMon,
+                MoTa = BoMonGoc.MoTa, KhoaId = BoMonGoc.KhoaId, CoHoatDong = BoMonGoc.CoHoatDong
+            };
+    }
+
+    private async Task LuuAsync(BoMon _)
+    {
+        if (_dangLuu)
+        {
+            return;
+        }
+
+        _dangLuu = true;
+        _loi = await TrangNghiepVuCoSo.ChayVaBatLoiAsync(async () =>
+        {
+            if (BoMonGoc is null)
+            {
+                await BoMonDichVu.ThemBoMonAsync(_banNhap);
+            }
+            else
+            {
+                await BoMonDichVu.CapNhatBoMonAsync(_banNhap);
+            }
+        });
+        _dangLuu = false;
+
+        if (_loi is null)
+        {
+            HopThoai.Close(new KetQuaBieuMau(BoMonGoc is null ? $"Đã thêm {_banNhap.TenBoMon}." : $"Đã cập nhật {_banNhap.TenBoMon}.", _banNhap.MaBoMon));
+        }
+    }
+}

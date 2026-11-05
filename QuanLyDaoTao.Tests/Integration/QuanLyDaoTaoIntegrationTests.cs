@@ -19,11 +19,10 @@ public class QuanLyDaoTaoIntegrationTests : IClassFixture<WebApplicationFactory<
         _factory = factory;
     }
 
+    /// <summary>
+    /// Mọi trang nghiệp vụ yêu cầu đăng nhập ở phía máy chủ: khách bị chuyển về cổng đăng nhập (không trả dữ liệu).
+    /// </summary>
     [Theory]
-    [InlineData("/")]
-    [InlineData("/Home/Index")]
-    [InlineData("/TaiKhoan/DangNhap")]
-    [InlineData("/TaiKhoan/TuChoiTruyCap")]
     [InlineData("/Khoa")]
     [InlineData("/BoMon")]
     [InlineData("/LopHoc")]
@@ -34,6 +33,22 @@ public class QuanLyDaoTaoIntegrationTests : IClassFixture<WebApplicationFactory<
     [InlineData("/MonHoc")]
     [InlineData("/PhanCongGiangDay")]
     [InlineData("/CayToChuc")]
+    [InlineData("/NhatKy")]
+    public async Task TrangNghiepVu_KhachChuaDangNhap_ChuyenVeDangNhap(string url)
+    {
+        var client = _factory.CreateClient(new WebApplicationFactoryClientOptions { AllowAutoRedirect = false });
+
+        var response = await client.GetAsync(url);
+
+        Assert.Equal(HttpStatusCode.Redirect, response.StatusCode);
+        Assert.Contains("/TaiKhoan/DangNhap", response.Headers.Location?.ToString());
+    }
+
+    [Theory]
+    [InlineData("/")]
+    [InlineData("/Home/Index")]
+    [InlineData("/TaiKhoan/DangNhap")]
+    [InlineData("/TaiKhoan/TuChoiTruyCap")]
     public async Task CacTrangChinh_TraVeHttp200Ok(string url)
     {
         // Arrange

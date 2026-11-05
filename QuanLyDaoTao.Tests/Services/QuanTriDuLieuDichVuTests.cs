@@ -1,4 +1,4 @@
-using QuanLyDaoTao.Models;
+﻿using QuanLyDaoTao.Models;
 using QuanLyDaoTao.Services;
 using QuanLyDaoTao.Tests.Helpers;
 using Xunit;
@@ -147,4 +147,42 @@ public class QuanTriDuLieuDichVuTests
         Assert.NotEmpty(ketQua.TenKhoaChinh);
         Assert.NotEmpty(ketQua.DanhSachCot);
     }
+
+    [Fact]
+    public async Task NhatKyKiemToan_ChiDoc_KhongTheThemSuaXoaQuaStudio()
+    {
+        using var db = CoSoDuLieuTestHelper.TaoDbContextAo();
+        var nhatKy = new NhatKyDichVu(db);
+        var dichVu = new QuanTriDuLieuDichVu(db, nhatKy);
+        await nhatKy.GhiNhatKyAsync("a", "Thêm", "Khoa");
+        var id = db.NhatKyHeThongs.First().NhatKyId.ToString();
+
+        var bang = (await dichVu.LayDanhSachBangHeThongAsync()).Single(b => b.TenBang == "NhatKyHeThong");
+        Assert.True(bang.ChiDoc);
+        await Assert.ThrowsAsync<InvalidOperationException>(() => dichVu.CapNhatNhanhBanGhiAsync("NhatKyHeThong", id, new Dictionary<string, string?> { ["HanhDong"] = "Sửa" }));
+        await Assert.ThrowsAsync<InvalidOperationException>(() => dichVu.XoaNhanhBanGhiAsync("NhatKyHeThong", id));
+        await Assert.ThrowsAsync<InvalidOperationException>(() => dichVu.ThemNhanhBanGhiAsync("NhatKyHeThong", new Dictionary<string, string?>()));
+        Assert.Equal("Thêm", db.NhatKyHeThongs.Single().HanhDong);
+    }
+
+    [Fact]
+    public async Task DanhMucDungChung_GomChucVuVaTrinhDo()
+    {
+        using var db = CoSoDuLieuTestHelper.TaoDbContextAo();
+        var dichVu = new QuanTriDuLieuDichVu(db, new NhatKyDichVu(db));
+
+        var danhMuc = (await dichVu.LayDanhSachBangHeThongAsync()).Where(b => b.Nhom == QuanTriDuLieuDichVu.NhomDanhMuc).Select(b => b.TenBang).ToList();
+
+        Assert.Equal(new[] { "ChucVu", "TrinhDoChuyenMon" }, danhMuc);
+    }
+
+    [Theory]
+    [InlineData("Khoa", "dt-khoa")]
+    [InlineData("Lớp học", "dt-lop")]
+    [InlineData("LopHoc", "dt-lop")]
+    [InlineData("Học viên", "dt-hoc-vien")]
+    [InlineData("Khóa", "dt-nien-khoa")]
+    [InlineData("Không rõ", "dt-trung-tinh")]
+    [InlineData(null, "dt-trung-tinh")]
+    public void MauDoiTuong_CungDoiTuongCungMau(string? loai, string lopMau) => Assert.Equal(lopMau, MauDoiTuong.LayLop(loai));
 }

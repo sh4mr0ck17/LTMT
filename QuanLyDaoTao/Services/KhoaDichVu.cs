@@ -7,18 +7,20 @@ namespace QuanLyDaoTao.Services;
 /// <summary>
 /// Lớp triển khai dịch vụ nghiệp vụ quản lý Khoa đào tạo.
 /// </summary>
-public class KhoaDichVu : IKhoaDichVu
+public class KhoaDichVu : DichVuNghiepVuCoSo, IKhoaDichVu
 {
-    private readonly QuanLyDaoTaoDbContext _coSoDuLieu;
+    private const string TenBang = "Khoa";
 
     /// <summary>
-    /// Khởi tạo dịch vụ khoa với DbContext.
+    /// Khởi tạo dịch vụ khoa.
     /// </summary>
-    /// <param name="coSoDuLieu">Ngữ cảnh cơ sở dữ liệu.</param>
-    public KhoaDichVu(QuanLyDaoTaoDbContext coSoDuLieu)
+    public KhoaDichVu(
+        QuanLyDaoTaoDbContext coSoDuLieu,
+        IPhanQuyenDichVu? phanQuyen = null,
+        INhatKyDichVu? nhatKy = null,
+        IBusThayDoiDuLieu? bus = null)
+        : base(coSoDuLieu, phanQuyen, nhatKy, bus)
     {
-        ArgumentNullException.ThrowIfNull(coSoDuLieu);
-        _coSoDuLieu = coSoDuLieu;
     }
 
     /// <summary>
@@ -87,6 +89,9 @@ public class KhoaDichVu : IKhoaDichVu
     public async Task<Khoa> ThemKhoaAsync(Khoa khoa, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(khoa);
+        var nguoiDung = await DamBaoQuanTriAsync();
+        khoa.MaKhoa = QuyTacNghiepVu.ChuanHoaMa(khoa.MaKhoa);
+        khoa.TenKhoa = QuyTacNghiepVu.ChuanHoaChuoi(khoa.TenKhoa);
 
         if (await KiemTraTonTaiMaAsync(khoa.MaKhoa, null, cancellationToken))
         {
@@ -96,6 +101,8 @@ public class KhoaDichVu : IKhoaDichVu
         khoa.NgayTao = DateTime.UtcNow;
         await _coSoDuLieu.Khoas.AddAsync(khoa, cancellationToken);
         await _coSoDuLieu.SaveChangesAsync(cancellationToken);
+
+        await HoanTatThaoTacAsync(nguoiDung, "Thêm mới", TenBang, khoa.MaKhoa, null, khoa.TenKhoa, cancellationToken);
         return khoa;
     }
 
@@ -112,11 +119,16 @@ public class KhoaDichVu : IKhoaDichVu
             throw new KeyNotFoundException($"Không tìm thấy khoa có ID {khoa.KhoaId}.");
         }
 
+        var nguoiDung = await DamBaoQuyenGhiAsync(VungQuanLy.ToChuc, khoaTonTai.KhoaId);
+        khoa.MaKhoa = QuyTacNghiepVu.ChuanHoaMa(khoa.MaKhoa);
+        khoa.TenKhoa = QuyTacNghiepVu.ChuanHoaChuoi(khoa.TenKhoa);
+
         if (await KiemTraTonTaiMaAsync(khoa.MaKhoa, khoa.KhoaId, cancellationToken))
         {
             throw new InvalidOperationException($"Mã khoa '{khoa.MaKhoa}' đã tồn tại ở bản ghi khác.");
         }
 
+        var giaTriCu = $"{khoaTonTai.MaKhoa} | {khoaTonTai.TenKhoa}";
         khoaTonTai.MaKhoa = khoa.MaKhoa;
         khoaTonTai.TenKhoa = khoa.TenKhoa;
         khoaTonTai.MoTa = khoa.MoTa;
@@ -126,6 +138,9 @@ public class KhoaDichVu : IKhoaDichVu
         khoaTonTai.CoHoatDong = khoa.CoHoatDong;
 
         await _coSoDuLieu.SaveChangesAsync(cancellationToken);
+
+        await HoanTatThaoTacAsync(nguoiDung, "Cập nhật", TenBang, khoaTonTai.MaKhoa, giaTriCu,
+            $"{khoaTonTai.MaKhoa} | {khoaTonTai.TenKhoa}", cancellationToken);
         return khoaTonTai;
     }
 
@@ -140,6 +155,8 @@ public class KhoaDichVu : IKhoaDichVu
             throw new KeyNotFoundException($"Không tìm thấy khoa có ID {id}.");
         }
 
+        var nguoiDung = await DamBaoQuanTriAsync();
+
         if (!await CoTheXoaAsync(id, cancellationToken))
         {
             throw new InvalidOperationException("Không thể xóa khoa vì còn bộ môn, lớp học hoặc nhân sự trực thuộc.");
@@ -147,6 +164,8 @@ public class KhoaDichVu : IKhoaDichVu
 
         _coSoDuLieu.Khoas.Remove(khoa);
         await _coSoDuLieu.SaveChangesAsync(cancellationToken);
+
+        await HoanTatThaoTacAsync(nguoiDung, "Xóa", TenBang, khoa.MaKhoa, khoa.TenKhoa, null, cancellationToken);
         return true;
     }
 

@@ -119,31 +119,20 @@
 
     <!-- Bảng xem trước dữ liệu Preview -->
     <div class="card shadow-sm border-0" id="pnlBangXemTruoc">
-        <div class="card-header bg-white py-3">
-            <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-2 mb-2">
-                <h5 class="mb-0 text-primary fw-bold">
-                    <i class="bi bi-table me-2"></i>Dữ Liệu Xem Trước (Preview Table)
-                </h5>
-                <div class="small text-muted">
-                    Tổng số: <strong>@Model.TongSoDong</strong> dòng • <span class="text-success fw-bold">@Model.SoDongHopLe</span> dòng hợp lệ • <span class="text-danger fw-bold">@Model.SoDongLoi</span> dòng có lỗi
-                </div>
-            </div>
-            <div class="alert alert-light border p-2 mb-0 d-flex flex-wrap align-items-center justify-content-between gap-2" id="pnlChuGiaiMauExcel">
-                <div class="d-flex align-items-center gap-2">
-                    <i class="bi bi-palette-fill text-primary"></i>
-                    <span class="text-dark fw-bold small">Quy ước màu sắc trường dữ liệu:</span>
-                </div>
-                <div class="d-flex flex-wrap align-items-center gap-2">
-                    <span class="badge py-1 px-2 fw-bold" style="background-color: #f0fdf4; color: #15803d; border: 1.5px solid #16a34a;">
-                        <i class="bi bi-check-circle-fill me-1 text-success"></i>Ô MÀU XANH LÁ: ĐÚNG FORMAT / HỢP LỆ
-                    </span>
-                    <span class="badge py-1 px-2 fw-bold" style="background-color: #fef2f2; color: #991b1b; border: 2px solid #dc2626;">
-                        <i class="bi bi-x-circle-fill me-1 text-danger"></i>Ô MÀU ĐỎ: BÁO LỖI (Cần sửa để nhập)
-                    </span>
-                    <span class="badge py-1 px-2 fw-bold" style="background-color: #fefce8; color: #854d0e; border: 1.5px solid #eab308;">
-                        <i class="bi bi-magic me-1 text-warning"></i>Ô MÀU VÀNG: Tự động bù đắp dữ liệu
-                    </span>
-                </div>
+        <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+            <h5 class="mb-0 text-primary fw-bold">
+                <i class="bi bi-table me-2"></i>Dữ Liệu Xem Trước (Preview Table)
+            </h5>
+            <div class="d-flex align-items-center gap-2">
+                <span class="badge" style="background-color: #f0fdf4; color: #166534; border: 1px solid #86efac;">
+                    <i class="bi bi-check-circle-fill me-1 text-success"></i>Ô Xanh lá: Thỏa mãn
+                </span>
+                <span class="badge" style="background-color: #fef2f2; color: #991b1b; border: 1px solid #f87171;">
+                    <i class="bi bi-x-circle-fill me-1 text-danger"></i>Ô Đỏ: Báo lỗi cần sửa
+                </span>
+                <span class="badge" style="background-color: #fefce8; color: #854d0e; border: 1.5px solid #eab308;">
+                    <i class="bi bi-magic me-1 text-warning"></i>Ô Vàng: Tự động bù đắp (Cho phép tiếp tục nhập)
+                </span>
             </div>
         </div>
         <div class="card-body p-0">

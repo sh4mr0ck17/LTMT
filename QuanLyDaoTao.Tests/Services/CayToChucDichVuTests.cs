@@ -66,8 +66,8 @@ public class CayToChucDichVuTests
             new HocVien { MaHocVien = "HV03", HoVaTen = "Học viên ba", LopHocId = lop.LopHocId, TrangThai = "Đã tốt nghiệp" });
         await db.SaveChangesAsync();
 
-        var goc = await new CayToChucDichVu(db).LayCayAsync();
-        var nutLop = LayTatCa(goc).Single(n => n.Ma == "L01");
+        var goc = await new CayToChucDichVu(db).LayCayDaoTaoAsync();
+        var nutLop = LayTatCa(goc).Single(n => n.Ten == "L01");
 
         Assert.Equal(2, goc.SoLop);
         Assert.Equal(2, goc.SoHocVien);
@@ -75,7 +75,28 @@ public class CayToChucDichVuTests
         Assert.Equal(1, nutLop.SucChua);
         Assert.NotNull(nutLop.CanhBao);
         Assert.Equal(1, goc.SoCanRaSoat);
-        Assert.Contains(LayTatCa(goc), n => n.Ma == "L02" && n.CoHoatDong == false);
+        Assert.Contains(LayTatCa(goc), n => n.Ten == "L02" && n.CoHoatDong == false);
+        // Học viên là lá dữ liệu của lớp (không vẽ thành thẻ), có đủ 3 hồ sơ kể cả đã tốt nghiệp.
+        Assert.Equal(3, nutLop.Con.Count(n => n.Loai == "Học viên"));
+        Assert.Contains(goc.Con, n => n.Loai == "Hệ đào tạo");
+    }
+
+    /// <summary>Cây tổ chức không còn chứa lớp học (lớp thuộc sơ đồ đào tạo riêng).</summary>
+    [Fact]
+    public async Task LayCay_ToChucKhongChuaLop_DaoTaoChuaLop()
+    {
+        using var db = TaoCoSoDuLieu();
+        var khoa = new Khoa { MaKhoa = "K01", TenKhoa = "Khoa một" };
+        db.AddRange(khoa, new LopHoc { MaLop = "B1D57", TenLop = "Lớp", NienKhoa = "2025-2029", Khoa = khoa, KhoaHoc = "D57" });
+        await db.SaveChangesAsync();
+        var dichVu = new CayToChucDichVu(db);
+
+        Assert.Equal(0, (await dichVu.LayCayAsync()).SoLop);
+        var daoTao = await dichVu.LayCayDaoTaoAsync();
+        Assert.Equal(1, daoTao.SoLop);
+        var nutKhoaHoc = LayTatCa(daoTao).Single(n => n.Loai == "Khóa");
+        Assert.Equal("Khóa D57", nutKhoaHoc.Ten);
+        Assert.Contains("Khoa một", nutKhoaHoc.Con.Single().MoTa);
     }
 
     /// <summary>Cây trống vẫn có gốc và số liệu bằng không.</summary>

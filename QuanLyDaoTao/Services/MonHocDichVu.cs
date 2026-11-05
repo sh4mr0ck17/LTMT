@@ -7,18 +7,20 @@ namespace QuanLyDaoTao.Services;
 /// <summary>
 /// Lớp triển khai dịch vụ nghiệp vụ quản lý Môn học đào tạo.
 /// </summary>
-public class MonHocDichVu : IMonHocDichVu
+public class MonHocDichVu : DichVuNghiepVuCoSo, IMonHocDichVu
 {
-    private readonly QuanLyDaoTaoDbContext _coSoDuLieu;
 
     /// <summary>
     /// Khởi tạo dịch vụ môn học với DbContext.
     /// </summary>
     /// <param name="coSoDuLieu">Ngữ cảnh cơ sở dữ liệu.</param>
-    public MonHocDichVu(QuanLyDaoTaoDbContext coSoDuLieu)
+    public MonHocDichVu(
+        QuanLyDaoTaoDbContext coSoDuLieu,
+        IPhanQuyenDichVu? phanQuyen = null,
+        INhatKyDichVu? nhatKy = null,
+        IBusThayDoiDuLieu? bus = null)
+        : base(coSoDuLieu, phanQuyen, nhatKy, bus)
     {
-        ArgumentNullException.ThrowIfNull(coSoDuLieu);
-        _coSoDuLieu = coSoDuLieu;
     }
 
     /// <summary>
@@ -85,6 +87,7 @@ public class MonHocDichVu : IMonHocDichVu
     /// </summary>
     public async Task<MonHoc> ThemMonHocAsync(MonHoc monHoc, CancellationToken cancellationToken = default)
     {
+        await DamBaoQuyenGhiAsync(VungQuanLy.DaoTao, null);
         ArgumentNullException.ThrowIfNull(monHoc);
 
         if (monHoc.BoMonId.HasValue && !await _coSoDuLieu.BoMons.AnyAsync(bm => bm.BoMonId == monHoc.BoMonId.Value, cancellationToken))
@@ -107,6 +110,7 @@ public class MonHocDichVu : IMonHocDichVu
     /// </summary>
     public async Task<MonHoc> CapNhatMonHocAsync(MonHoc monHoc, CancellationToken cancellationToken = default)
     {
+        await DamBaoQuyenGhiAsync(VungQuanLy.DaoTao, null);
         ArgumentNullException.ThrowIfNull(monHoc);
 
         var mhTonTai = await _coSoDuLieu.MonHocs.FirstOrDefaultAsync(mh => mh.MonHocId == monHoc.MonHocId, cancellationToken);
@@ -142,6 +146,7 @@ public class MonHocDichVu : IMonHocDichVu
     /// </summary>
     public async Task<bool> XoaMonHocAsync(int id, CancellationToken cancellationToken = default)
     {
+        await DamBaoQuyenGhiAsync(VungQuanLy.DaoTao, null);
         var mh = await _coSoDuLieu.MonHocs.FirstOrDefaultAsync(m => m.MonHocId == id, cancellationToken);
         if (mh == null)
         {

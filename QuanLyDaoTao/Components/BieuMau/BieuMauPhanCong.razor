@@ -1,0 +1,117 @@
+@inject DialogService HopThoai
+@inject IPhanCongGiangDayDichVu PhanCongDichVu
+@* Biểu mẫu phân công giảng viên dạy một môn cho một lớp trong một học kỳ. *@
+
+<RadzenTemplateForm TItem="PhanCongGiangDay" Data="@_banNhap" Submit="LuuAsync">
+    <div class="luoi-bieu-mau">
+        <RadzenFormField Text="Mã phân công *" Variant="Variant.Outlined">
+            <RadzenTextBox Name="txtMaPhanCong" id="txtMaPhanCong" @bind-Value="_banNhap.MaPhanCong" MaxLength="50" />
+        </RadzenFormField>
+        <RadzenFormField Text="Học kỳ (năm học) *" Variant="Variant.Outlined">
+            <RadzenAutoComplete Name="txtHocKyNamHoc" id="txtHocKyNamHoc" @bind-Value="_banNhap.HocKyNamHoc" Data="@HocKyGoiY" MaxLength="50" />
+        </RadzenFormField>
+        <RadzenFormField Text="Giảng viên *" Variant="Variant.Outlined" class="o-rong">
+            <RadzenDropDown TValue="int" Name="cboGiangVien" id="cboGiangVien" Data="@DanhSachGiangVien" TextProperty="HoVaTen" ValueProperty="NhanSuId" @bind-Value="_banNhap.NhanSuId"
+                            AllowFiltering="true" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" FilterOperator="StringFilterOperator.Contains" Placeholder="Chọn giảng viên" />
+        </RadzenFormField>
+        <RadzenFormField Text="Môn học *" Variant="Variant.Outlined">
+            <RadzenDropDown TValue="int" Name="cboMonHoc" id="cboMonHoc" Data="@DanhSachMonHoc" TextProperty="TenMonHoc" ValueProperty="MonHocId" @bind-Value="_banNhap.MonHocId"
+                            AllowFiltering="true" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" FilterOperator="StringFilterOperator.Contains" Placeholder="Chọn môn" />
+        </RadzenFormField>
+        <RadzenFormField Text="Lớp *" Variant="Variant.Outlined">
+            <RadzenDropDown TValue="int" Name="cboChonLop" id="cboChonLop" Data="@DanhSachLop" TextProperty="MaLop" ValueProperty="LopHocId" @bind-Value="_banNhap.LopHocId"
+                            AllowFiltering="true" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" FilterOperator="StringFilterOperator.Contains" Placeholder="Chọn lớp" />
+        </RadzenFormField>
+        <RadzenFormField Text="Vai trò giảng dạy" Variant="Variant.Outlined">
+            <RadzenDropDown TValue="string" Name="cboVaiTroGiangDay" id="cboVaiTroGiangDay" Data="@_vaiTro.Append(_banNhap.VaiTroGiangDay).Distinct()" @bind-Value="_banNhap.VaiTroGiangDay" />
+        </RadzenFormField>
+        <div class="d-flex align-items-center gap-2">
+            <RadzenSwitch @bind-Value="_banNhap.LaChuNhiem" Name="swChuNhiem" id="swChuNhiem" />
+            <label for="swChuNhiem" class="mb-0">Kiêm chủ nhiệm lớp</label>
+        </div>
+        <RadzenFormField Text="Ghi chú (phòng, ca dạy...)" Variant="Variant.Outlined" class="o-rong">
+            <RadzenTextBox Name="txtGhiChu" id="txtGhiChu" @bind-Value="_banNhap.GhiChu" MaxLength="255" />
+        </RadzenFormField>
+    </div>
+
+    @if (!string.IsNullOrEmpty(_loi))
+    {
+        <RadzenAlert AlertStyle="AlertStyle.Danger" Variant="Variant.Flat" AllowClose="false" class="mt-3 mb-0" id="lblThongBaoLoi">@_loi</RadzenAlert>
+    }
+
+    <RadzenRequiredValidator Component="txtMaPhanCong" Text="Vui lòng nhập mã phân công." Popup="false" />
+
+    <div class="d-flex justify-content-end gap-2 mt-3">
+        <RadzenButton Text="Hủy" ButtonStyle="ButtonStyle.Light" Disabled="@_dangLuu" Click="@(() => HopThoai.Close())" id="btnHuy" />
+        <RadzenButton Text="Lưu phân công" Icon="save" ButtonType="ButtonType.Submit" ButtonStyle="ButtonStyle.Primary" IsBusy="@_dangLuu" BusyText="Đang lưu..." id="btnLuuPhanCong" />
+    </div>
+</RadzenTemplateForm>
+
+@code {
+    private static readonly string[] _vaiTro = ["Giảng viên chính", "Giảng viên phụ", "Trợ giảng", "Hướng dẫn thực hành"];
+    private PhanCongGiangDay _banNhap = new();
+    private bool _dangLuu;
+    private string? _loi;
+
+    /// <summary>Phân công gốc khi sửa.</summary>
+    [Parameter] public PhanCongGiangDay? PhanCongGoc { get; set; }
+
+    /// <summary>Danh sách giảng viên.</summary>
+    [Parameter] public IReadOnlyList<NhanSu> DanhSachGiangVien { get; set; } = [];
+
+    /// <summary>Danh sách môn học.</summary>
+    [Parameter] public IReadOnlyList<MonHoc> DanhSachMonHoc { get; set; } = [];
+
+    /// <summary>Danh sách lớp.</summary>
+    [Parameter] public IReadOnlyList<LopHoc> DanhSachLop { get; set; } = [];
+
+    /// <summary>Gợi ý học kỳ đã dùng.</summary>
+    [Parameter] public IReadOnlyList<string> HocKyGoiY { get; set; } = [];
+
+    /// <inheritdoc />
+    protected override void OnInitialized()
+    {
+        var goc = PhanCongGoc;
+        _banNhap = goc is null
+            ? new PhanCongGiangDay
+            {
+                MaPhanCong = $"PC{DateTime.Now:yyMMddHHmm}",
+                NhanSuId = DanhSachGiangVien.FirstOrDefault()?.NhanSuId ?? 0,
+                MonHocId = DanhSachMonHoc.FirstOrDefault()?.MonHocId ?? 0,
+                LopHocId = DanhSachLop.FirstOrDefault()?.LopHocId ?? 0,
+                HocKyNamHoc = HocKyGoiY.FirstOrDefault() ?? "HK1 (2026-2027)"
+            }
+            : new PhanCongGiangDay
+            {
+                PhanCongId = goc.PhanCongId, MaPhanCong = goc.MaPhanCong, NhanSuId = goc.NhanSuId, MonHocId = goc.MonHocId, LopHocId = goc.LopHocId,
+                HocKyNamHoc = goc.HocKyNamHoc, VaiTroGiangDay = goc.VaiTroGiangDay, LaChuNhiem = goc.LaChuNhiem, GhiChu = goc.GhiChu
+            };
+    }
+
+    private async Task LuuAsync(PhanCongGiangDay _)
+    {
+        if (_dangLuu)
+        {
+            return;
+        }
+
+        _dangLuu = true;
+        _loi = await TrangNghiepVuCoSo.ChayVaBatLoiAsync(async () =>
+        {
+            if (PhanCongGoc is null)
+            {
+                await PhanCongDichVu.ThemPhanCongAsync(_banNhap);
+            }
+            else
+            {
+                await PhanCongDichVu.CapNhatPhanCongAsync(_banNhap);
+            }
+        });
+        _dangLuu = false;
+
+        if (_loi is null)
+        {
+            HopThoai.Close(new KetQuaBieuMau(PhanCongGoc is null ? $"Đã thêm phân công {_banNhap.MaPhanCong}." : $"Đã cập nhật phân công {_banNhap.MaPhanCong}.", _banNhap.MaPhanCong));
+        }
+    }
+}

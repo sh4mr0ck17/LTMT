@@ -7,18 +7,20 @@ namespace QuanLyDaoTao.Services;
 /// <summary>
 /// Lớp triển khai dịch vụ nghiệp vụ quản lý Phân công giảng dạy.
 /// </summary>
-public class PhanCongGiangDayDichVu : IPhanCongGiangDayDichVu
+public class PhanCongGiangDayDichVu : DichVuNghiepVuCoSo, IPhanCongGiangDayDichVu
 {
-    private readonly QuanLyDaoTaoDbContext _coSoDuLieu;
 
     /// <summary>
     /// Khởi tạo dịch vụ phân công giảng dạy với DbContext.
     /// </summary>
     /// <param name="coSoDuLieu">Ngữ cảnh cơ sở dữ liệu.</param>
-    public PhanCongGiangDayDichVu(QuanLyDaoTaoDbContext coSoDuLieu)
+    public PhanCongGiangDayDichVu(
+        QuanLyDaoTaoDbContext coSoDuLieu,
+        IPhanQuyenDichVu? phanQuyen = null,
+        INhatKyDichVu? nhatKy = null,
+        IBusThayDoiDuLieu? bus = null)
+        : base(coSoDuLieu, phanQuyen, nhatKy, bus)
     {
-        ArgumentNullException.ThrowIfNull(coSoDuLieu);
-        _coSoDuLieu = coSoDuLieu;
     }
 
     /// <summary>
@@ -114,6 +116,7 @@ public class PhanCongGiangDayDichVu : IPhanCongGiangDayDichVu
     /// </summary>
     public async Task<PhanCongGiangDay> ThemPhanCongAsync(PhanCongGiangDay phanCong, CancellationToken cancellationToken = default)
     {
+        await DamBaoQuyenGhiAsync(VungQuanLy.DaoTao, null);
         ArgumentNullException.ThrowIfNull(phanCong);
 
         if (!await _coSoDuLieu.NhanSus.AnyAsync(ns => ns.NhanSuId == phanCong.NhanSuId, cancellationToken))
@@ -147,6 +150,7 @@ public class PhanCongGiangDayDichVu : IPhanCongGiangDayDichVu
     /// </summary>
     public async Task<PhanCongGiangDay> CapNhatPhanCongAsync(PhanCongGiangDay phanCong, CancellationToken cancellationToken = default)
     {
+        await DamBaoQuyenGhiAsync(VungQuanLy.DaoTao, null);
         ArgumentNullException.ThrowIfNull(phanCong);
 
         var pcTonTai = await _coSoDuLieu.PhanCongGiangDays.FirstOrDefaultAsync(pc => pc.PhanCongId == phanCong.PhanCongId, cancellationToken);
@@ -196,6 +200,7 @@ public class PhanCongGiangDayDichVu : IPhanCongGiangDayDichVu
     /// </summary>
     public async Task<bool> XoaPhanCongAsync(int id, CancellationToken cancellationToken = default)
     {
+        await DamBaoQuyenGhiAsync(VungQuanLy.DaoTao, null);
         var pc = await _coSoDuLieu.PhanCongGiangDays.FirstOrDefaultAsync(p => p.PhanCongId == id, cancellationToken);
         if (pc == null)
         {

@@ -1,0 +1,74 @@
+﻿@using QuanLyDaoTao.Models.ToChuc
+@* Cây dạng thư mục (kiểu file explorer) để điều hướng nhanh; dùng chung trạng thái mở/chọn với canvas.
+   Chỉ hiện nút cấu trúc; cán bộ / học viên xem ở bảng panel chi tiết. *@
+<ul class="cay-thu-muc @(Cap == 0 ? "cay-thu-muc-goc" : null)" role="@(Cap == 0 ? "tree" : "group")">
+    @foreach (var nut in CacNut)
+    {
+        var con = BoCucCayToChuc.LayConVeDuoc(nut, NutHienThi).ToList();
+        var dangMo = NutMo.Contains(nut.KhoaNut);
+        <li role="treeitem" aria-expanded="@(con.Count > 0 ? dangMo.ToString().ToLowerInvariant() : null)" aria-selected="@((nut.KhoaNut == KhoaNutChon).ToString().ToLowerInvariant())">
+            <div class="cay-thu-muc-dong @(nut.KhoaNut == KhoaNutChon ? "dang-chon" : null) @(DuongDanChon.Contains(nut.KhoaNut) ? "tren-duong" : null)">
+                @if (con.Count > 0)
+                {
+                    <button type="button" class="cay-thu-muc-mo" aria-label="@(dangMo ? "Thu gọn" : "Mở") @nut.Ten" @onclick="() => KhiDoiTrangThai.InvokeAsync(nut)">
+                        <i class="bi @(dangMo ? "bi-chevron-down" : "bi-chevron-right")" aria-hidden="true"></i>
+                    </button>
+                }
+                else
+                {
+                    <span class="cay-thu-muc-mo"></span>
+                }
+                <button type="button" class="cay-thu-muc-ten @MauDoiTuong.LayLop(nut.Loai)" title="@nut.Ten" @onclick="() => KhiChon.InvokeAsync(nut)" id="@($"btnThuMuc_{nut.KhoaNut}")">
+                    <i class="bi @nut.BieuTuong dt-chu" aria-hidden="true"></i>
+                    <span>@nut.Ten</span>
+                    <small>@SoLieu(nut)</small>
+                    @if (nut.CanhBao != null || nut.SoCanRaSoat > 0)
+                    {
+                        <i class="bi bi-exclamation-triangle-fill text-warning" title="Có bản ghi cần rà soát" aria-hidden="true"></i>
+                    }
+                </button>
+            </div>
+            @if (dangMo && con.Count > 0)
+            {
+                <CayThuMuc CacNut="con" Cap="Cap + 1" NutHienThi="NutHienThi" NutMo="NutMo" KhoaNutChon="@KhoaNutChon" DuongDanChon="DuongDanChon"
+                           KhiChon="KhiChon" KhiDoiTrangThai="KhiDoiTrangThai" />
+            }
+        </li>
+    }
+</ul>
+
+@code {
+    /// <summary>Các nút cùng cấp cần hiển thị.</summary>
+    [Parameter, EditorRequired] public IReadOnlyList<NutToChuc> CacNut { get; set; } = [];
+
+    /// <summary>Cấp hiện tại (0 = gốc).</summary>
+    [Parameter] public int Cap { get; set; }
+
+    /// <summary>Nút qua bộ lọc.</summary>
+    [Parameter, EditorRequired] public ISet<string> NutHienThi { get; set; } = default!;
+
+    /// <summary>Nút đang mở.</summary>
+    [Parameter, EditorRequired] public ISet<string> NutMo { get; set; } = default!;
+
+    /// <summary>Đường dẫn tới nút chọn.</summary>
+    [Parameter, EditorRequired] public ISet<string> DuongDanChon { get; set; } = default!;
+
+    /// <summary>Khóa nút đang chọn.</summary>
+    [Parameter] public string? KhoaNutChon { get; set; }
+
+    /// <summary>Chọn nút.</summary>
+    [Parameter] public EventCallback<NutToChuc> KhiChon { get; set; }
+
+    /// <summary>Mở / thu gọn nút.</summary>
+    [Parameter] public EventCallback<NutToChuc> KhiDoiTrangThai { get; set; }
+
+    private static string SoLieu(NutToChuc nut) => nut.Loai switch
+    {
+        "Khoa" => $"{nut.SoNhanSu} CB",
+        "Bộ môn" => $"{nut.SoNhanSu} CB",
+        "Hệ đào tạo" or "Khóa" => $"{nut.SoLop} lớp",
+        "Lớp học" => $"{nut.SiSo}/{nut.SucChua}",
+        "Nhóm" => $"{nut.Con.Count}",
+        _ => string.Empty
+    };
+}

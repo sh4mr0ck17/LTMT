@@ -1,0 +1,106 @@
+﻿@inject DialogService HopThoai
+@inject ILopHocDichVu LopHocDichVu
+@* Biểu mẫu thêm/sửa lớp: lớp thuộc Khoa quản lý và được phân loại Hệ → Khóa → Chuyên ngành. *@
+
+<RadzenTemplateForm TItem="LopHoc" Data="@_banNhap" Submit="LuuAsync">
+    <div class="luoi-bieu-mau">
+        <RadzenFormField Text="Mã lớp *" Variant="Variant.Outlined">
+            <RadzenTextBox Name="txtMaLop" id="txtMaLop" @bind-Value="_banNhap.MaLop" MaxLength="50" Placeholder="VD: B12D57" />
+        </RadzenFormField>
+        <RadzenFormField Text="Tên lớp" Variant="Variant.Outlined">
+            <RadzenTextBox Name="txtTenLop" id="txtTenLop" @bind-Value="_banNhap.TenLop" MaxLength="200" Placeholder="Để trống để tự đặt theo mã" />
+        </RadzenFormField>
+        <RadzenFormField Text="Khoa quản lý *" Variant="Variant.Outlined">
+            <RadzenDropDown TValue="int" Name="cboChonKhoa" id="cboChonKhoa" Data="@DanhSachKhoa" TextProperty="TenKhoa" ValueProperty="KhoaId"
+                            @bind-Value="_banNhap.KhoaId" AllowFiltering="true" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" FilterOperator="StringFilterOperator.Contains" />
+        </RadzenFormField>
+        <RadzenFormField Text="Hệ đào tạo *" Variant="Variant.Outlined">
+            <RadzenDropDown TValue="string" Name="cboHeDaoTao" id="cboHeDaoTao" Data="@QuyTacNghiepVu.DanhSachHeDaoTao" @bind-Value="_banNhap.HeDaoTao" />
+        </RadzenFormField>
+        <RadzenFormField Text="Khóa (D57, K6...)" Variant="Variant.Outlined">
+            <RadzenTextBox Name="txtKhoaHoc" id="txtKhoaHoc" @bind-Value="_banNhap.KhoaHoc" MaxLength="20" Placeholder="Tự suy từ mã lớp nếu để trống" />
+        </RadzenFormField>
+        <RadzenFormField Text="Niên khóa *" Variant="Variant.Outlined">
+            <RadzenTextBox Name="txtNienKhoa" id="txtNienKhoa" @bind-Value="_banNhap.NienKhoa" MaxLength="9" Placeholder="2025-2029 (để trống: lấy theo khóa)" />
+        </RadzenFormField>
+        <RadzenFormField Text="Chuyên ngành" Variant="Variant.Outlined">
+            <RadzenAutoComplete Name="txtChuyenNganh" id="txtChuyenNganh" @bind-Value="_banNhap.ChuyenNganh" Data="@ChuyenNganhGoiY" MaxLength="150" />
+        </RadzenFormField>
+        <RadzenFormField Text="Sĩ số tối đa" Variant="Variant.Outlined">
+            <RadzenNumeric TValue="int" Name="numSoLuongToiDa" id="numSoLuongToiDa" @bind-Value="_banNhap.SoLuongToiDa" Min="1" Max="500" />
+        </RadzenFormField>
+        <div class="o-rong d-flex align-items-center gap-2">
+            <RadzenSwitch @bind-Value="_banNhap.CoHoatDong" Name="swHoatDong" id="swHoatDong" />
+            <label for="swHoatDong" class="mb-0">Lớp đang hoạt động</label>
+        </div>
+    </div>
+
+    @if (!string.IsNullOrEmpty(_loi))
+    {
+        <RadzenAlert AlertStyle="AlertStyle.Danger" Variant="Variant.Flat" AllowClose="false" class="mt-3 mb-0" id="lblThongBaoLoi">@_loi</RadzenAlert>
+    }
+
+    <RadzenRequiredValidator Component="txtMaLop" Text="Vui lòng nhập mã lớp." Popup="false" />
+
+    <div class="d-flex justify-content-end gap-2 mt-3">
+        <RadzenButton Text="Hủy" ButtonStyle="ButtonStyle.Light" Disabled="@_dangLuu" Click="@(() => HopThoai.Close())" id="btnHuy" />
+        <RadzenButton Text="Lưu lớp" Icon="save" ButtonType="ButtonType.Submit" ButtonStyle="ButtonStyle.Primary" IsBusy="@_dangLuu" BusyText="Đang lưu..." id="btnLuuLop" />
+    </div>
+</RadzenTemplateForm>
+
+@code {
+    private LopHoc _banNhap = new();
+    private bool _dangLuu;
+    private string? _loi;
+
+    /// <summary>Lớp gốc khi sửa (null khi thêm).</summary>
+    [Parameter] public LopHoc? LopGoc { get; set; }
+
+    /// <summary>Danh sách khoa được phép chọn.</summary>
+    [Parameter] public IReadOnlyList<Khoa> DanhSachKhoa { get; set; } = [];
+
+    /// <summary>Gợi ý chuyên ngành đã có.</summary>
+    [Parameter] public IReadOnlyList<string> ChuyenNganhGoiY { get; set; } = [];
+
+    private bool DangSua => LopGoc is not null;
+
+    /// <inheritdoc />
+    protected override void OnInitialized()
+    {
+        _banNhap = LopGoc is null
+            ? new LopHoc { KhoaId = DanhSachKhoa.FirstOrDefault()?.KhoaId ?? 0, NienKhoa = $"{DateTime.Today.Year}-{DateTime.Today.Year + 4}", SoLuongToiDa = 50 }
+            : new LopHoc
+            {
+                LopHocId = LopGoc.LopHocId, MaLop = LopGoc.MaLop, TenLop = LopGoc.TenLop, NienKhoa = LopGoc.NienKhoa,
+                KhoaId = LopGoc.KhoaId, HeDaoTao = LopGoc.HeDaoTao, KhoaHoc = LopGoc.KhoaHoc, ChuyenNganh = LopGoc.ChuyenNganh,
+                SoLuongToiDa = LopGoc.SoLuongToiDa, CoHoatDong = LopGoc.CoHoatDong
+            };
+    }
+
+    private async Task LuuAsync(LopHoc _)
+    {
+        if (_dangLuu)
+        {
+            return;
+        }
+
+        _dangLuu = true;
+        _loi = await TrangNghiepVuCoSo.ChayVaBatLoiAsync(async () =>
+        {
+            if (DangSua)
+            {
+                await LopHocDichVu.CapNhatLopHocAsync(_banNhap);
+            }
+            else
+            {
+                await LopHocDichVu.ThemLopHocAsync(_banNhap);
+            }
+        });
+        _dangLuu = false;
+
+        if (_loi is null)
+        {
+            HopThoai.Close(new KetQuaBieuMau(DangSua ? $"Đã cập nhật lớp {_banNhap.MaLop}." : $"Đã thêm lớp {_banNhap.MaLop}.", _banNhap.MaLop));
+        }
+    }
+}

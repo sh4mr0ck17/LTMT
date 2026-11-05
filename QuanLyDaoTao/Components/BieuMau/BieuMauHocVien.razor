@@ -1,0 +1,150 @@
+﻿@inject DialogService HopThoai
+@inject IHocVienDichVu HocVienDichVu
+@* Biểu mẫu thêm/sửa học viên trong hộp thoại. Bản nháp được giữ khi lưu thất bại; dịch vụ kiểm tra quyền và ràng buộc. *@
+
+<RadzenTemplateForm TItem="HocVien" Data="@_banNhap" Submit="LuuAsync">
+    <div class="luoi-bieu-mau">
+        <RadzenFormField Text="Mã học viên *" Variant="Variant.Outlined">
+            <RadzenTextBox Name="txtMaHocVien" id="txtMaHocVien" @bind-Value="_banNhap.MaHocVien" Disabled="@DangSua" MaxLength="50" />
+        </RadzenFormField>
+        <RadzenFormField Text="Họ và tên *" Variant="Variant.Outlined">
+            <RadzenTextBox Name="txtHoVaTen" id="txtHoVaTen" @bind-Value="_banNhap.HoVaTen" MaxLength="100" />
+        </RadzenFormField>
+        <RadzenFormField Text="Lớp *" Variant="Variant.Outlined">
+            <RadzenDropDown TValue="int" Name="cboLop" id="cboLop" Data="@DanhSachLop" TextProperty="MaLop" ValueProperty="LopHocId"
+                            @bind-Value="_banNhap.LopHocId" AllowFiltering="true" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive"
+                            FilterOperator="StringFilterOperator.Contains" Placeholder="Chọn lớp" />
+        </RadzenFormField>
+        <RadzenFormField Text="Chức vụ trong lớp" Variant="Variant.Outlined">
+            <RadzenDropDown TValue="IEnumerable<string>" Name="cboChucVuLop" id="cboChucVuLop" Data="@_luaChonChucVu" TextProperty="Ten" ValueProperty="Ma"
+                            @bind-Value="_chucVuChon" Multiple="true" Chips="true" AllowClear="true" Placeholder="Học viên" />
+        </RadzenFormField>
+        <RadzenFormField Text="Ngày sinh *" Variant="Variant.Outlined">
+            <RadzenDatePicker TValue="DateTime" Name="dtpNgaySinh" id="dtpNgaySinh" @bind-Value="_banNhap.NgaySinh" DateFormat="dd/MM/yyyy" Max="@DateTime.Today" />
+        </RadzenFormField>
+        <RadzenFormField Text="Giới tính *" Variant="Variant.Outlined">
+            <RadzenDropDown TValue="string" Name="cboGioiTinh" id="cboGioiTinh" Data="@_gioiTinh" @bind-Value="_banNhap.GioiTinh" />
+        </RadzenFormField>
+        <RadzenFormField Text="Số CCCD (12 số)" Variant="Variant.Outlined">
+            <RadzenTextBox Name="txtSoCCCD" id="txtSoCCCD" @bind-Value="_banNhap.SoCCCD" MaxLength="12" />
+        </RadzenFormField>
+        <RadzenFormField Text="Số điện thoại" Variant="Variant.Outlined">
+            <RadzenTextBox Name="txtSoDienThoai" id="txtSoDienThoai" @bind-Value="_banNhap.SoDienThoai" MaxLength="10" />
+        </RadzenFormField>
+        <RadzenFormField Text="Email" Variant="Variant.Outlined">
+            <RadzenTextBox Name="txtEmail" id="txtEmail" @bind-Value="_banNhap.Email" MaxLength="100" />
+        </RadzenFormField>
+        <RadzenFormField Text="Trạng thái" Variant="Variant.Outlined">
+            <RadzenDropDown TValue="string" Name="cboTrangThai" id="cboTrangThai" Data="@_trangThai" @bind-Value="_banNhap.TrangThai" />
+        </RadzenFormField>
+        <RadzenFormField Text="Quê quán / địa chỉ thường trú" Variant="Variant.Outlined" class="o-rong">
+            <RadzenTextBox Name="txtDiaChi" id="txtDiaChi" @bind-Value="_banNhap.DiaChi" MaxLength="255" />
+        </RadzenFormField>
+    </div>
+
+    @if (DanhSachLop.FirstOrDefault(l => l.LopHocId == _banNhap.LopHocId) is { } lop)
+    {
+        <RadzenAlert AlertStyle="AlertStyle.Info" Variant="Variant.Flat" Shade="Shade.Lighter" AllowClose="false" class="mt-3 mb-0" id="lblThongTinLop">
+            @lop.HeDaoTao · Khóa @(lop.KhoaHoc ?? "—") · @(lop.ChuyenNganh ?? "Chưa có chuyên ngành") · @(lop.Khoa?.TenKhoa) · Sĩ số @lop.HocViens.Count/@lop.SoLuongToiDa
+        </RadzenAlert>
+    }
+
+    @if (!string.IsNullOrEmpty(_loi))
+    {
+        <RadzenAlert AlertStyle="AlertStyle.Danger" Variant="Variant.Flat" AllowClose="false" class="mt-3 mb-0" id="lblThongBaoLoi">@_loi</RadzenAlert>
+    }
+
+    <RadzenRequiredValidator Component="txtMaHocVien" Text="Vui lòng nhập mã học viên." Popup="false" />
+    <RadzenRequiredValidator Component="txtHoVaTen" Text="Vui lòng nhập họ và tên." Popup="false" />
+
+    <div class="d-flex justify-content-end gap-2 mt-3">
+        <RadzenButton Text="Hủy" ButtonStyle="ButtonStyle.Light" Disabled="@_dangLuu" Click="@(() => HopThoai.Close())" id="btnHuy" />
+        <RadzenButton Text="Lưu học viên" Icon="save" ButtonType="ButtonType.Submit" ButtonStyle="ButtonStyle.Primary"
+                      IsBusy="@_dangLuu" BusyText="Đang lưu..." id="btnLuuHocVien" />
+    </div>
+</RadzenTemplateForm>
+
+@code {
+    private static readonly IReadOnlyList<string> _gioiTinh = QuyTacNghiepVu.DanhSachGioiTinh;
+    private static readonly IReadOnlyList<string> _trangThai = QuyTacNghiepVu.DanhSachTrangThaiHocVien;
+    private static readonly IReadOnlyList<LuaChon> _danhMucChucVu = QuyTacNghiepVu.TenDayDuChucVuLop
+        .Select(cv => new LuaChon(cv.Key, $"{cv.Key} – {cv.Value}" +
+            (QuyTacNghiepVu.ChiTieuChucVuLop.GetValueOrDefault(cv.Key) is int chiTieu ? $" (tối đa {chiTieu})" : string.Empty)))
+        .ToList();
+
+    private HocVien _banNhap = new();
+    private IEnumerable<string> _chucVuChon = [];
+    private List<LuaChon> _luaChonChucVu = [];
+    private bool _dangLuu;
+    private string? _loi;
+
+    /// <summary>Hồ sơ gốc (null khi thêm mới).</summary>
+    [Parameter] public HocVien? HocVienGoc { get; set; }
+
+    /// <summary>Danh sách lớp để chọn (đã gồm Khoa và học viên để hiện sĩ số).</summary>
+    [Parameter] public IReadOnlyList<LopHoc> DanhSachLop { get; set; } = [];
+
+    /// <summary>Lớp mặc định khi thêm mới.</summary>
+    [Parameter] public int? LopMacDinhId { get; set; }
+
+    private bool DangSua => HocVienGoc is not null;
+
+    /// <inheritdoc />
+    protected override void OnInitialized()
+    {
+        // Làm việc trên bản sao để hủy không ảnh hưởng dữ liệu đang hiển thị.
+        _banNhap = HocVienGoc is null
+            ? new HocVien { NgaySinh = new DateTime(DateTime.Today.Year - 19, 1, 1), LopHocId = LopMacDinhId ?? DanhSachLop.FirstOrDefault()?.LopHocId ?? 0 }
+            : new HocVien
+            {
+                HocVienId = HocVienGoc.HocVienId,
+                MaHocVien = HocVienGoc.MaHocVien,
+                HoVaTen = HocVienGoc.HoVaTen,
+                NgaySinh = HocVienGoc.NgaySinh,
+                GioiTinh = HocVienGoc.GioiTinh,
+                Email = HocVienGoc.Email,
+                SoDienThoai = HocVienGoc.SoDienThoai,
+                SoCCCD = HocVienGoc.SoCCCD,
+                DiaChi = HocVienGoc.DiaChi,
+                ChucVuLop = HocVienGoc.ChucVuLop,
+                LopHocId = HocVienGoc.LopHocId,
+                TrangThai = HocVienGoc.TrangThai
+            };
+        _chucVuChon = QuyTacNghiepVu.TachChucVuLop(_banNhap.ChucVuLop);
+        // Giữ chức vụ cũ ngoài danh mục chuẩn để không bị mất khi lưu lại.
+        _luaChonChucVu = _danhMucChucVu
+            .Concat(_chucVuChon.Where(cv => !QuyTacNghiepVu.TenDayDuChucVuLop.ContainsKey(cv)).Select(cv => new LuaChon(cv, cv)))
+            .ToList();
+    }
+
+    private async Task LuuAsync(HocVien _)
+    {
+        if (_dangLuu)
+        {
+            return;
+        }
+
+        _dangLuu = true;
+        _loi = null;
+        _banNhap.ChucVuLop = QuyTacNghiepVu.GhepChucVuLop(_chucVuChon);
+        _loi = await TrangNghiepVuCoSo.ChayVaBatLoiAsync(async () =>
+        {
+            if (DangSua)
+            {
+                await HocVienDichVu.CapNhatHocVienAsync(_banNhap);
+            }
+            else
+            {
+                await HocVienDichVu.ThemHocVienAsync(_banNhap);
+            }
+        });
+        _dangLuu = false;
+
+        if (_loi is null)
+        {
+            HopThoai.Close(new KetQuaBieuMau(DangSua
+                ? $"Đã cập nhật học viên {_banNhap.HoVaTen}."
+                : $"Đã thêm học viên {_banNhap.HoVaTen} ({_banNhap.MaHocVien}).", _banNhap.MaHocVien));
+        }
+    }
+}

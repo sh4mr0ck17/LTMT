@@ -42,7 +42,7 @@
 
                             <div class="col-md-6">
                                 <label asp-for="MatKhau" class="form-label fw-semibold">Mật khẩu khởi tạo <span class="text-danger">*</span></label>
-                                <input asp-for="MatKhau" class="form-control" id="txtMatKhau" placeholder="Tối thiểu 6 ký tự (VD: CanBo@123)" />
+                                <input asp-for="MatKhau" class="form-control" id="txtMatKhau" placeholder="Tối thiểu 8 ký tự, có chữ thường và số" />
                                 <span asp-validation-for="MatKhau" class="text-danger small"></span>
                             </div>
 
@@ -52,18 +52,38 @@
                             </div>
 
                             <div class="col-md-6">
-                                <label asp-for="VaiTro" class="form-label fw-semibold">Loại Tài khoản &amp; Workspace <span class="text-danger">*</span></label>
+                                <label asp-for="VaiTro" class="form-label fw-semibold">Vai trò <span class="text-danger">*</span></label>
                                 <select asp-for="VaiTro" class="form-select" id="cboVaiTro">
-                                    <option value="@VaiTroMacDinh.GiaoVien">Giáo viên / Giảng viên (Giảng viên Workspace)</option>
-                                    <option value="@VaiTroMacDinh.CanBo">Cán bộ Khoa / Phòng (Cán bộ Workspace)</option>
-                                    <option value="@VaiTroMacDinh.NguoiDung">User thường (Read-Only Workspace - Chỉ xem)</option>
-                                    <option value="@VaiTroMacDinh.QuanTriVien">Quản trị viên Đào tạo (Admin Workspace - Không có Live CRUD)</option>
+                                    <option value="@VaiTroMacDinh.NguoiXem">Người xem - chỉ tra cứu, thông tin cá nhân bị che</option>
+                                    <option value="@VaiTroMacDinh.QuanLy">Quản lý - ghi dữ liệu trong vùng / khoa được giao</option>
+                                    <option value="@VaiTroMacDinh.QuanTriVien">Quản trị viên - toàn quyền nghiệp vụ và tài khoản</option>
                                     @if (User.IsInRole(VaiTroMacDinh.SuperAdmin))
                                     {
-                                        <option value="@VaiTroMacDinh.SuperAdmin">Superadmin (Toàn quyền + Độc quyền Live CRUD Studio)</option>
+                                        <option value="@VaiTroMacDinh.SuperAdmin">Superadmin - toàn quyền + Live CRUD Studio</option>
                                     }
                                 </select>
                                 <span asp-validation-for="VaiTro" class="text-danger small"></span>
+                            </div>
+
+                            <div class="col-md-6" id="pnlVungQuanLy">
+                                <label asp-for="VungQuanLy" class="form-label fw-semibold">Vùng quản lý <span class="text-muted small">(bắt buộc với Quản lý)</span></label>
+                                <select asp-for="VungQuanLy" class="form-select" id="cboVungQuanLy">
+                                    <option value="">-- Chọn vùng --</option>
+                                    <option value="@VungQuanLy.ToChuc">Tổ chức - Cán bộ (Khoa, Bộ môn, Cán bộ)</option>
+                                    <option value="@VungQuanLy.DaoTao">Đào tạo (Lớp, Học viên, Môn học, Phân công)</option>
+                                </select>
+                            </div>
+
+                            <div class="col-md-6" id="pnlKhoaPhuTrach">
+                                <label asp-for="KhoaPhuTrachId" class="form-label fw-semibold">Khoa phụ trách</label>
+                                <select asp-for="KhoaPhuTrachId" class="form-select" id="cboKhoaPhuTrach">
+                                    <option value="">-- Mọi khoa trong vùng --</option>
+                                    @foreach (var khoa in (ViewBag.DanhSachKhoa as List<Khoa>) ?? new List<Khoa>())
+                                    {
+                                        <option value="@khoa.KhoaId">@khoa.TenKhoa</option>
+                                    }
+                                </select>
+                                <div class="form-text small">Giới hạn Quản lý chỉ được ghi dữ liệu của một khoa.</div>
                             </div>
 
                             <div class="col-md-6">

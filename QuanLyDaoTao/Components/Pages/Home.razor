@@ -1,4 +1,4 @@
-@page "/"
+﻿@page "/"
 @page "/Home"
 @page "/Home/Index"
 @using Microsoft.AspNetCore.Identity
@@ -14,32 +14,34 @@
 @inject IServiceScopeFactory ScopeFactory
 @inject IJSRuntime JSRuntime
 
-<PageTitle>Không Gian Làm Việc - Học Viện An Ninh Nhân Dân (C500)</PageTitle>
+<PageTitle>Không gian làm việc | Quản lý đào tạo C500</PageTitle>
 
-<div class="container-fluid px-4 py-3" id="pnlDashboard">
-    <!-- Thanh Tiêu Đề Không Gian Làm Việc Cá Nhân Hóa -->
-    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center bg-white border rounded-3 px-4 py-3 mb-4 shadow-sm" id="pnlCaNhanHoaWorkspace">
-        <div>
-            <h4 class="mb-0 fw-bold text-primary" id="lblTieuDeDashboard">
-                Xin chào, @hoTenNguoiDung
-            </h4>
-        </div>
-
-        <div class="d-flex flex-wrap gap-2 mt-2 mt-md-0">
-            <a href="HoSoCaNhan" class="btn btn-sm btn-outline-primary" id="btnXemProfileNhanh">
-                <i class="bi bi-person-vcard me-1"></i>Hồ Sơ Cá Nhân
-            </a>
-            @if (laSuperAdmin)
+<div class="trang-chu" id="pnlDashboard">
+    <header class="trang-chu-dau" id="pnlCaNhanHoaWorkspace">
+        <div class="trang-chu-chao">
+            <h1 id="lblTieuDeDashboard">Xin chào, @hoTenNguoiDung</h1>
+            <span class="nhan-vung" id="lblWorkspaceRoleBadge">@tenWorkspace</span>
+            @if (hoSoGiangVien != null)
             {
-                <a href="TaiKhoan/TaoMoi" class="btn btn-sm btn-outline-primary" id="btnCapTaiKhoanGv">
-                    <i class="bi bi-person-plus me-1"></i>Tạo Tài Khoản
-                </a>
-                <a href="QuanTriDuLieu" class="btn btn-sm btn-primary" id="btnXemStudio">
-                    <i class="bi bi-database-fill-gear me-1"></i>Live CRUD Studio
-                </a>
+                <span class="dt-chip dt-can-bo">Mã GV: @hoSoGiangVien.MaNhanSu</span>
+            }
+            <span class="trang-chu-ngay">@DateTime.Now.ToString("dddd, dd/MM/yyyy", new System.Globalization.CultureInfo("vi-VN"))</span>
+        </div>
+        <div class="trang-chu-nut">
+            <a href="HoSoCaNhan" class="btn btn-sm btn-light" id="btnXemProfileNhanh"><i class="bi bi-person-vcard me-1"></i>Hồ sơ</a>
+            <button type="button" class="btn btn-sm btn-light" id="btnBatDauTourWorkspace" onclick="window.batDauTourHuongDan()"><i class="bi bi-signpost-split me-1"></i>Hướng dẫn</button>
+            @if (laSuperAdmin || laAdmin)
+            {
+                <a href="QuanTri/TaiKhoan" class="btn btn-sm btn-light" id="btnCapTaiKhoanGv"><i class="bi bi-person-plus me-1"></i>Tạo tài khoản</a>
+                <a href="QuanTriDuLieu" class="btn btn-sm btn-primary" id="btnXemStudio"><i class="bi bi-table me-1"></i>Dữ liệu &amp; danh mục</a>
             }
         </div>
-    </div>
+    </header>
+
+    @if (daTaiXong)
+    {
+        <BangTinThongBao />
+    }
 
     @if (hienThiWorkspaceGiangVienRieng && hoSoGiangVien != null)
     {
@@ -210,193 +212,111 @@
     }
     else
     {
-        <!-- ==========================================================================
-             WORKSPACE TỔNG QUAN DÀNH CHO SUPERADMIN / ADMIN / CÁN BỘ / USER TRA CỨU
-             ========================================================================== -->
-        <div class="row g-3 mb-4">
-            <div class="col-xl-2 col-md-4 col-sm-6">
-                <div class="stat-kpi-card h-100">
-                    <div class="d-flex justify-content-between align-items-center mb-1">
-                        <span class="text-muted small fw-semibold text-uppercase">Khoa Đào Tạo</span>
-                        <i class="bi bi-bank text-primary fs-5"></i>
-                    </div>
-                    <h3 class="fw-bold mb-0 text-primary" id="lblTongSoKhoa">@tongSoKhoa</h3>
-                    <a href="Khoa" class="text-decoration-none small text-muted">Xem danh sách &rarr;</a>
-                </div>
-            </div>
-            <div class="col-xl-2 col-md-4 col-sm-6">
-                <div class="stat-kpi-card h-100">
-                    <div class="d-flex justify-content-between align-items-center mb-1">
-                        <span class="text-muted small fw-semibold text-uppercase">Bộ Môn</span>
-                        <i class="bi bi-diagram-2 text-primary fs-5"></i>
-                    </div>
-                    <h3 class="fw-bold mb-0 text-primary" id="lblTongSoBoMon">@tongSoBoMon</h3>
-                    <a href="BoMon" class="text-decoration-none small text-muted">Xem danh sách &rarr;</a>
-                </div>
-            </div>
-            <div class="col-xl-2 col-md-4 col-sm-6">
-                <div class="stat-kpi-card stat-kpi-gold h-100">
-                    <div class="d-flex justify-content-between align-items-center mb-1">
-                        <span class="text-muted small fw-semibold text-uppercase">Lớp Học</span>
-                        <i class="bi bi-people text-primary fs-5"></i>
-                    </div>
-                    <h3 class="fw-bold mb-0 text-primary" id="lblTongSoLop">@tongSoLop</h3>
-                    <a href="LopHoc" class="text-decoration-none small text-muted">Xem danh sách &rarr;</a>
-                </div>
-            </div>
-            <div class="col-xl-2 col-md-4 col-sm-6">
-                <div class="stat-kpi-card stat-kpi-red h-100">
-                    <div class="d-flex justify-content-between align-items-center mb-1">
-                        <span class="text-muted small fw-semibold text-uppercase">Học Viên</span>
-                        <i class="bi bi-person-badge text-primary fs-5"></i>
-                    </div>
-                    <h3 class="fw-bold mb-0 text-primary" id="lblTongSoHocVien">@tongSoHocVien</h3>
-                    <a href="HocVien" class="text-decoration-none small text-muted">Xem danh sách &rarr;</a>
-                </div>
-            </div>
-            <div class="col-xl-2 col-md-4 col-sm-6">
-                <div class="stat-kpi-card h-100">
-                    <div class="d-flex justify-content-between align-items-center mb-1">
-                        <span class="text-muted small fw-semibold text-uppercase">Cán Bộ / GV</span>
-                        <i class="bi bi-person-lines-fill text-primary fs-5"></i>
-                    </div>
-                    <h3 class="fw-bold mb-0 text-primary" id="lblTongSoNhanSu">@tongSoNhanSu</h3>
-                    <a href="NhanSu" class="text-decoration-none small text-muted">Xem danh sách &rarr;</a>
-                </div>
-            </div>
-            <div class="col-xl-2 col-md-4 col-sm-6">
-                <div class="stat-kpi-card h-100">
-                    <div class="d-flex justify-content-between align-items-center mb-1">
-                        <span class="text-muted small fw-semibold text-uppercase">Môn Học</span>
-                        <i class="bi bi-journal-bookmark text-primary fs-5"></i>
-                    </div>
-                    <h3 class="fw-bold mb-0 text-primary" id="lblTongSoMonHoc">@tongSoMonHoc</h3>
-                    <a href="MonHoc" class="text-decoration-none small text-muted">Xem danh sách &rarr;</a>
-                </div>
-            </div>
+        <div class="luoi-chi-so" id="pnlChiSo" aria-label="Chỉ số tổng hợp">
+            @foreach (var cs in danhSachChiSo)
+            {
+                <a class="the-chi-so @cs.Mau" href="@cs.DuongDan" aria-label="@($"{cs.Ten}: {cs.So}. {cs.Phu}")">
+                    <span class="dt-o-bieu-tuong"><i class="bi @cs.BieuTuong" aria-hidden="true"></i></span>
+                    <span class="the-chi-so-ten">@cs.Ten</span>
+                    <strong class="the-chi-so-so" id="@cs.Id">@cs.So</strong>
+                    <span class="the-chi-so-phu @LopTrangThai(cs.TrangThai)">@cs.Phu</span>
+                </a>
+            }
         </div>
 
-        <!-- PANEL BIỂU ĐỒ THỐNG KÊ TRỰC QUAN -->
-        <div class="card shadow-sm border-0 mb-4" id="pnlBieuDoThongKe">
-            <div class="card-header bg-white py-3 border-bottom d-flex flex-wrap justify-content-between align-items-center gap-2">
-                <h6 class="mb-0 text-primary fw-bold">
-                    <i class="bi bi-bar-chart-line me-2"></i>Biểu Đồ Phân Tích Quy Mô Đào Tạo &amp; Nhân Sự
-                </h6>
-                <span class="text-muted small">Dữ liệu thời gian thực</span>
-            </div>
-            <div class="card-body p-4 bg-white">
-                <div class="row g-4">
-                    <div class="col-lg-6">
-                        <div class="diagram-panel-card h-100">
-                            <div class="diagram-header">
-                                <span class="diagram-header-title">
-                                    <i class="bi bi-bar-chart text-primary"></i>Quy Mô Học Viên &amp; Lớp Theo Khoa
-                                </span>
-                            </div>
-                            <div class="diagram-canvas-wrapper">
-                                <canvas id="chartHocVienTheoKhoa"></canvas>
-                            </div>
-                        </div>
+        <div class="luoi-trang-chu @(laSuperAdmin || laAdmin ? "co-nhat-ky" : null)">
+            <section class="khoi-trang-chu" id="pnlCanChuY" aria-labelledby="lblCanChuY">
+                <h2 id="lblCanChuY"><i class="bi bi-exclamation-triangle text-warning" aria-hidden="true"></i> Cần chú ý
+                    @if (danhSachCanChuY.Count > 0) { <span class="khoi-dem">@danhSachCanChuY.Count</span> }</h2>
+                @if (danhSachCanChuY.Count == 0)
+                {
+                    <p class="khoi-tot"><i class="bi bi-check-circle-fill" aria-hidden="true"></i> Dữ liệu đầy đủ, không có mục cần xử lý.</p>
+                }
+                else
+                {
+                    <div class="ds-can-chu-y">
+                        @foreach (var muc in danhSachCanChuY)
+                        {
+                            <a class="muc-can-chu-y tt-@muc.MucDo" href="@muc.DuongDan">
+                                <span class="muc-can-chu-y-so dt-chu">@muc.SoLuong.ToString("N0")</span>
+                                <span class="muc-can-chu-y-noi-dung">@muc.NoiDung</span>
+                                <span class="dt-chip @muc.MauDoiTuong">@muc.DoiTuong</span>
+                                <i class="bi bi-chevron-right" aria-hidden="true"></i>
+                            </a>
+                        }
                     </div>
+                }
+            </section>
 
-                    <div class="col-lg-6">
-                        <div class="diagram-panel-card h-100">
-                            <div class="diagram-header">
-                                <span class="diagram-header-title">
-                                    <i class="bi bi-pie-chart text-primary"></i>Cơ Cấu Trình Độ &amp; Học Vị Cán Bộ
-                                </span>
-                            </div>
-                            <div class="diagram-canvas-wrapper d-flex align-items-center justify-content-center">
-                                <canvas id="chartTrinhDoChuyenMon" style="max-height: 250px;"></canvas>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="col-lg-6">
-                        <div class="diagram-panel-card h-100">
-                            <div class="diagram-header">
-                                <span class="diagram-header-title">
-                                    <i class="bi bi-award text-primary"></i>Phân Bổ Nhân Sự Theo Chức Vụ
-                                </span>
-                            </div>
-                            <div class="diagram-canvas-wrapper">
-                                <canvas id="chartChucVuNhanSu"></canvas>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="col-lg-6">
-                        <div class="diagram-panel-card h-100">
-                            <div class="diagram-header">
-                                <span class="diagram-header-title">
-                                    <i class="bi bi-people text-primary"></i>Tỷ Lệ Sĩ Số / Chỉ Tiêu Các Lớp
-                                </span>
-                            </div>
-                            <div class="diagram-canvas-wrapper">
-                                <canvas id="chartSiSoLopHoc"></canvas>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
+            @if (laSuperAdmin || laAdmin)
+            {
+                <section class="khoi-trang-chu" id="pnlHoatDongGanDay" aria-labelledby="lblHoatDong">
+                    <h2 id="lblHoatDong"><i class="bi bi-clock-history" aria-hidden="true"></i> Hoạt động gần đây
+                        <a href="NhatKy" class="khoi-lien-ket" id="btnXemTatCaNhatKy">Xem nhật ký <i class="bi bi-arrow-right" aria-hidden="true"></i></a></h2>
+                    @if (hoatDongGanDay.Count == 0)
+                    {
+                        <p class="text-muted small mb-0">Chưa có hoạt động nào được ghi nhận.</p>
+                    }
+                    else
+                    {
+                        <ol class="ds-hoat-dong" id="dgvHoatDongGanDay">
+                            @foreach (var item in hoatDongGanDay)
+                            {
+                                <li>
+                                    <span class="dt-chip @MauHanhDong(item.HanhDong)">@item.HanhDong</span>
+                                    <span class="ds-hoat-dong-noi-dung">
+                                        <strong>@item.NguoiThucHien</strong>
+                                        <span class="dt-chip @MauDoiTuong.LayLop(item.BangDuLieu)">@item.BangDuLieu</span>
+                                        @if (!string.IsNullOrEmpty(item.KhoaBanGhi) && item.KhoaBanGhi.Length <= 12) { <span class="text-muted">#@item.KhoaBanGhi</span> }
+                                        @if (item.KetQua != "Thành công") { <span class="dt-chip tt-nguy">@item.KetQua</span> }
+                                    </span>
+                                    <time class="ds-hoat-dong-gio" title="@item.ThoiDiem.ToString("dd/MM/yyyy HH:mm:ss")">@ThoiGianTuongDoi(item.ThoiDiem)</time>
+                                </li>
+                            }
+                        </ol>
+                    }
+                </section>
+            }
         </div>
 
-        @if (laSuperAdmin || laAdmin)
-        {
-            <div class="card shadow-sm border-0" id="pnlHoatDongGanDay">
-                <div class="card-header bg-white py-3 border-bottom d-flex justify-content-between align-items-center">
-                    <h6 class="mb-0 text-primary fw-bold"><i class="bi bi-clock-history me-2"></i>Nhật Ký Kiểm Toán Hệ Thống Gần Đây</h6>
-                    <a href="NhatKy" class="btn btn-sm btn-outline-primary" id="btnXemTatCaNhatKy">Xem tất cả</a>
-                </div>
-                <div class="card-body p-0">
-                    <div class="table-responsive">
-                        <table class="table table-hover align-middle mb-0" id="dgvHoatDongGanDay">
-                            <thead class="table-light">
-                                <tr>
-                                    <th class="ps-3">Thời điểm</th>
-                                    <th>Người thực hiện</th>
-                                    <th>Hành động</th>
-                                    <th>Bảng dữ liệu</th>
-                                    <th>Khóa bản ghi</th>
-                                    <th>Kết quả</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                @if (hoatDongGanDay.Count == 0)
-                                {
-                                    <tr>
-                                        <td colspan="6" class="text-center py-4 text-muted">Chưa có hoạt động nào được ghi nhận</td>
-                                    </tr>
-                                }
-                                else
-                                {
-                                    foreach (var item in hoatDongGanDay)
-                                    {
-                                        <tr>
-                                            <td class="ps-3 text-muted small">@item.ThoiDiem.ToString("dd/MM/yyyy HH:mm:ss")</td>
-                                            <td class="fw-semibold">@item.NguoiThucHien</td>
-                                            <td><span class="badge bg-primary">@item.HanhDong</span></td>
-                                            <td><code>@item.BangDuLieu</code></td>
-                                            <td><span class="badge bg-light text-dark border">@(item.KhoaBanGhi ?? "-")</span></td>
-                                            <td>
-                                                @if (item.KetQua == "Thành công")
-                                                {
-                                                    <span class="badge bg-success">Thành công</span>
-                                                }
-                                                else
-                                                {
-                                                    <span class="badge bg-danger">@item.KetQua</span>
-                                                }
-                                            </td>
-                                        </tr>
-                                    }
-                                }
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            </div>
-        }
+        <div class="luoi-bieu-do" id="pnlBieuDoThongKe">
+            <section class="khoi-trang-chu">
+                <h2><i class="bi bi-bar-chart" aria-hidden="true"></i> Học viên và lớp theo khoa</h2>
+                <p class="khoi-mo-ta">Khoa nào đang quản lý nhiều lớp, nhiều học viên nhất.</p>
+                <div class="khung-bieu-do"><canvas id="chartHocVienTheoKhoa" aria-label="Biểu đồ học viên và lớp theo khoa" role="img"></canvas></div>
+            </section>
+            <section class="khoi-trang-chu">
+                <h2><i class="bi bi-speedometer2" aria-hidden="true"></i> Lấp đầy chỉ tiêu từng lớp</h2>
+                <p class="khoi-mo-ta">
+                    <span class="dt-chip tt-tot">Dưới 90%</span> <span class="dt-chip tt-canh-bao">90–100%</span> <span class="dt-chip tt-nguy">Vượt chỉ tiêu</span>
+                </p>
+                <div class="khung-bieu-do"><canvas id="chartSiSoLopHoc" aria-label="Biểu đồ sĩ số và chỉ tiêu từng lớp" role="img"></canvas></div>
+            </section>
+            <section class="khoi-trang-chu">
+                <h2><i class="bi bi-mortarboard" aria-hidden="true"></i> Trình độ cán bộ đang công tác</h2>
+                @if (soCanBoDangLam == 0)
+                {
+                    <p class="khoi-trong">Chưa có hồ sơ cán bộ đang công tác.</p>
+                }
+                else
+                {
+                    <p class="khoi-mo-ta">Tổng @soCanBoDangLam cán bộ.</p>
+                    <div class="khung-bieu-do"><canvas id="chartTrinhDoChuyenMon" aria-label="Biểu đồ cơ cấu trình độ cán bộ" role="img"></canvas></div>
+                }
+            </section>
+            <section class="khoi-trang-chu">
+                <h2><i class="bi bi-award" aria-hidden="true"></i> Cán bộ theo chức vụ</h2>
+                @if (soCanBoDangLam == 0)
+                {
+                    <p class="khoi-trong">Chưa có hồ sơ cán bộ đang công tác.</p>
+                }
+                else
+                {
+                    <p class="khoi-mo-ta">Đối chiếu với chỉ tiêu lãnh đạo khoa, bộ môn.</p>
+                    <div class="khung-bieu-do"><canvas id="chartChucVuNhanSu" aria-label="Biểu đồ cán bộ theo chức vụ" role="img"></canvas></div>
+                }
+            </section>
+        </div>
     }
 </div>
 
@@ -412,7 +332,7 @@
     private int tongSoMonHoc;
 
     private string hoTenNguoiDung = "Cán bộ / Học viên";
-    private string tenWorkspace = "WORKSPACE NGHIỆP VỤ";
+    private string tenWorkspace = "Người dùng";
     private string moTaWorkspace = "Tổng quan dữ liệu đào tạo Học viện An ninh Nhân dân (C500)";
     private string? maNhanSuLienKet;
     private string? emailDangNhap;
@@ -421,6 +341,65 @@
     private bool laGiaoVien;
     private bool laCanBo;
     private bool hienThiWorkspaceGiangVienRieng;
+    private bool daTaiXong;
+    private string? vungQuanLy;
+    private List<MucCanChuY> danhSachCanChuY = new();
+
+    /// <summary>Một mục cảnh báo chất lượng dữ liệu: mức độ (nguy / canh-bao) quyết định màu.</summary>
+    private sealed record MucCanChuY(string DoiTuong, string MauDoiTuong, string NoiDung, int SoLuong, string DuongDan, string MucDo);
+
+    /// <summary>Một thẻ chỉ số trên trang chủ.</summary>
+    private sealed record ChiSo(string Id, string Ten, string So, string Phu, string BieuTuong, string Mau, string DuongDan, string? TrangThai = null);
+
+    private List<ChiSo> danhSachChiSo = new();
+    private int soCanBoDangLam;
+    private bool daVeBieuDo;
+    private string duLieuBieuDoJson = "{}";
+
+    /// <summary>Người có quyền sửa vùng đó được dẫn thẳng tới nhóm "cần xử lý" trong Dữ liệu &amp; danh mục; người khác tới trang xem.</summary>
+    private string LienKetXuLy(string bang, string nhom, string vung) =>
+        laSuperAdmin || laAdmin || (laCanBo && vungQuanLy == vung) ? $"QuanTriDuLieu?bang={bang}&can={nhom}" : bang;
+
+    private static string? LopTrangThai(string? trangThai) => trangThai is null ? null : $"tt-{trangThai} dt-chu";
+
+    private static string MauHanhDong(string? hanhDong) => hanhDong switch
+    {
+        null => "dt-trung-tinh",
+        var h when h.Contains("Xóa", StringComparison.OrdinalIgnoreCase) => "tt-nguy",
+        var h when h.Contains("Thêm", StringComparison.OrdinalIgnoreCase) || h.Contains("Tạo", StringComparison.OrdinalIgnoreCase) || h.Contains("Nhập", StringComparison.OrdinalIgnoreCase) => "tt-tot",
+        var h when h.Contains("Sửa", StringComparison.OrdinalIgnoreCase) || h.Contains("Cập nhật", StringComparison.OrdinalIgnoreCase) => "tt-thong-tin",
+        _ => "dt-trung-tinh"
+    };
+
+    private static string ThoiGianTuongDoi(DateTime thoiDiem)
+    {
+        var khoang = DateTime.Now - (thoiDiem.Kind == DateTimeKind.Utc ? thoiDiem.ToLocalTime() : thoiDiem);
+        return khoang.TotalMinutes < 1 ? "vừa xong"
+            : khoang.TotalHours < 1 ? $"{(int)khoang.TotalMinutes} phút trước"
+            : khoang.TotalDays < 1 ? $"{(int)khoang.TotalHours} giờ trước"
+            : khoang.TotalDays < 7 ? $"{(int)khoang.TotalDays} ngày trước"
+            : thoiDiem.ToString("dd/MM/yyyy");
+    }
+
+
+    /// <summary>
+    /// Tổng hợp các điểm cần xử lý để người quản lý theo dõi chất lượng dữ liệu; chỉ hiện mục có số lượng lớn hơn 0.
+    /// </summary>
+    private void TinhDanhSachCanChuY(List<Khoa> khoas, List<LopHoc> lophocs, List<HocVien> hocviens, List<NhanSu> nhansus)
+    {
+        var dangLam = nhansus.Where(n => n.CoHoatDong).ToList();
+        var ung = new List<MucCanChuY>
+        {
+            new("Lớp", "dt-lop", "lớp vượt chỉ tiêu sĩ số", lophocs.Count(l => l.HocViens.Count > l.SoLuongToiDa), "LopHoc", "nguy"),
+            new("Học viên", "dt-hoc-vien", "học viên thiếu CCCD hoặc số điện thoại", hocviens.Count(h => string.IsNullOrEmpty(h.SoCCCD) || string.IsNullOrEmpty(h.SoDienThoai)), LienKetXuLy("HocVien", "thieu-dinh-danh", VungQuanLy.DaoTao), "canh-bao"),
+            new("Lớp", "dt-lop", "lớp có học viên nhưng chưa có B trưởng", lophocs.Count(l => l.HocViens.Count > 0 &&
+                !hocviens.Any(h => h.LopHocId == l.LopHocId && QuyTacNghiepVu.TachChucVuLop(h.ChucVuLop).Contains("BT"))), "LopHoc", "canh-bao"),
+            new("Lớp", "dt-lop", "lớp chưa khai báo khóa hoặc chuyên ngành", lophocs.Count(l => l.KhoaHoc == null || l.ChuyenNganh == null), LienKetXuLy("LopHoc", "chua-khoa-hoc", VungQuanLy.DaoTao), "canh-bao"),
+            new("Khoa", "dt-khoa", "khoa chưa có Trưởng khoa", khoas.Count(k => !dangLam.Any(n => n.KhoaId == k.KhoaId && n.ChucVu?.MaChucVu == "CV_TK")), "Khoa", "canh-bao"),
+            new("Cán bộ", "dt-can-bo", "cán bộ chưa gán bộ môn", dangLam.Count(n => n.BoMonId == null), LienKetXuLy("NhanSu", "chua-bo-mon", VungQuanLy.ToChuc), "canh-bao")
+        };
+        danhSachCanChuY = ung.Where(m => m.SoLuong > 0).OrderBy(m => m.MucDo == "nguy" ? 0 : 1).ThenByDescending(m => m.SoLuong).ToList();
+    }
 
     private NhanSu? hoSoGiangVien;
     private int soMonGiangDayCaNhan;
@@ -428,8 +407,6 @@
     private int soLopChuNhiemCaNhan;
     private List<(LopHoc Lop, bool LaChuNhiem)> danhSachLopQuanLyCaNhan = new();
 
-    private List<ThongKeKhoaItem> dsKhoa = new();
-    private List<ThongKeLopItem> dsLop = new();
     private List<PhanCongGiangDay> danhSachPhanCongCaNhan = new();
     private List<NhatKyHeThong> hoatDongGanDay = new();
 
@@ -444,8 +421,8 @@
                 emailDangNhap = user.Identity.Name ?? "";
                 laSuperAdmin = user.IsInRole(VaiTroMacDinh.SuperAdmin);
                 laAdmin = user.IsInRole(VaiTroMacDinh.QuanTriVien);
-                laGiaoVien = user.IsInRole(VaiTroMacDinh.GiaoVien);
-                laCanBo = user.IsInRole(VaiTroMacDinh.CanBo) || user.IsInRole(VaiTroMacDinh.QuanLyDaoTao);
+                laCanBo = user.IsInRole(VaiTroMacDinh.QuanLy);
+                vungQuanLy = user.FindFirst(LoaiClaimTuyChinh.VungQuanLy)?.Value;
 
                 try
                 {
@@ -456,6 +433,8 @@
                     {
                         hoTenNguoiDung = !string.IsNullOrWhiteSpace(dbUser.HoVaTen) ? dbUser.HoVaTen : emailDangNhap;
                         maNhanSuLienKet = dbUser.MaNhanSuLienKet;
+                        // Tài khoản liên kết hồ sơ cán bộ (không phải quản trị) xem bảng phân công cá nhân.
+                        laGiaoVien = !laSuperAdmin && !laAdmin && !string.IsNullOrWhiteSpace(maNhanSuLienKet);
                     }
                     else
                     {
@@ -483,15 +462,14 @@
         }
 
         // Nếu là Giảng viên (hoặc tài khoản không phải Admin/Superadmin mà có hồ sơ Giảng viên khớp) -> Hiển thị Workspace Giảng viên gọn gàng
-        if (!laSuperAdmin && !laAdmin && (laGiaoVien || hoSoGiangVien != null))
+        if (!laSuperAdmin && !laAdmin && !laCanBo && hoSoGiangVien != null)
         {
             hienThiWorkspaceGiangVienRieng = true;
-            hoSoGiangVien ??= nhansus.FirstOrDefault();
 
             if (hoSoGiangVien != null)
             {
                 hoTenNguoiDung = hoSoGiangVien.HoVaTen;
-                tenWorkspace = "GIẢNG VIÊN WORKSPACE";
+                tenWorkspace = "Giảng viên";
                 moTaWorkspace = $"Đơn vị: {hoSoGiangVien.Khoa?.TenKhoa ?? "Học viện C500"} • {hoSoGiangVien.BoMon?.TenBoMon ?? "Bộ môn chuyên ngành"} • Chức vụ: {hoSoGiangVien.ChucVu?.TenChucVu ?? "Giảng viên"}";
 
                 danhSachPhanCongCaNhan = phancongs
@@ -516,29 +494,32 @@
 
                 soLopChuNhiemCaNhan = danhSachLopQuanLyCaNhan.Count(x => x.LaChuNhiem);
             }
+            daTaiXong = true;
             return;
         }
 
         // Ngược lại: Tải dữ liệu tổng hợp cho Superadmin / Admin / Cán bộ / User tra cứu
         if (laSuperAdmin)
         {
-            tenWorkspace = "SUPERADMIN WORKSPACE";
-            moTaWorkspace = "Toàn quyền quản trị hệ thống, xóa/cấp phát tài khoản và tùy biến trực tiếp cấu trúc Database (Live CRUD Studio)";
+            tenWorkspace = "Siêu quản trị";
+            moTaWorkspace = "Toàn quyền quản trị hệ thống, tài khoản và dữ liệu gốc";
         }
         else if (laAdmin)
         {
-            tenWorkspace = "ADMIN WORKSPACE";
+            tenWorkspace = "Quản trị viên";
             moTaWorkspace = "Quản trị đào tạo, tổ chức nhân sự và cấp phát tài khoản Giáo viên / Cán bộ";
         }
         else if (laCanBo)
         {
-            tenWorkspace = "CÁN BỘ WORKSPACE";
-            moTaWorkspace = "Quản lý lớp đào tạo, hồ sơ học viên và tiện ích nhập/xuất dữ liệu Excel";
+            tenWorkspace = $"Quản lý · {VungQuanLy.LayNhan(vungQuanLy)}";
+            moTaWorkspace = vungQuanLy == VungQuanLy.ToChuc
+                ? "Quản lý khoa, bộ môn và hồ sơ cán bộ giảng viên trong phạm vi được giao"
+                : "Quản lý lớp đào tạo, hồ sơ học viên, môn học và phân công giảng dạy trong phạm vi được giao";
         }
         else
         {
-            tenWorkspace = "USER WORKSPACE (CHỈ XEM)";
-            moTaWorkspace = "Không gian tra cứu thông tin đơn vị, chương trình đào tạo và thống kê tổng hợp";
+            tenWorkspace = "Người xem (chỉ tra cứu)";
+            moTaWorkspace = "Tra cứu thông tin đơn vị, lớp và thống kê tổng hợp; thông tin cá nhân được che";
         }
 
         var khoas = await KhoaDichVu.LayDanhSachAsync();
@@ -549,7 +530,7 @@
 
         if (laSuperAdmin || laAdmin)
         {
-            hoatDongGanDay = await NhatKyDichVu.LayDanhSachNhatKyAsync(null, null, 10);
+            hoatDongGanDay = await NhatKyDichVu.LayDanhSachNhatKyAsync(null, null, 6);
         }
 
         tongSoKhoa = khoas.Count;
@@ -559,40 +540,60 @@
         tongSoNhanSu = nhansus.Count;
         tongSoMonHoc = monhocs.Count;
 
-        foreach (var k in khoas)
-        {
-            dsKhoa.Add(new ThongKeKhoaItem
-            {
-                TenKhoa = k.TenKhoa,
-                SoLop = k.LopHocs?.Count ?? 0,
-                SoHocVien = k.LopHocs?.Sum(l => l.HocViens?.Count ?? 0) ?? 0,
-                SoNhanSu = k.NhanSus?.Count ?? 0
-            });
-        }
+        TinhDanhSachCanChuY(khoas, lophocs, hocviens, nhansus);
 
-        foreach (var l in lophocs.Take(10))
+        // Số liệu thật cho thẻ chỉ số và biểu đồ (sĩ số tính từ hồ sơ học viên, không dùng số mẫu).
+        var siSoTheoLop = hocviens.GroupBy(h => h.LopHocId).ToDictionary(g => g.Key, g => g.Count());
+        int SiSo(LopHoc l) => siSoTheoLop.GetValueOrDefault(l.LopHocId);
+        var dangLam = nhansus.Where(n => n.CoHoatDong).ToList();
+        soCanBoDangLam = dangLam.Count;
+        var tongChiTieu = lophocs.Sum(l => l.SoLuongToiDa);
+        var tiLeLapDay = tongChiTieu == 0 ? 0 : (int)Math.Round(hocviens.Count * 100.0 / tongChiTieu);
+        var soLopVuot = lophocs.Count(l => SiSo(l) > l.SoLuongToiDa);
+        var soLopDay = lophocs.Count(l => SiSo(l) == l.SoLuongToiDa);
+
+        danhSachChiSo =
+        [
+            new("lblTongSoKhoa", "Khoa", tongSoKhoa.ToString("N0"), $"{khoas.Count(k => k.CoHoatDong)} đang hoạt động", "bi-bank", "dt-khoa", "Khoa"),
+            new("lblTongSoBoMon", "Bộ môn", tongSoBoMon.ToString("N0"), tongSoKhoa == 0 ? "Chưa có khoa" : $"TB {tongSoBoMon / (double)tongSoKhoa:0.#} bộ môn / khoa", "bi-diagram-2", "dt-bo-mon", "BoMon"),
+            new("lblTongSoNhanSu", "Cán bộ, giảng viên", tongSoNhanSu.ToString("N0"), $"{soCanBoDangLam} đang công tác", "bi-person-lines-fill", "dt-can-bo", "NhanSu"),
+            new("lblTongSoLop", "Lớp đào tạo", tongSoLop.ToString("N0"), soLopVuot > 0 ? $"{soLopVuot} lớp vượt chỉ tiêu" : $"{soLopDay} lớp đã đủ chỉ tiêu", "bi-people", "dt-lop", "LopHoc", soLopVuot > 0 ? "nguy" : null),
+            new("lblTongSoHocVien", "Học viên", tongSoHocVien.ToString("N0"), $"Lấp đầy {tiLeLapDay}% chỉ tiêu", "bi-person-badge", "dt-hoc-vien", "HocVien", tiLeLapDay > 100 ? "nguy" : null),
+            new("lblTongSoMonHoc", "Môn học", tongSoMonHoc.ToString("N0"), $"{monhocs.Sum(m => m.SoTinChi)} tín chỉ", "bi-journal-bookmark", "dt-mon-hoc", "MonHoc")
+        ];
+
+        var duLieuBieuDo = new
         {
-            dsLop.Add(new ThongKeLopItem
+            theoKhoa = khoas.Select(k => new
             {
-                TenLop = l.TenLop,
-                SoHocVien = l.HocViens?.Count ?? 0,
-                SoLuongToiDa = l.SoLuongToiDa
-            });
-        }
+                ten = k.TenKhoa,
+                lop = lophocs.Count(l => l.KhoaId == k.KhoaId),
+                hocVien = lophocs.Where(l => l.KhoaId == k.KhoaId).Sum(SiSo)
+            }).OrderByDescending(x => x.hocVien).ThenByDescending(x => x.lop).ToList(),
+            trinhDo = dangLam.GroupBy(n => n.TrinhDoChuyenMon?.TenTrinhDo ?? "Chưa khai báo")
+                .Select(g => new { ten = g.Key, soLuong = g.Count() }).OrderByDescending(x => x.soLuong).ToList(),
+            chucVu = dangLam.GroupBy(n => n.ChucVu?.TenChucVu ?? "Chưa có chức vụ")
+                .Select(g => new { ten = g.Key, soLuong = g.Count() }).OrderByDescending(x => x.soLuong).ToList(),
+            siSoLop = lophocs.OrderBy(l => l.MaLop.Length).ThenBy(l => l.MaLop, StringComparer.Ordinal)
+                .Select(l => new { ten = l.MaLop, siSo = SiSo(l), chiTieu = l.SoLuongToiDa }).ToList()
+        };
+        duLieuBieuDoJson = System.Text.Json.JsonSerializer.Serialize(duLieuBieuDo);
+
+        daTaiXong = true;
     }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        if (firstRender && !hienThiWorkspaceGiangVienRieng)
+        if (daTaiXong && !daVeBieuDo && !hienThiWorkspaceGiangVienRieng)
         {
+            daVeBieuDo = true;
             try
             {
-                var khoasJson = System.Text.Json.JsonSerializer.Serialize(dsKhoa);
-                var lopsJson = System.Text.Json.JsonSerializer.Serialize(dsLop);
-                await JSRuntime.InvokeVoidAsync("khoiTaoBieuDoDashboard", khoasJson, lopsJson);
+                await JSRuntime.InvokeVoidAsync("khoiTaoBieuDoTrangChu", duLieuBieuDoJson);
             }
-            catch
+            catch (JSException)
             {
+                // Thư viện biểu đồ chưa sẵn sàng: bỏ qua, số liệu dạng thẻ vẫn hiển thị.
             }
         }
     }
@@ -603,8 +604,9 @@
         {
             await JSRuntime.InvokeVoidAsync("batDauTourHuongDan", tenWorkspace);
         }
-        catch
+        catch (JSException)
         {
+            // Trang chưa nạp script hướng dẫn.
         }
     }
 }

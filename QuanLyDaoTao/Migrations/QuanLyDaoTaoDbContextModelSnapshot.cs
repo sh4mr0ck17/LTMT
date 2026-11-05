@@ -233,6 +233,10 @@ namespace QuanLyDaoTao.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("INTEGER");
 
+                    b.Property<string>("ChucVuLop")
+                        .HasMaxLength(100)
+                        .HasColumnType("TEXT");
+
                     b.Property<string>("DiaChi")
                         .HasMaxLength(255)
                         .HasColumnType("TEXT");
@@ -259,10 +263,17 @@ namespace QuanLyDaoTao.Migrations
                         .HasMaxLength(50)
                         .HasColumnType("TEXT");
 
+                    b.Property<DateTime?>("NgayCapNhat")
+                        .HasColumnType("TEXT");
+
                     b.Property<DateTime>("NgaySinh")
                         .HasColumnType("TEXT");
 
                     b.Property<DateTime>("NgayTao")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("SoCCCD")
+                        .HasMaxLength(12)
                         .HasColumnType("TEXT");
 
                     b.Property<string>("SoDienThoai")
@@ -282,6 +293,10 @@ namespace QuanLyDaoTao.Migrations
 
                     b.HasIndex("MaHocVien")
                         .IsUnique();
+
+                    b.HasIndex("SoCCCD");
+
+                    b.HasIndex("SoDienThoai");
 
                     b.ToTable("HocViens");
                 });
@@ -340,8 +355,21 @@ namespace QuanLyDaoTao.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("INTEGER");
 
+                    b.Property<string>("ChuyenNganh")
+                        .HasMaxLength(150)
+                        .HasColumnType("TEXT");
+
                     b.Property<bool>("CoHoatDong")
                         .HasColumnType("INTEGER");
+
+                    b.Property<string>("HeDaoTao")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("KhoaHoc")
+                        .HasMaxLength(20)
+                        .HasColumnType("TEXT");
 
                     b.Property<int>("KhoaId")
                         .HasColumnType("INTEGER");
@@ -349,6 +377,9 @@ namespace QuanLyDaoTao.Migrations
                     b.Property<string>("MaLop")
                         .IsRequired()
                         .HasMaxLength(50)
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime?>("NgayCapNhat")
                         .HasColumnType("TEXT");
 
                     b.Property<DateTime>("NgayTao")
@@ -377,6 +408,8 @@ namespace QuanLyDaoTao.Migrations
                     b.HasIndex("NienKhoa");
 
                     b.HasIndex("TenLop");
+
+                    b.HasIndex("HeDaoTao", "KhoaHoc");
 
                     b.ToTable("LopHocs");
                 });
@@ -433,6 +466,10 @@ namespace QuanLyDaoTao.Migrations
                     b.Property<int?>("BoMonId")
                         .HasColumnType("INTEGER");
 
+                    b.Property<string>("CapBacHam")
+                        .HasMaxLength(50)
+                        .HasColumnType("TEXT");
+
                     b.Property<int?>("ChucVuId")
                         .HasColumnType("INTEGER");
 
@@ -467,6 +504,10 @@ namespace QuanLyDaoTao.Migrations
                         .HasMaxLength(100)
                         .HasColumnType("TEXT");
 
+                    b.Property<string>("HocHam")
+                        .HasMaxLength(50)
+                        .HasColumnType("TEXT");
+
                     b.Property<int?>("KhoaId")
                         .HasColumnType("INTEGER");
 
@@ -492,6 +533,10 @@ namespace QuanLyDaoTao.Migrations
                         .HasColumnType("TEXT");
 
                     b.Property<string>("NguoiTao")
+                        .HasMaxLength(100)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("QueQuan")
                         .HasMaxLength(100)
                         .HasColumnType("TEXT");
 
@@ -525,6 +570,10 @@ namespace QuanLyDaoTao.Migrations
 
                     b.HasIndex("MaNhanSu")
                         .IsUnique();
+
+                    b.HasIndex("SoCCCD");
+
+                    b.HasIndex("SoDienThoai");
 
                     b.HasIndex("TrinhDoChuyenMonId");
 
@@ -668,6 +717,12 @@ namespace QuanLyDaoTao.Migrations
                         .HasMaxLength(100)
                         .HasColumnType("TEXT");
 
+                    b.Property<int?>("KhoaPhuTrachId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime?>("LanDangNhapCuoi")
+                        .HasColumnType("TEXT");
+
                     b.Property<bool>("LockoutEnabled")
                         .HasColumnType("INTEGER");
 
@@ -708,6 +763,10 @@ namespace QuanLyDaoTao.Migrations
                         .HasMaxLength(256)
                         .HasColumnType("TEXT");
 
+                    b.Property<string>("VungQuanLy")
+                        .HasMaxLength(20)
+                        .HasColumnType("TEXT");
+
                     b.HasKey("Id");
 
                     b.HasIndex("NormalizedEmail")
@@ -718,6 +777,148 @@ namespace QuanLyDaoTao.Migrations
                         .HasDatabaseName("UserNameIndex");
 
                     b.ToTable("AspNetUsers", (string)null);
+                });
+
+            modelBuilder.Entity("QuanLyDaoTao.Models.TepDinhKemThongBao", b =>
+                {
+                    b.Property<int>("TepDinhKemThongBaoId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<byte[]>("DuLieu")
+                        .IsRequired()
+                        .HasColumnType("BLOB");
+
+                    b.Property<long>("KichThuoc")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("KieuNoiDung")
+                        .IsRequired()
+                        .HasMaxLength(120)
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("NgayTaiLen")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("TenTep")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("ThongBaoId")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("TepDinhKemThongBaoId");
+
+                    b.HasIndex("ThongBaoId");
+
+                    b.ToTable("TepDinhKemThongBaos");
+                });
+
+            modelBuilder.Entity("QuanLyDaoTao.Models.ThongBao", b =>
+                {
+                    b.Property<int>("ThongBaoId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("AnhDinhKem")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("CoQuanBanHanh")
+                        .HasMaxLength(150)
+                        .HasColumnType("TEXT");
+
+                    b.Property<bool>("DaGhim")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime?>("HetHanLuc")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("LoaiVanBan")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("MucDo")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime?>("NgayBanHanh")
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("NgayDang")
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime?>("NgaySua")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("NguoiDang")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("NguoiKy")
+                        .HasMaxLength(100)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("NoiDung")
+                        .IsRequired()
+                        .HasMaxLength(20000)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("PhamVi")
+                        .IsRequired()
+                        .HasMaxLength(1000)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("SoKyHieu")
+                        .HasMaxLength(50)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("TieuDe")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("TrichYeu")
+                        .HasMaxLength(500)
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("ThongBaoId");
+
+                    b.HasIndex("LoaiVanBan");
+
+                    b.HasIndex("NgayDang");
+
+                    b.ToTable("ThongBaos");
+                });
+
+            modelBuilder.Entity("QuanLyDaoTao.Models.ThongBaoDaDoc", b =>
+                {
+                    b.Property<int>("ThongBaoDaDocId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime>("DocLuc")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("TenDangNhap")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("ThongBaoId")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("ThongBaoDaDocId");
+
+                    b.HasIndex("TenDangNhap");
+
+                    b.HasIndex("ThongBaoId", "TenDangNhap")
+                        .IsUnique();
+
+                    b.ToTable("ThongBaoDaDocs");
                 });
 
             modelBuilder.Entity("QuanLyDaoTao.Models.TrinhDoChuyenMon", b =>
@@ -1003,6 +1204,28 @@ namespace QuanLyDaoTao.Migrations
                     b.Navigation("NhanSu");
                 });
 
+            modelBuilder.Entity("QuanLyDaoTao.Models.TepDinhKemThongBao", b =>
+                {
+                    b.HasOne("QuanLyDaoTao.Models.ThongBao", "ThongBao")
+                        .WithMany("TepDinhKem")
+                        .HasForeignKey("ThongBaoId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("ThongBao");
+                });
+
+            modelBuilder.Entity("QuanLyDaoTao.Models.ThongBaoDaDoc", b =>
+                {
+                    b.HasOne("QuanLyDaoTao.Models.ThongBao", "ThongBao")
+                        .WithMany("LuotDoc")
+                        .HasForeignKey("ThongBaoId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("ThongBao");
+                });
+
             modelBuilder.Entity("QuanLyDaoTao.Models.BoMon", b =>
                 {
                     b.Navigation("MonHocs");
@@ -1039,6 +1262,13 @@ namespace QuanLyDaoTao.Migrations
             modelBuilder.Entity("QuanLyDaoTao.Models.NhanSu", b =>
                 {
                     b.Navigation("PhanCongGiangDays");
+                });
+
+            modelBuilder.Entity("QuanLyDaoTao.Models.ThongBao", b =>
+                {
+                    b.Navigation("LuotDoc");
+
+                    b.Navigation("TepDinhKem");
                 });
 
             modelBuilder.Entity("QuanLyDaoTao.Models.TrinhDoChuyenMon", b =>

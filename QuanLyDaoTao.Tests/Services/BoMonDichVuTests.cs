@@ -76,7 +76,7 @@ public class BoMonDichVuTests
         {
             MaNhanSu = "NS_01",
             HoVaTen = "Nguyễn Văn B",
-            EmailCongViec = "b@test.local",
+            Email = "b@test.local",
             BoMonId = bm.BoMonId
         });
         await db.SaveChangesAsync();

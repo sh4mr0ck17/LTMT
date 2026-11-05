@@ -1,0 +1,110 @@
+@inject DialogService HopThoai
+@inject ITaiKhoanDichVu TaiKhoanDichVu
+@* Biểu mẫu tạo / sửa tài khoản: vai trò, vùng và khoa phụ trách; đặt lại mật khẩu khi sửa. *@
+
+<div class="luoi-bieu-mau">
+    <RadzenFormField Text="Email đăng nhập *" Variant="Variant.Outlined">
+        <RadzenTextBox id="txtEmail" @bind-Value="_yeuCau.Email" Disabled="@DangSua" MaxLength="100" />
+    </RadzenFormField>
+    <RadzenFormField Text="Họ và tên *" Variant="Variant.Outlined">
+        <RadzenTextBox id="txtHoVaTen" @bind-Value="_yeuCau.HoVaTen" MaxLength="100" />
+    </RadzenFormField>
+    <RadzenFormField Text="Vai trò *" Variant="Variant.Outlined">
+        <RadzenDropDown TValue="string" id="cboVaiTro" Data="@VaiTroDuocCap" TextProperty="Ten" ValueProperty="Ma" @bind-Value="_yeuCau.VaiTro" />
+    </RadzenFormField>
+    <RadzenFormField Text="@(DangSua ? "Mật khẩu mới (để trống: giữ nguyên)" : "Mật khẩu khởi tạo *")" Variant="Variant.Outlined">
+        <RadzenPassword id="txtMatKhau" @bind-Value="_yeuCau.MatKhau" />
+    </RadzenFormField>
+    @if (_yeuCau.VaiTro == VaiTroMacDinh.QuanLy)
+    {
+        <RadzenFormField Text="Vùng quản lý *" Variant="Variant.Outlined">
+            <RadzenDropDown TValue="string" id="cboVungQuanLy" Data="@_danhSachVung" TextProperty="Ten" ValueProperty="Ma" @bind-Value="_yeuCau.VungQuanLy" />
+        </RadzenFormField>
+        <RadzenFormField Text="Khoa phụ trách" Variant="Variant.Outlined">
+            <RadzenDropDown TValue="int?" id="cboKhoaPhuTrach" Data="@DanhSachKhoa" TextProperty="TenKhoa" ValueProperty="KhoaId" @bind-Value="_yeuCau.KhoaPhuTrachId"
+                            AllowClear="true" Placeholder="Mọi khoa trong vùng" />
+        </RadzenFormField>
+    }
+    <RadzenFormField Text="Liên kết hồ sơ cán bộ" Variant="Variant.Outlined" class="o-rong">
+        <RadzenDropDown TValue="string" id="cboNhanSuLienKet" Data="@DanhSachCanBo" TextProperty="Ten" ValueProperty="Ma" @bind-Value="_yeuCau.MaNhanSuLienKet"
+                        AllowClear="true" AllowFiltering="true" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" FilterOperator="StringFilterOperator.Contains"
+                        Placeholder="Không liên kết" />
+    </RadzenFormField>
+</div>
+
+<p class="small text-muted mt-2 mb-0">
+    <i class="bi bi-shield-lock me-1"></i>@MoTaQuyen
+</p>
+
+@if (!string.IsNullOrEmpty(_loi))
+{
+    <RadzenAlert AlertStyle="AlertStyle.Danger" Variant="Variant.Flat" AllowClose="false" class="mt-3 mb-0" id="lblThongBaoLoi">@_loi</RadzenAlert>
+}
+
+<div class="d-flex justify-content-end gap-2 mt-3">
+    <RadzenButton Text="Hủy" ButtonStyle="ButtonStyle.Light" Disabled="@_dangLuu" Click="@(() => HopThoai.Close())" id="btnHuy" />
+    <RadzenButton Text="Lưu tài khoản" Icon="save" ButtonStyle="ButtonStyle.Primary" IsBusy="@_dangLuu" BusyText="Đang lưu..." Click="LuuAsync" id="btnLuuTaiKhoan" />
+</div>
+
+@code {
+    private static readonly LuaChon[] _danhSachVung =
+        [new(VungQuanLy.ToChuc, "Tổ chức - Cán bộ (Khoa, Bộ môn, Cán bộ)"), new(VungQuanLy.DaoTao, "Đào tạo (Lớp, Học viên, Môn học, Phân công)")];
+
+    private YeuCauTaiKhoan _yeuCau = new();
+    private bool _dangLuu;
+    private string? _loi;
+
+    /// <summary>Tài khoản đang sửa (null khi tạo mới).</summary>
+    [Parameter] public DongTaiKhoan? TaiKhoanGoc { get; set; }
+
+    /// <summary>Danh sách khoa.</summary>
+    [Parameter] public IReadOnlyList<Khoa> DanhSachKhoa { get; set; } = [];
+
+    /// <summary>Danh sách cán bộ để liên kết (mã → tên).</summary>
+    [Parameter] public IReadOnlyList<LuaChon> DanhSachCanBo { get; set; } = [];
+
+    /// <summary>Người thao tác là Superadmin.</summary>
+    [Parameter] public bool LaSuperAdmin { get; set; }
+
+    private bool DangSua => TaiKhoanGoc is not null;
+
+    private IEnumerable<LuaChon> VaiTroDuocCap => VaiTroMacDinh.TatCa
+        .Where(v => v != VaiTroMacDinh.SuperAdmin || LaSuperAdmin || TaiKhoanGoc?.VaiTro == v)
+        .Select(v => new LuaChon(v, VaiTroMacDinh.LayNhan(v)));
+
+    private string MoTaQuyen => _yeuCau.VaiTro switch
+    {
+        VaiTroMacDinh.SuperAdmin => "Toàn quyền, kể cả Live CRUD Studio.",
+        VaiTroMacDinh.QuanTriVien => "Toàn quyền nghiệp vụ, quản lý tài khoản và danh mục.",
+        VaiTroMacDinh.QuanLy => "Chỉ ghi dữ liệu trong vùng (và khoa) được giao; xem dữ liệu cá nhân trong phạm vi đó.",
+        _ => "Chỉ tra cứu; CCCD, SĐT, email, địa chỉ bị che."
+    };
+
+    /// <inheritdoc />
+    protected override void OnInitialized()
+    {
+        _yeuCau = TaiKhoanGoc is null
+            ? new YeuCauTaiKhoan()
+            : new YeuCauTaiKhoan
+            {
+                Id = TaiKhoanGoc.Id, Email = TaiKhoanGoc.Email, HoVaTen = TaiKhoanGoc.HoVaTen, VaiTro = TaiKhoanGoc.VaiTro,
+                VungQuanLy = TaiKhoanGoc.VungQuanLy, KhoaPhuTrachId = TaiKhoanGoc.KhoaPhuTrachId, MaNhanSuLienKet = TaiKhoanGoc.MaNhanSuLienKet
+            };
+    }
+
+    private async Task LuuAsync()
+    {
+        if (_dangLuu)
+        {
+            return;
+        }
+
+        _dangLuu = true;
+        _loi = await TrangNghiepVuCoSo.ChayVaBatLoiAsync(() => TaiKhoanDichVu.LuuAsync(_yeuCau));
+        _dangLuu = false;
+        if (_loi is null)
+        {
+            HopThoai.Close(new KetQuaBieuMau(DangSua ? $"Đã cập nhật {_yeuCau.Email}. Phiên cũ hết hiệu lực nếu quyền thay đổi." : $"Đã tạo tài khoản {_yeuCau.Email}.", _yeuCau.Email));
+        }
+    }
+}

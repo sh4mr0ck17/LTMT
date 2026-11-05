@@ -30,7 +30,7 @@
     var avatarUrl = userClaims.FirstOrDefault(c => c.Type == "Avatar")?.Value ?? defaultAvatar;
     var laSuperAdmin = User.IsInRole(VaiTroMacDinh.SuperAdmin);
     var laAdmin = laSuperAdmin || User.IsInRole(VaiTroMacDinh.QuanTriVien);
-    var roleLabel = laSuperAdmin ? "Superadmin" : (laAdmin ? "Quản trị viên" : (User.IsInRole(VaiTroMacDinh.GiaoVien) ? "Giảng viên" : (User.IsInRole(VaiTroMacDinh.CanBo) ? "Cán bộ" : "Người dùng")));
+    var roleLabel = laSuperAdmin ? "Superadmin" : (laAdmin ? "Quản trị viên" : (User.IsInRole(VaiTroMacDinh.QuanLy) ? "Quản lý" : "Người xem"));
 
     <div class="app-layout">
         <!-- Backdrop cho mobile -->
@@ -43,7 +43,8 @@
                 <a class="d-flex align-items-center text-decoration-none text-white overflow-hidden" href="/" id="lblLogo">
                     <img src="~/images/logo_badge.png" alt="Logo Học viện An ninh Nhân dân" class="logo-cand-nav flex-shrink-0 shadow-sm" />
                     <div class="lh-sm ms-2 sidebar-brand-text">
-                        <span class="d-block fw-bold text-white brand-text-title">Học viện An ninh Nhân dân</span>
+                        <span class="d-block fw-bold text-white" style="font-size: 0.88rem; letter-spacing: 0.3px;">HỌC VIỆN AN NINH</span>
+                        <span class="text-white-50" style="font-size: 0.68rem; font-weight: 600;">NHÂN DÂN • C500</span>
                     </div>
                 </a>
                 <button type="button" class="sidebar-collapse-btn d-none d-lg-flex" id="btnToggleNav" onclick="toggleSidebarCollapse()" title="Thu gọn về Icon / Mở rộng Side Panel">
@@ -198,7 +199,7 @@
                 </button>
                 <div class="d-flex align-items-center gap-2">
                     <img src="~/images/logo_badge.png" alt="C500" style="width: 26px; height: 26px; border-radius: 50%;" />
-                    <span class="fw-bold text-primary small">Học viện An ninh Nhân dân</span>
+                    <span class="fw-bold text-primary small">C500 • ĐÀO TẠO</span>
                 </div>
                 <div class="d-flex align-items-center gap-1">
                     <button type="button" class="btn btn-sm btn-outline-primary" id="btnTourMobile" onclick="window.batDauTourHuongDan('@roleLabel')" title="Hướng dẫn tương tác">
@@ -303,10 +304,13 @@ else
                                     </div>
                                 </form>
                             </div>
+                            <environment include="Development">
                             <div class="card-footer bg-light text-center py-3 text-muted small border-top">
-                                <div>Superadmin: <code>superadmin@quanlydaotao.local</code> | Admin: <code>admin@quanlydaotao.local</code></div>
-                                <div>Giảng viên: <code>giaovien@quanlydaotao.local</code> | User: <code>user@quanlydaotao.local</code> (MK: <code>Admin@123456</code>)</div>
+                                <div>Superadmin: <code>superadmin@quanlydaotao.local</code> · Admin: <code>admin@quanlydaotao.local</code></div>
+                                <div>Quản lý: <code>quanly.tochuc@quanlydaotao.local</code> · <code>quanly.daotao@quanlydaotao.local</code></div>
+                                <div>Người xem: <code>nguoixem@quanlydaotao.local</code> (MK mẫu: <code>Admin@123456</code>, chỉ hiện ở môi trường phát triển)</div>
                             </div>
+                            </environment>
                         </div>
                     </div>
                 </div>

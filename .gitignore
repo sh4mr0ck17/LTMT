@@ -1,0 +1,11 @@
+# Build output
+bin/
+obj/
+.vs/
+*.user
+TestResults/
+
+# SQLite tạm thời (file .db chính vẫn được theo dõi để chia sẻ dữ liệu mẫu)
+*.db-wal
+*.db-shm
+*.db.bak*

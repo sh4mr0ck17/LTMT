@@ -40,7 +40,7 @@ public class PhanCongGiangDayDichVuTests
 
         var lop = new LopHoc { MaLop = "L_01", TenLop = "Lớp 1", NienKhoa = "2024-2028", KhoaId = khoa.KhoaId };
         var mh = new MonHoc { MaMonHoc = "M_01", TenMonHoc = "Môn 1" };
-        var ns = new NhanSu { MaNhanSu = "NS_01", HoVaTen = "Giảng viên A", EmailCongViec = "a@test.local" };
+        var ns = new NhanSu { MaNhanSu = "NS_01", HoVaTen = "Giảng viên A", Email = "a@test.local" };
         db.LopHocs.Add(lop);
         db.MonHocs.Add(mh);
         db.NhanSus.Add(ns);

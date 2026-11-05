@@ -1,0 +1,91 @@
+@inject DialogService HopThoai
+@inject IKhoaDichVu KhoaDichVu
+@* Biểu mẫu thêm/sửa khoa. Thêm khoa chỉ dành cho quản trị viên (kiểm tra tại dịch vụ). *@
+
+<RadzenTemplateForm TItem="Khoa" Data="@_banNhap" Submit="LuuAsync">
+    <div class="luoi-bieu-mau">
+        <RadzenFormField Text="Mã khoa *" Variant="Variant.Outlined">
+            <RadzenTextBox Name="txtMaKhoa" id="txtMaKhoa" @bind-Value="_banNhap.MaKhoa" MaxLength="50" />
+        </RadzenFormField>
+        <RadzenFormField Text="Tên khoa *" Variant="Variant.Outlined">
+            <RadzenTextBox Name="txtTenKhoa" id="txtTenKhoa" @bind-Value="_banNhap.TenKhoa" MaxLength="200" />
+        </RadzenFormField>
+        <RadzenFormField Text="Số điện thoại" Variant="Variant.Outlined">
+            <RadzenTextBox Name="txtSoDienThoai" id="txtSoDienThoai" @bind-Value="_banNhap.SoDienThoai" MaxLength="20" />
+        </RadzenFormField>
+        <RadzenFormField Text="Email" Variant="Variant.Outlined">
+            <RadzenTextBox Name="txtEmail" id="txtEmail" @bind-Value="_banNhap.Email" MaxLength="100" />
+        </RadzenFormField>
+        <RadzenFormField Text="Địa điểm" Variant="Variant.Outlined" class="o-rong">
+            <RadzenTextBox Name="txtDiaDiem" id="txtDiaDiem" @bind-Value="_banNhap.DiaDiem" MaxLength="200" />
+        </RadzenFormField>
+        <RadzenFormField Text="Mô tả" Variant="Variant.Outlined" class="o-rong">
+            <RadzenTextArea Name="txtMoTa" id="txtMoTa" @bind-Value="_banNhap.MoTa" MaxLength="500" Rows="3" />
+        </RadzenFormField>
+        <div class="o-rong d-flex align-items-center gap-2">
+            <RadzenSwitch @bind-Value="_banNhap.CoHoatDong" Name="swHoatDong" id="swHoatDong" />
+            <label for="swHoatDong" class="mb-0">Khoa đang hoạt động</label>
+        </div>
+    </div>
+
+    @if (!string.IsNullOrEmpty(_loi))
+    {
+        <RadzenAlert AlertStyle="AlertStyle.Danger" Variant="Variant.Flat" AllowClose="false" class="mt-3 mb-0" id="lblThongBaoLoi">@_loi</RadzenAlert>
+    }
+
+    <RadzenRequiredValidator Component="txtMaKhoa" Text="Vui lòng nhập mã khoa." Popup="false" />
+    <RadzenRequiredValidator Component="txtTenKhoa" Text="Vui lòng nhập tên khoa." Popup="false" />
+
+    <div class="d-flex justify-content-end gap-2 mt-3">
+        <RadzenButton Text="Hủy" ButtonStyle="ButtonStyle.Light" Disabled="@_dangLuu" Click="@(() => HopThoai.Close())" id="btnHuy" />
+        <RadzenButton Text="Lưu khoa" Icon="save" ButtonType="ButtonType.Submit" ButtonStyle="ButtonStyle.Primary" IsBusy="@_dangLuu" BusyText="Đang lưu..." id="btnLuuKhoa" />
+    </div>
+</RadzenTemplateForm>
+
+@code {
+    private Khoa _banNhap = new();
+    private bool _dangLuu;
+    private string? _loi;
+
+    /// <summary>Khoa gốc khi sửa (null khi thêm).</summary>
+    [Parameter] public Khoa? KhoaGoc { get; set; }
+
+    /// <inheritdoc />
+    protected override void OnInitialized()
+    {
+        _banNhap = KhoaGoc is null
+            ? new Khoa()
+            : new Khoa
+            {
+                KhoaId = KhoaGoc.KhoaId, MaKhoa = KhoaGoc.MaKhoa, TenKhoa = KhoaGoc.TenKhoa, MoTa = KhoaGoc.MoTa,
+                SoDienThoai = KhoaGoc.SoDienThoai, Email = KhoaGoc.Email, DiaDiem = KhoaGoc.DiaDiem, CoHoatDong = KhoaGoc.CoHoatDong
+            };
+    }
+
+    private async Task LuuAsync(Khoa _)
+    {
+        if (_dangLuu)
+        {
+            return;
+        }
+
+        _dangLuu = true;
+        _loi = await TrangNghiepVuCoSo.ChayVaBatLoiAsync(async () =>
+        {
+            if (KhoaGoc is null)
+            {
+                await KhoaDichVu.ThemKhoaAsync(_banNhap);
+            }
+            else
+            {
+                await KhoaDichVu.CapNhatKhoaAsync(_banNhap);
+            }
+        });
+        _dangLuu = false;
+
+        if (_loi is null)
+        {
+            HopThoai.Close(new KetQuaBieuMau(KhoaGoc is null ? $"Đã thêm {_banNhap.TenKhoa}." : $"Đã cập nhật {_banNhap.TenKhoa}.", _banNhap.MaKhoa));
+        }
+    }
+}

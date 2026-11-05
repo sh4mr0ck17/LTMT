@@ -1,5 +1,24 @@
-// Tương tác khung nhìn chạy ngay tại trình duyệt, không gửi từng bước kéo lên server.
-export const GioiHan = Object.freeze({ nhoNhat: 0.05, lonNhat: 2, buocPhong: 1.2, le: 32 });
+﻿// Tương tác khung nhìn chạy ngay tại trình duyệt, không gửi từng bước kéo lên server.
+// Tỉ lệ nhỏ nhất giữ tên đơn vị đọc được (tên phóng 24px × 0.5 ≈ 12px); sơ đồ lớn hơn thì căn theo nút đang chọn thay vì thu nhỏ.
+export const GioiHan = Object.freeze({ nhoNhat: 0.5, lonNhat: 2, buocPhong: 1.2, le: 32 });
+
+// Ngưỡng mức chi tiết (semantic zoom): dưới "thap" chỉ hiện loại + tên + badge; từ "cao" hiện đầy đủ.
+export const NguongChiTiet = Object.freeze({ thap: 0.6, cao: 0.85 });
+
+// Tỉ lệ tối thiểu khi đưa một nút vào giữa khung nhìn để nút đó đọc được.
+export const TiLeDocDuoc = 0.75;
+
+export function tinhMucChiTiet(tiLe) {
+    if (tiLe < NguongChiTiet.thap) { return 'thap'; }
+    if (tiLe < NguongChiTiet.cao) { return 'vua'; }
+    return 'cao';
+}
+
+/** Tỉ lệ cần để vừa trọn sơ đồ, chưa áp giới hạn (dùng để biết sơ đồ có quá lớn không). */
+export function tinhTiLeVuaKhungGoc(rong, cao, rongSoDo, caoSoDo) {
+    return Math.min(1, Math.max(1, rong - GioiHan.le * 2) / Math.max(1, rongSoDo),
+        Math.max(1, cao - GioiHan.le * 2) / Math.max(1, caoSoDo));
+}
 
 export function gioiHanTiLe(tiLe) {
     return Math.min(GioiHan.lonNhat, Math.max(GioiHan.nhoNhat, tiLe));
@@ -38,12 +57,24 @@ export function khoiTao(khung) {
     function ve() {
         if (coHuy) { return; }
         san.style.transform = `translate(${trangThai.x}px, ${trangThai.y}px) scale(${trangThai.tiLe})`;
+        san.dataset.lod = tinhMucChiTiet(trangThai.tiLe);
         nhanTiLe.textContent = `${Math.round(trangThai.tiLe * 100)}%`;
         panel.querySelector('[data-canvas-action="thu-nho"]').disabled = trangThai.tiLe <= GioiHan.nhoNhat;
         panel.querySelector('[data-canvas-action="phong-to"]').disabled = trangThai.tiLe >= GioiHan.lonNhat;
     }
 
     function canKhung() {
+        const tiLeGoc = tinhTiLeVuaKhungGoc(khung.clientWidth, khung.clientHeight, san.offsetWidth, san.offsetHeight);
+        if (tiLeGoc < GioiHan.nhoNhat) {
+            // Sơ đồ quá lớn: không thu nhỏ vô hạn, căn theo nút đang chọn (hoặc gốc) ở tỉ lệ nhỏ nhất còn đọc được.
+            trangThai.tiLe = GioiHan.nhoNhat;
+            const nutGoc = san.querySelector('[data-canvas-node]');
+            const khoa = khoaDangChon && timNut(khoaDangChon) ? khoaDangChon : nutGoc?.dataset.canvasNode;
+            if (khoa) { veNut(khoa, false); }
+            else { ve(); }
+            vuaKhung = true;
+            return;
+        }
         trangThai = tinhVuaKhung(khung.clientWidth, khung.clientHeight, san.offsetWidth, san.offsetHeight);
         vuaKhung = true;
         ve();
@@ -57,7 +88,7 @@ export function khoiTao(khung) {
         const nut = timNut(khoa);
         if (!nut) { return; }
         // Nút được tìm phải đọc được ngay cả khi trước đó đã thu nhỏ toàn sơ đồ.
-        if (damBaoDocDuoc) { trangThai.tiLe = Math.max(0.75, trangThai.tiLe); }
+        if (damBaoDocDuoc) { trangThai.tiLe = Math.max(TiLeDocDuoc, trangThai.tiLe); }
         trangThai.x = khung.clientWidth / 2 - (nut.offsetLeft + nut.offsetWidth / 2) * trangThai.tiLe;
         trangThai.y = khung.clientHeight / 2 - (nut.offsetTop + nut.offsetHeight / 2) * trangThai.tiLe;
         vuaKhung = false;

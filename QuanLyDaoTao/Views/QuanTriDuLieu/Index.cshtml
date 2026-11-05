@@ -8,6 +8,50 @@
 
 <div class="container-fluid px-4 py-3" id="pnlQuanTriDuLieu">
     <!-- Banner tiêu đề Quản trị DB trực tiếp -->
+    <div class="cand-banner-header p-3 mb-3 d-flex flex-column flex-xl-row justify-content-between align-items-xl-center gap-3">
+        <div class="d-flex align-items-center">
+            <img src="~/images/logo_badge.png" alt="Logo C500" class="logo-cand-nav me-3" />
+            <div>
+                <div class="d-flex align-items-center gap-2">
+                    <span class="badge badge-cand-gold">ADMINISTRATOR STUDIO</span>
+                    <span class="badge badge-cand-red">LIVE DATABASE CRUD (+/- &amp; UNDO/REDO)</span>
+                </div>
+                <h4 class="mb-0 fw-bold text-white mt-1" id="lblTieuDe">
+                    <i class="bi bi-database-fill-gear me-2"></i>TRÌNH QUẢN TRỊ &amp; TÙY BIẾN DỮ LIỆU TRỰC TIẾP: @Model.TenHienThi.ToUpper()
+                </h4>
+                <small style="color: #F2F0A5;">Bấm dấu <strong>[+] / [-]</strong> trực tiếp trên bảng để thêm/bớt dòng &amp; cột, hỗ trợ <strong>Delete</strong>, <strong>Undo (Ctrl+Z)</strong> và <strong>Redo (Ctrl+Y)</strong> áp dụng thẳng lên Database</small>
+            </div>
+        </div>
+
+        <!-- Cụm nút điều khiển chính: Undo / Redo / Thêm-Bớt (+/-) / Delete / Lưu -->
+        <div class="d-flex flex-wrap gap-2 align-items-center">
+            <div class="btn-group shadow-sm" role="group" aria-label="Undo Redo">
+                <button type="button" class="btn btn-light fw-bold text-dark" id="btnUndoDb" onclick="thucHienUndo()" title="Hoàn tác thao tác vừa thực hiện (Ctrl+Z)" disabled>
+                    <i class="bi bi-arrow-counterclockwise me-1"></i>Undo (<span id="lblSoBuocUndo">0</span>)
+                </button>
+                <button type="button" class="btn btn-light fw-bold text-dark border-start" id="btnRedoDb" onclick="thucHienRedo()" title="Làm lại thao tác vừa hoàn tác (Ctrl+Y)" disabled>
+                    <i class="bi bi-arrow-clockwise me-1"></i>Redo (<span id="lblSoBuocRedo">0</span>)
+                </button>
+            </div>
+
+            <div class="btn-group shadow-sm" role="group" aria-label="Add Remove Rows">
+                <button type="button" class="btn btn-warning fw-bold text-dark" id="btnThemDongPlus" onclick="cuonToiDongThemNhanh()" title="Thêm dòng mới vào bảng [+]">
+                    <i class="bi bi-plus-lg me-1"></i>Thêm Dòng [+]
+                </button>
+                <button type="button" class="btn btn-danger fw-bold" id="btnXoaDongMinus" onclick="xoaDongDaChonHoacDongCuoi()" title="Xóa các dòng đã chọn hoặc bớt dòng cuối [-]">
+                    <i class="bi bi-dash-lg me-1"></i>Xóa / Bớt Dòng [-] (<span id="lblSoDongDaChon">0</span>)
+                </button>
+            </div>
+
+            <button type="button" class="btn btn-info fw-bold text-dark shadow-sm" id="btnMoModalTruongTuyChinh" data-bs-toggle="modal" data-bs-target="#mdlQuanLyTruongTuyChinh">
+                <i class="bi bi-columns-gap me-1"></i>+/- Cột Tùy Chỉnh (@Model.DanhSachTruongTuyChinh.Count)
+            </button>
+
+            <button type="button" class="btn btn-success fw-bold shadow-sm" id="btnLuuTatCaThayDoi" onclick="luuTatCaDongDaSua()">
+                <i class="bi bi-cloud-check-fill me-1"></i>Lưu Tất Cả (<span id="lblSoDongChoLuu">0</span>)
+            </button>
+        </div>
+    </div>
 
     <!-- Thanh chuyển đổi nhanh giữa tất cả 11 nhóm quản lý trong hệ thống -->
     <div class="card shadow-sm border-0 mb-3" id="pnlChonNhomQuanLy">
@@ -298,44 +342,23 @@
                     </tbody>
 
                     <!-- Chân bảng có nút [+] / [-] trực tiếp -->
-                    <!-- Chân bảng tích hợp trực tiếp toàn bộ nút chức năng -->
                     <tfoot class="table-light">
                         <tr>
-                            <td colspan="@(Model.DanhSachCot.Count + 2)" class="py-3 px-3">
-                                <div class="d-flex flex-wrap justify-content-between align-items-center gap-3">
-                                    <!-- Cụm bên trái: Undo, Redo và Phím tắt -->
-                                    <div class="d-flex flex-wrap gap-2 align-items-center">
-                                        <div class="btn-group shadow-sm" role="group" aria-label="Undo Redo">
-                                            <button type="button" class="btn btn-outline-secondary fw-bold" id="btnUndoDb" onclick="thucHienUndo()" title="Hoàn tác thao tác vừa thực hiện (Ctrl+Z)" disabled>
-                                                <i class="bi bi-arrow-counterclockwise me-1"></i>Undo (<span id="lblSoBuocUndo">0</span>)
-                                            </button>
-                                            <button type="button" class="btn btn-outline-secondary fw-bold" id="btnRedoDb" onclick="thucHienRedo()" title="Làm lại thao tác vừa hoàn tác (Ctrl+Y)" disabled>
-                                                <i class="bi bi-arrow-clockwise me-1"></i>Redo (<span id="lblSoBuocRedo">0</span>)
-                                            </button>
-                                        </div>
-                                        <span class="small text-muted ms-2">
-                                            Tổng số: <strong>@Model.DanhSachDong.Count</strong> bản ghi • Phím tắt: <code>Ctrl+Z</code>, <code>Ctrl+Y</code>
-                                        </span>
+                            <td colspan="@(Model.DanhSachCot.Count + 2)" class="py-2 px-3">
+                                <div class="d-flex flex-wrap justify-content-between align-items-center gap-2">
+                                    <div class="d-flex gap-2">
+                                        <button type="button" class="btn btn-sm btn-success fw-bold" id="btnFooterPlusRow" onclick="cuonToiDongThemNhanh()">
+                                            <i class="bi bi-plus-circle-fill me-1"></i>[+] Điền &amp; Thêm Dòng Mới
+                                        </button>
+                                        <button type="button" class="btn btn-sm btn-danger fw-bold" id="btnFooterMinusRow" onclick="xoaDongDaChonHoacDongCuoi()">
+                                            <i class="bi bi-dash-circle-fill me-1"></i>[-] Bớt Dòng Cuối / Xóa Dòng Đã Chọn
+                                        </button>
+                                        <button type="button" class="btn btn-sm btn-warning fw-bold text-dark" id="btnFooterPlusCol" onclick="themCotNhanhTrucTiepTrenBang()">
+                                            <i class="bi bi-columns-gap me-1"></i>[+] Thêm Cột Mới
+                                        </button>
                                     </div>
-
-                                    <!-- Cụm bên phải: Thêm, Xóa, Cột tùy chỉnh và Lưu -->
-                                    <div class="d-flex flex-wrap gap-2 align-items-center">
-                                        <div class="btn-group shadow-sm" role="group" aria-label="Add Remove Rows">
-                                            <button type="button" class="btn btn-warning fw-bold text-dark" id="btnThemDongPlus" onclick="cuonToiDongThemNhanh()" title="Thêm dòng mới vào bảng [+]">
-                                                <i class="bi bi-plus-lg me-1"></i>Thêm Dòng [+]
-                                            </button>
-                                            <button type="button" class="btn btn-danger fw-bold" id="btnXoaDongMinus" onclick="xoaDongDaChonHoacDongCuoi()" title="Xóa các dòng đã chọn hoặc bớt dòng cuối [-]">
-                                                <i class="bi bi-dash-lg me-1"></i>Xóa / Bớt Dòng [-] (<span id="lblSoDongDaChon">0</span>)
-                                            </button>
-                                        </div>
-
-                                        <button type="button" class="btn btn-info fw-bold text-dark shadow-sm" id="btnMoModalTruongTuyChinh" data-bs-toggle="modal" data-bs-target="#mdlQuanLyTruongTuyChinh">
-                                            <i class="bi bi-columns-gap me-1"></i>+/- Cột Tùy Chỉnh (@Model.DanhSachTruongTuyChinh.Count)
-                                        </button>
-
-                                        <button type="button" class="btn btn-success fw-bold shadow-sm" id="btnLuuTatCaThayDoi" onclick="luuTatCaDongDaSua()">
-                                            <i class="bi bi-cloud-check-fill me-1"></i>Lưu Tất Cả (<span id="lblSoDongChoLuu">0</span>)
-                                        </button>
+                                    <div class="small text-muted">
+                                        Tổng số bản ghi hiện tại: <strong>@Model.DanhSachDong.Count</strong> • Phím tắt: <code>Ctrl+Z</code> (Undo), <code>Ctrl+Y</code> (Redo)
                                     </div>
                                 </div>
                             </td>

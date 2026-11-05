@@ -1,345 +1,105 @@
-@page "/BoMon"
+﻿@page "/BoMon"
+@attribute [Authorize]
+@inherits TrangNghiepVuCoSo
 @inject IBoMonDichVu BoMonDichVu
 @inject IKhoaDichVu KhoaDichVu
-@inject IQuanTriDuLieuDichVu QuanTriDuLieuDichVu
-@inject IJSRuntime JSRuntime
-@inject NavigationManager Navigation
+@inject INhanSuDichVu NhanSuDichVu
+@inject NavigationManager DieuHuong
 
-<PageTitle>Quản lý Bộ môn - Học Viện An Ninh Nhân Dân</PageTitle>
+<PageTitle>Bộ môn | Quản lý đào tạo C500</PageTitle>
 
-<div class="container-fluid px-4 py-3" id="pnlDanhSachBoMon">
-    <div class="d-flex justify-content-between align-items-center mb-3">
-        <div>
-            <h4 class="mb-1 text-primary fw-bold" id="lblTieuDe">
-                <i class="bi bi-diagram-2 me-2"></i>Quản Lý Bộ Môn Trực Thuộc Khoa
-            </h4>
-            <span class="text-muted small">Danh sách các bộ môn, chuyên ngành học thuật và nhân sự C500</span>
-        </div>
-        <div class="d-flex gap-2">
-            <a href="Excel/XuatDuLieu?module=BoMon" class="btn btn-outline-primary" id="btnXuatExcel">
-                <i class="bi bi-file-earmark-excel me-1"></i>Xuất Excel
-            </a>
-            <AuthorizeView Roles="Superadmin,GiaoVien,Admin,DataManager,CanBo">
-                <Authorized>
-                    <a href="Excel/TaiTepMau?module=BoMon" class="btn btn-outline-secondary" id="btnTaiMauExcel">
-                        <i class="bi bi-download me-1"></i>Tải Mẫu Excel
-                    </a>
-                    <a href="Excel/NhapExcel?module=BoMon" class="btn btn-success" id="btnNhapExcel">
-                        <i class="bi bi-file-earmark-arrow-up me-1"></i>Nhập Excel
-                    </a>
-                    <a href="BoMon/ThemMoi" class="btn btn-primary" id="btnThemBoMon">
-                        <i class="bi bi-plus-circle-fill me-1"></i>Thêm Mới Bộ Môn
-                    </a>
-                </Authorized>
-            </AuthorizeView>
-        </div>
-    </div>
+<div class="trang-nghiep-vu" id="pnlDanhSachBoMon">
+    <TieuDeTrang PhanHe="Tổ chức - Cán bộ" TieuDe="Bộ môn / Tổ chuyên môn" BieuTuong="bi-diagram-2"
+                 MoTa="Đơn vị chuyên môn trực thuộc khoa, quản lý cán bộ giảng viên và môn học. Không chuyển khoa khi còn cán bộ trực thuộc.">
+        <a href="Excel/XuatDuLieu?module=BoMon" class="btn btn-outline-primary btn-sm" id="btnXuatExcel"><i class="bi bi-file-earmark-excel me-1"></i>Xuất Excel</a>
+        @if (_coQuyenGhiVung)
+        {
+            <a href="QuanTriDuLieu?bang=BoMon" class="btn btn-primary btn-sm" id="btnChinhSuaDuLieu" title="Thêm, sửa, xóa, nhập Excel tại trang Dữ liệu &amp; danh mục"><i class="bi bi-pencil-square me-1"></i>Chỉnh sửa dữ liệu</a>
+        }
+    </TieuDeTrang>
 
-    <!-- Bộ lọc & Tìm kiếm -->
-    <div class="card shadow-sm border-0 mb-4" id="pnlBoLoc">
-        <div class="card-body">
-            <div class="row g-3 align-items-center" id="frmTimKiem">
-                <div class="col-md-5">
-                    <div class="input-group">
-                        <span class="input-group-text"><i class="bi bi-search"></i></span>
-                        <input type="text" class="form-control" id="txtTimKiem" 
-                               placeholder="Tìm theo mã hoặc tên bộ môn..." 
-                               value="@tuKhoa" @oninput="OnTimKiemChanged" />
-                    </div>
-                </div>
-                <div class="col-md-4">
-                    <select class="form-select" id="cboChonKhoa" @onchange="OnKhoaChanged">
-                        <option value="">-- Tất cả Khoa --</option>
-                        @if (danhSachKhoa != null)
-                        {
-                            @foreach (var k in danhSachKhoa)
-                            {
-                                <option value="@k.KhoaId">@k.TenKhoa (@k.MaKhoa)</option>
-                            }
-                        }
-                    </select>
-                </div>
-                <div class="col-md-3 d-flex gap-2">
-                    <button type="button" class="btn btn-primary" id="btnTimKiem" @onclick="LocDuLieu">Lọc Dữ Liệu</button>
-                    <button type="button" class="btn btn-outline-secondary" id="btnLamMoi" @onclick="LamMoi">Làm Mới</button>
-                </div>
+    <div class="khung-danh-sach">
+        <div class="thanh-cong-cu" id="pnlBoLoc">
+            <div class="o-tim-kiem">
+                <i class="bi bi-search"></i>
+                <input class="form-control" id="txtTimKiem" placeholder="Tìm mã, tên bộ môn, trưởng bộ môn..." value="@_tuKhoa" @oninput="@(e => _tuKhoa = e.Value?.ToString() ?? string.Empty)" />
             </div>
+            <RadzenDropDown TValue="int?" Data="@_danhSachKhoa" TextProperty="TenKhoa" ValueProperty="KhoaId" @bind-Value="_khoaLoc" AllowClear="true" AllowFiltering="true"
+                            FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" FilterOperator="StringFilterOperator.Contains" Placeholder="Tất cả khoa" class="bo-loc" id="cboChonKhoa" />
+            <RadzenButton Text="Bỏ lọc" Icon="filter_alt_off" ButtonStyle="ButtonStyle.Light" Size="ButtonSize.Small" Click="@(() => { _tuKhoa = string.Empty; _khoaLoc = null; })" id="btnBoLoc" />
         </div>
-    </div>
 
-    <!-- Bảng danh sách Bộ môn -->
-    <div class="card shadow-sm border-0" id="pnlBangDuLieu">
-        <div class="card-body p-0">
-            <div class="table-responsive">
-                <table class="table table-hover table-striped align-middle mb-0" id="dgvDanhSachBoMon">
-                    <thead class="table-light">
-                        <tr>
-                            <th class="ps-3" style="width: 50px;">#</th>
-                            <th style="width: 140px;">Mã Bộ Môn</th>
-                            <th>Tên Bộ Môn</th>
-                            <th>Khoa Chủ Quản</th>
-                            <th class="text-center" style="width: 100px;">Nhân Sự</th>
-                            <th class="text-center" style="width: 100px;">Môn Học</th>
-                            <th class="text-center" style="width: 120px;">Trạng Thái</th>
+        <p class="dem-ket-qua" role="status" id="lblKetQua">Kết quả phù hợp: <strong>@DanhSachHienThi.Count() / @_tatCa.Count</strong></p>
 
-                            <!-- CÁC CỘT TÙY CHỈNH ĐỘNG TỪ LIVE CRUD STUDIO -->
-                            @if (dsTruongTuyChinh != null)
-                            {
-                                @foreach (var cot in dsTruongTuyChinh)
-                                {
-                                    <th style="min-width: 120px;">
-                                        <span class="text-primary fw-bold"><i class="bi bi-stars text-warning me-1"></i>@cot.TenHienThi</span>
-                                    </th>
-                                }
-                            }
-
-                            <th class="text-center" style="width: 160px;">Thao Tác</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @if (danhSachHienThi == null || danhSachHienThi.Count == 0)
-                        {
-                            <tr>
-                                <td colspan="@(8 + (dsTruongTuyChinh?.Count ?? 0))" class="text-center py-4 text-muted">
-                                    <i class="bi bi-inbox fs-2 d-block mb-2"></i>Không tìm thấy bộ môn nào trong hệ thống
-                                </td>
-                            </tr>
-                        }
-                        else
-                        {
-                            int stt = 1;
-                            foreach (var bm in danhSachHienThi)
-                            {
-                                string pk = bm.BoMonId.ToString();
-                                <tr>
-                                    <td class="ps-3 fw-bold text-muted">@(stt++)</td>
-                                    <td><span class="badge bg-primary bg-opacity-10 text-primary fw-bold font-monospace fs-6">@bm.MaBoMon</span></td>
-                                    <td>
-                                        <a href="BoMon/ChiTiet/@bm.BoMonId" class="fw-semibold text-decoration-none text-dark">@bm.TenBoMon</a>
-                                        @if (!string.IsNullOrEmpty(bm.MoTa))
-                                        {
-                                            <div class="text-muted small text-truncate" style="max-width: 320px;">@bm.MoTa</div>
-                                        }
-                                    </td>
-                                    <td>
-                                        <span class="badge bg-light text-dark border">@(bm.Khoa?.TenKhoa ?? "-")</span>
-                                    </td>
-                                    <td class="text-center"><span class="badge bg-success">@(bm.NhanSus?.Count ?? 0)</span></td>
-                                    <td class="text-center"><span class="badge bg-secondary">@(bm.MonHocs?.Count ?? 0)</span></td>
-                                    <td class="text-center">
-                                        <span class="badge @(bm.CoHoatDong ? "bg-success" : "bg-secondary")">
-                                            @(bm.CoHoatDong ? "Hoạt động" : "Đã khóa")
-                                        </span>
-                                    </td>
-
-                                    <!-- HIỂN THỊ VÀ SỬA NHANH CỘT TÙY CHỈNH ĐỘNG -->
-                                    @if (dsTruongTuyChinh != null)
-                                    {
-                                        @foreach (var cot in dsTruongTuyChinh)
-                                        {
-                                            string val = LayGiaTriCustom(pk, cot.MaTruong);
-                                            string fieldKey = "Custom_" + cot.MaTruong;
-                                            <td>
-                                                @if (editingPk == pk && editingField == fieldKey)
-                                                {
-                                                    <div class="input-group input-group-sm">
-                                                        <input type="text" class="form-control form-control-sm"
-                                                               value="@val"
-                                                               @onchange="(e) => LuuNhanhCustom(pk, cot.MaTruong, e.Value?.ToString())"
-                                                               @onblur="() => { editingPk = null; editingField = null; }" autofocus />
-                                                    </div>
-                                                }
-                                                else
-                                                {
-                                                    <AuthorizeView Roles="Superadmin,GiaoVien,Admin,DataManager,CanBo">
-                                                        <Authorized>
-                                                            <span class="badge bg-light text-dark border p-1 cursor-pointer"
-                                                                  @onclick="() => { editingPk = pk; editingField = fieldKey; }"
-                                                                  title="Bấm để sửa nhanh trực tiếp">
-                                                                @(string.IsNullOrEmpty(val) ? "(Trống)" : val)
-                                                                <i class="bi bi-pencil-fill ms-1 text-primary small"></i>
-                                                            </span>
-                                                        </Authorized>
-                                                        <NotAuthorized>
-                                                            <span class="badge bg-light text-dark border p-1">@(string.IsNullOrEmpty(val) ? "-" : val)</span>
-                                                        </NotAuthorized>
-                                                    </AuthorizeView>
-                                                }
-                                            </td>
-                                        }
-                                    }
-
-                                    <td class="text-center">
-                                        <div class="btn-group btn-group-sm" role="group">
-                                            <a href="BoMon/ChiTiet/@bm.BoMonId" class="btn btn-outline-primary" title="Xem chi tiết" id="btnXem_@bm.BoMonId">
-                                                <i class="bi bi-eye"></i>
-                                            </a>
-                                            <AuthorizeView Roles="Superadmin,GiaoVien,Admin,DataManager,CanBo">
-                                                <Authorized>
-                                                    <a href="BoMon/ChinhSua/@bm.BoMonId" class="btn btn-outline-primary" title="Chỉnh sửa" id="btnSua_@bm.BoMonId">
-                                                        <i class="bi bi-pencil"></i>
-                                                    </a>
-                                                    <button type="button" class="btn btn-outline-danger" title="Xóa bộ môn" id="btnXoa_@bm.BoMonId"
-                                                            @onclick="() => XoaBoMon(bm.BoMonId)">
-                                                        <i class="bi bi-trash"></i>
-                                                    </button>
-                                                </Authorized>
-                                            </AuthorizeView>
-                                        </div>
-                                    </td>
-                                </tr>
-                            }
-                        }
-                    </tbody>
-                </table>
-            </div>
-        </div>
+        <RadzenDataGrid TItem="BoMon" Data="@DanhSachHienThi" IsLoading="@DangTai" AllowPaging="true" PageSize="20" AllowSorting="true" AllowColumnResize="true"
+                        EmptyText="Không có bộ môn phù hợp." class="bang-du-lieu" id="dgvDanhSachBoMon">
+            <Columns>
+                <RadzenDataGridColumn TItem="BoMon" Property="MaBoMon" Title="Mã" Width="110px"><Template Context="b"><span class="ma-ban-ghi">@b.MaBoMon</span></Template></RadzenDataGridColumn>
+                <RadzenDataGridColumn TItem="BoMon" Property="TenBoMon" Title="Tên bộ môn" Width="240px"><Template Context="b"><strong>@b.TenBoMon</strong> <NhanBanGhi NgayTao="b.NgayTao" /></Template></RadzenDataGridColumn>
+                <RadzenDataGridColumn TItem="BoMon" Property="Khoa.TenKhoa" Title="Khoa" Width="220px" />
+                <RadzenDataGridColumn TItem="BoMon" Title="Trưởng bộ môn" Width="180px" Sortable="false"><Template Context="b">@TenLanhDao(b.BoMonId, "CV_TBM")</Template></RadzenDataGridColumn>
+                <RadzenDataGridColumn TItem="BoMon" Title="Cán bộ" Width="85px" SortProperty="NhanSus.Count" TextAlign="TextAlign.Center"><Template Context="b">@b.NhanSus.Count</Template></RadzenDataGridColumn>
+                <RadzenDataGridColumn TItem="BoMon" Title="Môn học" Width="90px" SortProperty="MonHocs.Count" TextAlign="TextAlign.Center"><Template Context="b">@b.MonHocs.Count</Template></RadzenDataGridColumn>
+                <RadzenDataGridColumn TItem="BoMon" Property="CoHoatDong" Title="Trạng thái" Width="105px">
+                    <Template Context="b"><span class="chip-trang-thai @(b.CoHoatDong ? "tot" : "tat")">@(b.CoHoatDong ? "Hoạt động" : "Ngừng")</span></Template>
+                </RadzenDataGridColumn>
+                <RadzenDataGridColumn TItem="BoMon" Title="Thao tác" Width="125px" Sortable="false" TextAlign="TextAlign.Center" Frozen="true" FrozenPosition="FrozenColumnPosition.Right">
+                    <Template Context="b">
+                        <div class="o-thao-tac">
+                            <RadzenButton Icon="badge" ButtonStyle="ButtonStyle.Light" Size="ButtonSize.ExtraSmall" Click="@(() => DieuHuong.NavigateTo($"NhanSu?bomon={b.BoMonId}"))" title="Cán bộ của bộ môn" id="@($"btnCanBo_{b.BoMonId}")" />
+                        </div>
+                    </Template>
+                </RadzenDataGridColumn>
+            </Columns>
+        </RadzenDataGrid>
     </div>
 </div>
 
 @code {
-    private List<BoMon>? danhSachGoc;
-    private List<BoMon>? danhSachHienThi;
-    private List<Khoa>? danhSachKhoa;
-    private string tuKhoa = "";
-    private int? khoaIdLoc = null;
-    private System.Threading.Timer? _debounceTimer;
+    private List<BoMon> _tatCa = [];
+    private List<Khoa> _danhSachKhoa = [];
+    private List<NhanSu> _canBo = [];
+    private string _tuKhoa = string.Empty;
+    private int? _khoaLoc;
+    private bool _coQuyenGhiVung;
 
-    private void OnTimKiemChanged(ChangeEventArgs e)
+    /// <summary>Lọc sẵn theo khoa (?khoa=ID).</summary>
+    [SupplyParameterFromQuery(Name = "khoa")]
+    public int? KhoaTuDuongDan { get; set; }
+
+    /// <inheritdoc />
+    protected override IReadOnlyCollection<string> BangTheoDoi { get; } = ["BoMon", "NhanSu", "Khoa", "MonHoc"];
+
+    /// <inheritdoc />
+    protected override void OnParametersSet()
     {
-        tuKhoa = e.Value?.ToString() ?? "";
-        _debounceTimer?.Dispose();
-        _debounceTimer = new System.Threading.Timer(_ =>
+        if (KhoaTuDuongDan.HasValue)
         {
-            InvokeAsync(() =>
-            {
-                LocDuLieu();
-                StateHasChanged();
-            });
-        }, null, 350, Timeout.Infinite);
-    }
-
-    protected override async Task OnInitializedAsync()
-    {
-        danhSachKhoa = await KhoaDichVu.LayDanhSachAsync();
-        await LoadData();
-    }
-
-    private List<TruongTuyChinh>? dsTruongTuyChinh;
-    private Dictionary<string, Dictionary<string, string>> mapCustomValues = new(StringComparer.OrdinalIgnoreCase);
-    private string? editingPk;
-    private string? editingField;
-
-    private async Task LoadData()
-    {
-        danhSachGoc = await BoMonDichVu.LayDanhSachAsync();
-        try
-        {
-            dsTruongTuyChinh = await QuanTriDuLieuDichVu.LayDanhSachTruongTuyChinhAsync("BoMon");
-            var duLieuBang = await QuanTriDuLieuDichVu.LayDuLieuBangTrucTuyenAsync("BoMon");
-            if (duLieuBang?.DanhSachDong != null)
-            {
-                foreach (var dong in duLieuBang.DanhSachDong)
-                {
-                    var pk = dong.TryGetValue("BoMonId", out var pVal) ? pVal ?? "" : "";
-                    if (string.IsNullOrEmpty(pk)) continue;
-                    if (!mapCustomValues.ContainsKey(pk)) mapCustomValues[pk] = new(StringComparer.OrdinalIgnoreCase);
-                    if (dsTruongTuyChinh != null)
-                    {
-                        foreach (var c in dsTruongTuyChinh)
-                        {
-                            var keyCustom = "Custom_" + c.MaTruong;
-                            var val = dong.TryGetValue(keyCustom, out var v) ? v ?? "" : "";
-                            mapCustomValues[pk][c.MaTruong] = val;
-                        }
-                    }
-                }
-            }
-        }
-        catch
-        {
-        }
-        LocDuLieu();
-    }
-
-    private string LayGiaTriCustom(string pk, string maTruong)
-    {
-        if (mapCustomValues.TryGetValue(pk, out var dict) && dict.TryGetValue(maTruong, out var val))
-        {
-            return val ?? "";
-        }
-        return "";
-    }
-
-    private async Task LuuNhanhCustom(string pk, string maTruong, string? giaTriMoi)
-    {
-        if (string.IsNullOrWhiteSpace(pk)) return;
-        try
-        {
-            await QuanTriDuLieuDichVu.CapNhatNhanhBanGhiAsync(
-                "BoMon",
-                pk,
-                new Dictionary<string, string?> { ["Custom_" + maTruong] = giaTriMoi },
-                "Superadmin Live"
-            );
-            if (mapCustomValues.TryGetValue(pk, out var dict))
-            {
-                dict[maTruong] = giaTriMoi ?? "";
-            }
-        }
-        catch (Exception ex)
-        {
-            await JSRuntime.InvokeVoidAsync("alert", ex.Message);
-        }
-        finally
-        {
-            editingPk = null;
-            editingField = null;
+            _khoaLoc = KhoaTuDuongDan;
         }
     }
 
-    private void LocDuLieu()
+    private IEnumerable<BoMon> DanhSachHienThi => _tatCa.Where(b =>
+        (_khoaLoc is null || b.KhoaId == _khoaLoc) &&
+        (QuyTacNghiepVu.ChuaTuKhoa(b.MaBoMon, _tuKhoa) || QuyTacNghiepVu.ChuaTuKhoa(b.TenBoMon, _tuKhoa) || QuyTacNghiepVu.ChuaTuKhoa(TenLanhDao(b.BoMonId, "CV_TBM"), _tuKhoa)));
+
+    private IReadOnlyList<Khoa> KhoaDuocGhi => _danhSachKhoa.Where(k => NguoiDung.CoQuyenGhi(VungQuanLy.ToChuc, k.KhoaId)).ToList();
+
+    /// <inheritdoc />
+    protected override async Task TaiDuLieuAsync()
     {
-        if (danhSachGoc == null) return;
-        danhSachHienThi = danhSachGoc.Where(b =>
-            (string.IsNullOrWhiteSpace(tuKhoa) ||
-             b.MaBoMon.Contains(tuKhoa, StringComparison.OrdinalIgnoreCase) ||
-             b.TenBoMon.Contains(tuKhoa, StringComparison.OrdinalIgnoreCase) ||
-             (mapCustomValues.TryGetValue(b.BoMonId.ToString(), out var cDict) && cDict.Values.Any(v => v != null && v.Contains(tuKhoa, StringComparison.OrdinalIgnoreCase)))) &&
-            (!khoaIdLoc.HasValue || b.KhoaId == khoaIdLoc.Value)
-        ).ToList();
+        _danhSachKhoa = await KhoaDichVu.LayDanhSachAsync();
+        _tatCa = await BoMonDichVu.LayDanhSachAsync();
+        _canBo = await NhanSuDichVu.LayDanhSachAsync(coHoatDong: true);
+        _coQuyenGhiVung = NguoiDung.LaQuanTri || (NguoiDung.VaiTro == VaiTroMacDinh.QuanLy && NguoiDung.VungQuanLy == VungQuanLy.ToChuc);
     }
 
-    private void OnKhoaChanged(ChangeEventArgs e)
+    private string TenLanhDao(int boMonId, string maChucVu)
     {
-        var val = e.Value?.ToString();
-        if (int.TryParse(val, out int kid) && kid > 0)
-        {
-            khoaIdLoc = kid;
-        }
-        else
-        {
-            khoaIdLoc = null;
-        }
-        LocDuLieu();
+        var ten = _canBo.Where(ns => ns.BoMonId == boMonId && ns.ChucVu?.MaChucVu == maChucVu).Select(ns => ns.HoVaTen).ToList();
+        return ten.Count == 0 ? "Chưa phân công" : string.Join(", ", ten);
     }
 
-    private void LamMoi()
-    {
-        tuKhoa = "";
-        khoaIdLoc = null;
-        LocDuLieu();
-    }
 
-    private async Task XoaBoMon(int id)
-    {
-        try
-        {
-            await BoMonDichVu.XoaBoMonAsync(id);
-            await LoadData();
-        }
-        catch
-        {
-        }
-    }
+
 }

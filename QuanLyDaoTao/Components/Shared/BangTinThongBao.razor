@@ -1,0 +1,186 @@
+@inherits TrangNghiepVuCoSo
+@inject IThongBaoDichVu DichVuThongBao
+@* Bảng tin trang chủ theo bố cục cổng thông tin cơ quan: dải "Tin mới" chạy chữ, khung tin nổi bật tự chuyển,
+   cột "Mới cập nhật". Chuyển động tạm dừng khi rê chuột/tập trung bàn phím và tắt hẳn khi hệ điều hành bật giảm chuyển động. *@
+
+<section class="cong-tin" id="pnlBangTin" aria-label="Bảng tin thông báo">
+    <div class="cong-tin-dau">
+        <span class="cong-tin-nhan"><i class="bi bi-broadcast" aria-hidden="true"></i> TIN MỚI</span>
+        <div class="cong-tin-chay" aria-hidden="@(_tinMoi.Count == 0 ? "true" : null)">
+            @if (_tinMoi.Count == 0)
+            {
+                <span class="cong-tin-chay-trong">Chưa có thông báo mới.</span>
+            }
+            else
+            {
+                <div class="cong-tin-chay-noi-dung" style="--thoi-gian-chay: @(Math.Max(20, _tinMoi.Count * 9))s">
+                    @for (var lap = 0; lap < 2; lap++)
+                    {
+                        var laBanSao = lap == 1;
+                        @foreach (var dong in _tinMoi)
+                        {
+                            <a href="@($"ThongBao/{dong.ThongBao.ThongBaoId}")" tabindex="@(laBanSao ? "-1" : null)" aria-hidden="@(laBanSao ? "true" : null)">
+                                <span class="cong-tin-cham @LopMucDo(dong.ThongBao.MucDo)"></span>@dong.ThongBao.TieuDe
+                            </a>
+                        }
+                    }
+                </div>
+            }
+        </div>
+        @if (_soChuaDoc > 0) { <span class="badge-chua-doc" title="Thông báo chưa đọc">@_soChuaDoc chưa đọc</span> }
+        <a href="ThongBao" class="cong-tin-xem-het" id="btnXemTatCaThongBao">Xem tất cả <i class="bi bi-arrow-right" aria-hidden="true"></i></a>
+    </div>
+
+    @if (_noiBat.Count == 0)
+    {
+        <p class="cong-tin-trong" id="lblBangTinTrong"><i class="bi bi-inbox" aria-hidden="true"></i> Chưa có thông báo.</p>
+    }
+    else
+    {
+        <div class="cong-tin-than">
+            @{ var tin = _noiBat[_chiSo]; var tb = tin.ThongBao; }
+            <article class="cong-tin-noi-bat @LopMucDo(tb.MucDo)" @onmouseenter="() => _tamDung = true" @onmouseleave="() => _tamDung = false"
+                     @onfocusin="() => _tamDung = true" @onfocusout="() => _tamDung = false" aria-roledescription="trình chiếu" aria-label="Tin nổi bật">
+                <div class="cong-tin-slide" @key="tb.ThongBaoId">
+                    <div class="cong-tin-ngay" aria-hidden="true">
+                        <strong>@tb.NgayDang.ToLocalTime().ToString("dd")</strong>
+                        <span>Th @tb.NgayDang.ToLocalTime().Month</span>
+                        <span>@tb.NgayDang.ToLocalTime().Year</span>
+                    </div>
+                    <div class="cong-tin-noi-dung">
+                        <div class="cong-tin-the">
+                            <span class="cong-tin-loai">@tb.LoaiVanBan</span>
+                            @if (tb.MucDo != MucDoThongBao.Thuong) { <span class="chip-muc-do muc-do-@(tb.MucDo == MucDoThongBao.Khan ? "khan" : "quan-trong")">@tb.MucDo</span> }
+                            @if (tb.DaGhim) { <span class="cong-tin-ghim"><i class="bi bi-pin-angle-fill" aria-hidden="true"></i> Ghim</span> }
+                            @if (!tin.DaDoc) { <span class="nhan-moi">Chưa đọc</span> }
+                        </div>
+                        <a class="cong-tin-tieu-de" href="@($"ThongBao/{tb.ThongBaoId}")" id="@($"lnkThongBao_{tb.ThongBaoId}")">@tb.TieuDe</a>
+                        <p class="cong-tin-trich-yeu">@(tb.TrichYeu ?? RutGon(tb.NoiDung))</p>
+                        <div class="cong-tin-meta">
+                            @if (!string.IsNullOrEmpty(tb.SoKyHieu)) { <span>Số: <strong>@tb.SoKyHieu</strong></span> }
+                            @if (!string.IsNullOrEmpty(tb.CoQuanBanHanh)) { <span><i class="bi bi-building" aria-hidden="true"></i> @tb.CoQuanBanHanh</span> }
+                            @if (tin.SoTep > 0) { <span><i class="bi bi-paperclip" aria-hidden="true"></i> @tin.SoTep tệp</span> }
+                            <a href="@($"ThongBao/{tb.ThongBaoId}")" class="cong-tin-doc-tiep">Xem chi tiết <i class="bi bi-arrow-right" aria-hidden="true"></i></a>
+                        </div>
+                    </div>
+                </div>
+                @if (_noiBat.Count > 1)
+                {
+                    <div class="cong-tin-dieu-khien">
+                        <button type="button" class="cong-tin-nut" aria-label="Tin trước" @onclick="() => ChuyenTin(-1)"><i class="bi bi-chevron-left"></i></button>
+                        <div class="cong-tin-cham-trang" role="tablist" aria-label="Chọn tin nổi bật">
+                            @for (var i = 0; i < _noiBat.Count; i++)
+                            {
+                                var vt = i;
+                                <button type="button" role="tab" aria-selected="@(vt == _chiSo ? "true" : "false")" aria-label="@($"Tin {vt + 1}")"
+                                        class="@(vt == _chiSo ? "dang-chon" : null)" @onclick="() => { _chiSo = vt; _demGiay = 0; }"></button>
+                            }
+                        </div>
+                        <button type="button" class="cong-tin-nut" aria-label="Tin sau" @onclick="() => ChuyenTin(1)"><i class="bi bi-chevron-right"></i></button>
+                        <span class="cong-tin-tien-do @(_tamDung ? "tam-dung" : null)" @key="_chiSo" style="--thoi-gian-slide: @(GiayMoiTin)s"></span>
+                    </div>
+                }
+            </article>
+
+            <div class="cong-tin-moi" aria-label="Mới cập nhật">
+                <h3>Mới cập nhật</h3>
+                <ol>
+                    @foreach (var (dong, thuTu) in _tinMoi.Take(5).Select((d, i) => (d, i)))
+                    {
+                        var t = dong.ThongBao;
+                        <li style="--tre: @(thuTu * 70)ms">
+                            <a href="@($"ThongBao/{t.ThongBaoId}")" class="@(dong.DaDoc ? null : "chua-doc")">
+                                <span class="cong-tin-ngay-nho">@t.NgayDang.ToLocalTime().ToString("dd/MM")</span>
+                                <span class="cong-tin-dong-tieu-de">
+                                    @if (!dong.DaDoc) { <span class="cham-chua-doc" aria-label="Chưa đọc"></span> }
+                                    @t.TieuDe
+                                </span>
+                                @if ((DateTime.UtcNow - t.NgayDang).TotalDays < 3) { <span class="nhan-moi">Mới</span> }
+                            </a>
+                        </li>
+                    }
+                </ol>
+            </div>
+        </div>
+    }
+</section>
+
+@code {
+    private const int SoTinNoiBat = 5;
+    private const int GiayMoiTin = 7;
+    private List<DongThongBao> _noiBat = [];
+    private List<DongThongBao> _tinMoi = [];
+    private int _soChuaDoc;
+    private int _chiSo;
+    private int _demGiay;
+    private bool _tamDung;
+    private PeriodicTimer? _hen;
+
+    /// <inheritdoc />
+    protected override IReadOnlyCollection<string> BangTheoDoi { get; } = [ThongBaoDichVu.TenBang, ThongBaoDichVu.TenBangDaDoc];
+
+    /// <inheritdoc />
+    protected override async Task TaiDuLieuAsync()
+    {
+        var tatCa = await DichVuThongBao.LayDanhSachAsync(new LocThongBao { SoLuong = 100 });
+        _soChuaDoc = tatCa.Count(d => !d.DaDoc);
+        // Nổi bật: ghim → mức độ cao → chưa đọc → mới nhất.
+        _noiBat = tatCa
+            .OrderByDescending(d => d.ThongBao.DaGhim)
+            .ThenByDescending(d => MucDoThongBao.TatCa.ToList().IndexOf(d.ThongBao.MucDo))
+            .ThenBy(d => d.DaDoc)
+            .ThenByDescending(d => d.ThongBao.NgayDang)
+            .Take(SoTinNoiBat)
+            .ToList();
+        _tinMoi = tatCa.OrderByDescending(d => d.ThongBao.NgayDang).Take(8).ToList();
+        _chiSo = Math.Min(_chiSo, Math.Max(0, _noiBat.Count - 1));
+    }
+
+    /// <inheritdoc />
+    protected override void OnAfterRender(bool firstRender)
+    {
+        if (firstRender)
+        {
+            _hen = new PeriodicTimer(TimeSpan.FromSeconds(1));
+            _ = ChayTrinhChieuAsync(_hen);
+        }
+    }
+
+    /// <summary>Tự chuyển tin nổi bật mỗi <see cref="GiayMoiTin"/> giây; đứng yên khi người dùng đang xem.</summary>
+    private async Task ChayTrinhChieuAsync(PeriodicTimer hen)
+    {
+        try
+        {
+            while (await hen.WaitForNextTickAsync())
+            {
+                if (_tamDung || _noiBat.Count < 2) { continue; }
+                if (++_demGiay >= GiayMoiTin)
+                {
+                    await InvokeAsync(() => { ChuyenTin(1); StateHasChanged(); });
+                }
+            }
+        }
+        catch (ObjectDisposedException)
+        {
+            // Mạch đã đóng.
+        }
+    }
+
+    private void ChuyenTin(int buoc)
+    {
+        if (_noiBat.Count == 0) { return; }
+        _chiSo = (_chiSo + buoc + _noiBat.Count) % _noiBat.Count;
+        _demGiay = 0;
+    }
+
+    private static string LopMucDo(string mucDo) => mucDo == MucDoThongBao.Khan ? "muc-khan" : mucDo == MucDoThongBao.QuanTrong ? "muc-quan-trong" : "muc-thuong";
+
+    private static string RutGon(string? noiDung)
+    {
+        var s = (noiDung ?? string.Empty).ReplaceLineEndings(" ").Trim();
+        return s.Length <= 180 ? s : s[..180].TrimEnd() + "…";
+    }
+
+    /// <inheritdoc />
+    protected override void GiaiPhong() => _hen?.Dispose();
+}

@@ -7,18 +7,20 @@ namespace QuanLyDaoTao.Services;
 /// <summary>
 /// Lớp triển khai dịch vụ nghiệp vụ quản lý Chức vụ công tác.
 /// </summary>
-public class ChucVuDichVu : IChucVuDichVu
+public class ChucVuDichVu : DichVuNghiepVuCoSo, IChucVuDichVu
 {
-    private readonly QuanLyDaoTaoDbContext _coSoDuLieu;
 
     /// <summary>
     /// Khởi tạo dịch vụ chức vụ với DbContext.
     /// </summary>
     /// <param name="coSoDuLieu">Ngữ cảnh cơ sở dữ liệu.</param>
-    public ChucVuDichVu(QuanLyDaoTaoDbContext coSoDuLieu)
+    public ChucVuDichVu(
+        QuanLyDaoTaoDbContext coSoDuLieu,
+        IPhanQuyenDichVu? phanQuyen = null,
+        INhatKyDichVu? nhatKy = null,
+        IBusThayDoiDuLieu? bus = null)
+        : base(coSoDuLieu, phanQuyen, nhatKy, bus)
     {
-        ArgumentNullException.ThrowIfNull(coSoDuLieu);
-        _coSoDuLieu = coSoDuLieu;
     }
 
     /// <summary>
@@ -60,6 +62,7 @@ public class ChucVuDichVu : IChucVuDichVu
     /// </summary>
     public async Task<ChucVu> ThemChucVuAsync(ChucVu chucVu, CancellationToken cancellationToken = default)
     {
+        await DamBaoQuanTriAsync();
         ArgumentNullException.ThrowIfNull(chucVu);
 
         if (await KiemTraTonTaiMaAsync(chucVu.MaChucVu, null, cancellationToken))
@@ -77,6 +80,7 @@ public class ChucVuDichVu : IChucVuDichVu
     /// </summary>
     public async Task<ChucVu> CapNhatChucVuAsync(ChucVu chucVu, CancellationToken cancellationToken = default)
     {
+        await DamBaoQuanTriAsync();
         ArgumentNullException.ThrowIfNull(chucVu);
 
         var cvTonTai = await _coSoDuLieu.ChucVus.FirstOrDefaultAsync(cv => cv.ChucVuId == chucVu.ChucVuId, cancellationToken);
@@ -104,6 +108,7 @@ public class ChucVuDichVu : IChucVuDichVu
     /// </summary>
     public async Task<bool> XoaChucVuAsync(int id, CancellationToken cancellationToken = default)
     {
+        await DamBaoQuanTriAsync();
         var cv = await _coSoDuLieu.ChucVus.FirstOrDefaultAsync(c => c.ChucVuId == id, cancellationToken);
         if (cv == null)
         {

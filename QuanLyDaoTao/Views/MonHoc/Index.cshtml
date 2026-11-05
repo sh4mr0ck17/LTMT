@@ -3,7 +3,7 @@
 @{
     ViewData["Title"] = "Quản lý Môn học";
     Layout = "_Layout";
-    bool laQuanTri = User.IsInRole(VaiTroMacDinh.SuperAdmin) || User.IsInRole(VaiTroMacDinh.GiaoVien) || User.IsInRole(VaiTroMacDinh.QuanTriVien) || User.IsInRole(VaiTroMacDinh.QuanLyDaoTao);
+    bool laQuanTri = User.IsInRole(VaiTroMacDinh.SuperAdmin) || User.IsInRole(VaiTroMacDinh.QuanTriVien) || User.IsInRole(VaiTroMacDinh.QuanLy);
     var danhSachBoMon = ViewBag.DanhSachBoMon as List<BoMon> ?? new List<BoMon>();
 }
 

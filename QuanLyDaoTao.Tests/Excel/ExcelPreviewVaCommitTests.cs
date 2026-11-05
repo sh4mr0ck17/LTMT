@@ -1,4 +1,4 @@
-using ClosedXML.Excel;
+﻿using ClosedXML.Excel;
 using Microsoft.EntityFrameworkCore;
 using QuanLyDaoTao.Models;
 using QuanLyDaoTao.Models.Excel;
@@ -107,66 +107,71 @@ public class ExcelPreviewVaCommitTests
         Assert.Null(phienSauXoa);
     }
 
+    /// <summary>
+    /// Chế độ linh hoạt KHÔNG được bịa dữ liệu định danh hay tham chiếu: thiếu ngày sinh, giới tính, mã lớp → dòng lỗi,
+    /// tuyệt đối không tự gán học viên vào "lớp khả dụng đầu tiên".
+    /// </summary>
     [Fact]
-    public async Task Commit_HangThieuTruong_CheDoLinhHoat_TuDongBuDapVaLuuThanhCong()
+    public async Task KiemTra_CheDoLinhHoat_ThieuNgaySinhGioiTinhMaLop_LaDongLoiKhongTuGanLop()
     {
-        // Arrange: Tạo lớp B1D57 sẵn trong DB
         using var db = CoSoDuLieuTestHelper.TaoDbContextAo();
         var khoa = new Khoa { MaKhoa = "KHOA_CNTT", TenKhoa = "CNTT" };
         db.Khoas.Add(khoa);
         await db.SaveChangesAsync();
+        db.LopHocs.Add(new LopHoc { MaLop = "B1D57", TenLop = "Lớp B1D57", KhoaId = khoa.KhoaId, NienKhoa = "2025-2029" });
+        await db.SaveChangesAsync();
+        var excelDichVu = new ExcelDichVu(db, new NhatKyDichVu(db));
 
+        using var stream = TaoWorkbookInMemory(ws =>
+        {
+            string[] tieuDe = ["Mã học viên", "Họ và tên", "Ngày sinh", "Giới tính", "Email", "Số điện thoại", "Địa chỉ", "Mã lớp", "Trạng thái"];
+            for (var c = 0; c < tieuDe.Length; c++) { ws.Cell(1, c + 1).Value = tieuDe[c]; }
+            ws.Cell(2, 2).SetValue("Nguyễn Thị Linh Hoạt");
+            ws.Cell(2, 7).SetValue("Hà Nội, Việt Nam");
+        });
+
+        var ketQua = await excelDichVu.KiemTraVaDocTepExcelAsync("HocVien", stream, "partial.xlsx", choPhepThieuTruong: true);
+
+        Assert.Equal(0, ketQua.SoDongHopLe);
+        Assert.Equal(1, ketQua.SoDongLoi);
+        Assert.Contains(ketQua.DanhSachLoi, l => l.TenTruong == "Mã lớp" && l.MaLoi.StartsWith("ERR_"));
+        Assert.Contains(ketQua.DanhSachLoi, l => l.TenTruong == "Ngày sinh" && l.MaLoi.StartsWith("ERR_"));
+    }
+
+    /// <summary>Chế độ linh hoạt vẫn tự sinh MÃ HỆ THỐNG (mã học viên) và trạng thái mặc định khi để trống.</summary>
+    [Fact]
+    public async Task Commit_CheDoLinhHoat_ThieuMaHocVien_TuSinhMaVaLuuThanhCong()
+    {
+        using var db = CoSoDuLieuTestHelper.TaoDbContextAo();
+        var khoa = new Khoa { MaKhoa = "KHOA_CNTT", TenKhoa = "CNTT" };
+        db.Khoas.Add(khoa);
+        await db.SaveChangesAsync();
         var lop = new LopHoc { MaLop = "B1D57", TenLop = "Lớp B1D57", KhoaId = khoa.KhoaId, NienKhoa = "2025-2029" };
         db.LopHocs.Add(lop);
         await db.SaveChangesAsync();
+        var excelDichVu = new ExcelDichVu(db, new NhatKyDichVu(db));
 
-        var nhatKy = new NhatKyDichVu(db);
-        var excelDichVu = new ExcelDichVu(db, nhatKy);
-
-        // Tạo tệp Excel chỉ có Họ và tên và Địa chỉ (thiếu Mã học viên, Ngày sinh, Giới tính, Mã lớp)
         using var stream = TaoWorkbookInMemory(ws =>
         {
-            ws.Cell(1, 1).Value = "Mã học viên";
-            ws.Cell(1, 2).Value = "Họ và tên";
-            ws.Cell(1, 3).Value = "Ngày sinh";
-            ws.Cell(1, 4).Value = "Giới tính";
-            ws.Cell(1, 5).Value = "Email";
-            ws.Cell(1, 6).Value = "Số điện thoại";
-            ws.Cell(1, 7).Value = "Địa chỉ";
-            ws.Cell(1, 8).Value = "Mã lớp";
-            ws.Cell(1, 9).Value = "Trạng thái";
-
-            // Hàng 2: Để trống Mã học viên, Ngày sinh, Giới tính, Mã lớp (thiếu nhiều trường)
-            ws.Cell(2, 1).SetValue("");
+            string[] tieuDe = ["Mã học viên", "Họ và tên", "Ngày sinh", "Giới tính", "Email", "Số điện thoại", "Địa chỉ", "Mã lớp", "Trạng thái"];
+            for (var c = 0; c < tieuDe.Length; c++) { ws.Cell(1, c + 1).Value = tieuDe[c]; }
             ws.Cell(2, 2).SetValue("Nguyễn Thị Linh Hoạt");
-            ws.Cell(2, 3).SetValue("");
-            ws.Cell(2, 4).SetValue("");
+            ws.Cell(2, 3).SetValue("12/03/2006");
+            ws.Cell(2, 4).SetValue("Nữ");
             ws.Cell(2, 7).SetValue("Hà Nội, Việt Nam");
-            ws.Cell(2, 8).SetValue("");
+            ws.Cell(2, 8).SetValue("B1D57");
         });
 
-        // Act 1: Kiểm tra tệp ở chế độ cho phép thiếu trường (choPhepThieuTruong = true)
         var ketQua = await excelDichVu.KiemTraVaDocTepExcelAsync("HocVien", stream, "partial.xlsx", choPhepThieuTruong: true);
-
-        // Assert 1: Dòng được tự động bù đắp và vẫn HỢP LỆ để tiếp tục nhập
         Assert.Equal(1, ketQua.SoDongHopLe);
-        Assert.Equal(0, ketQua.SoDongLoi);
-        Assert.True(ketQua.DanhSachDongDuLieu[0].LaHopLe);
         Assert.Contains(ketQua.DanhSachLoi, l => l.MaLoi.StartsWith("WARN_"));
 
-        // Act 2: Commit dữ liệu
-        var danhSachHopLe = ketQua.DanhSachDongDuLieu.Where(d => d.LaHopLe).ToList();
-        var ketQuaCommit = await excelDichVu.CommitDuLieuExcelAsync("HocVien", danhSachHopLe, "tester");
-
-        // Assert 2: Lưu thành công vào CSDL
+        var ketQuaCommit = await excelDichVu.CommitDuLieuExcelAsync("HocVien", ketQua.DanhSachDongDuLieu.Where(d => d.LaHopLe).ToList(), "tester");
         Assert.True(ketQuaCommit.ThanhCong);
-        Assert.Equal(1, ketQuaCommit.SoBanGhiDaThem);
 
-        var hvDb = await db.HocViens.FirstOrDefaultAsync(h => h.HoVaTen == "Nguyễn Thị Linh Hoạt");
-        Assert.NotNull(hvDb);
+        var hvDb = await db.HocViens.SingleAsync(h => h.HoVaTen == "Nguyễn Thị Linh Hoạt");
         Assert.StartsWith("HV_", hvDb.MaHocVien);
-        Assert.Equal("Nữ", hvDb.GioiTinh); // Tự động suy luận giới tính qua chữ 'Thị'
-        Assert.Equal("Hà Nội, Việt Nam", hvDb.DiaChi);
-        Assert.Equal(lop.LopHocId, hvDb.LopHocId); // Tự động gán lớp khả dụng
+        Assert.Equal(lop.LopHocId, hvDb.LopHocId);
+        Assert.Equal("Đang học", hvDb.TrangThai);
     }
 }

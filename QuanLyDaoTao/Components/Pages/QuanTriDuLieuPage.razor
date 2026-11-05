@@ -1,223 +1,373 @@
-@page "/QuanTriDuLieu"
-@attribute [Authorize(Roles = VaiTroMacDinh.SuperAdmin)]
-@inject IQuanTriDuLieuDichVu QuanTriDuLieuDichVu
-@inject NavigationManager Navigation
-@inject IJSRuntime JSRuntime
+﻿@page "/QuanTriDuLieu"
+@attribute [Authorize(Roles = VaiTroMacDinh.NhomCoQuyenGhi)]
+@using QuanLyDaoTao.Models.QuanTri
+@inject IQuanTriDuLieuDichVu DichVuDuLieu
+@inject IPhanQuyenDichVu PhanQuyen
+@inject IKhoaDichVu DichVuKhoa
+@inject IBoMonDichVu DichVuBoMon
+@inject ILopHocDichVu DichVuLop
+@inject IHocVienDichVu DichVuHocVien
+@inject INhanSuDichVu DichVuNhanSu
+@inject IMonHocDichVu DichVuMonHoc
+@inject IChucVuDichVu DichVuChucVu
+@inject ITrinhDoChuyenMonDichVu DichVuTrinhDo
+@inject DialogService HopThoai
+@inject NotificationService ThongBaoNhanh
 
-<PageTitle>Quản trị DB Trực tuyến (Live CRUD) - C500</PageTitle>
+<PageTitle>Dữ liệu &amp; danh mục | Quản lý đào tạo C500</PageTitle>
 
-<div class="container-fluid px-4 py-3" id="pnlQuanTriDuLieu">
-    <!-- Banner tiêu đề Quản trị DB trực tiếp -->
+@* NƠI DUY NHẤT chỉnh sửa dữ liệu nền (khoa, bộ môn, cán bộ, lớp, học viên, môn học, danh mục).
+   Lưới kiểu bảng tính + biểu mẫu chi tiết; mọi ghi chép đi qua dịch vụ nghiệp vụ (quy tắc + phân quyền theo vùng/khoa).
+   Thay đổi trên lưới chỉ được ĐÁNH DẤU, bấm "Lưu" mới ghi; xóa phải xác nhận; lỗi hiện theo từng dòng. *@
+<div class="trang-nghiep-vu studio" id="pnlQuanTriDuLieu">
+    <TieuDeTrang PhanHe="@(_nguoiDung.LaQuanTri ? "Quản trị" : VungQuanLy.LayNhan(_nguoiDung.VungQuanLy))" TieuDe="Dữ liệu & danh mục" BieuTuong="bi-table"
+                 MoTa="Nơi chỉnh sửa tập trung dữ liệu nền. Sửa trực tiếp trên lưới hoặc mở biểu mẫu chi tiết; thay đổi chỉ ghi khi bấm Lưu, kiểm tra như biểu mẫu nghiệp vụ và ghi nhật ký." />
 
-    <!-- Thanh chuyển đổi giữa 11 nhóm quản lý -->
-    <div class="card shadow-sm border-0 mb-3" id="pnlChonNhomQuanLy">
-        <div class="card-body py-2 px-3">
-            <div class="d-flex flex-wrap gap-2 align-items-center">
-                <span class="fw-bold text-primary small text-uppercase me-1"><i class="bi bi-layers-fill me-1"></i>Chọn Nhóm DB:</span>
-                @if (danhSachBang != null)
+    <div class="studio-bo-cuc">
+        <nav class="studio-ds-bang" id="pnlChonNhomQuanLy" aria-label="Chọn bảng dữ liệu">
+            @foreach (var nhom in CacBangDuocPhep.GroupBy(b => b.Nhom))
+            {
+                <div class="studio-nhom">@nhom.Key</div>
+                @foreach (var b in nhom)
                 {
-                    @foreach (var b in danhSachBang)
+                    var dangChon = b.TenBang == _tenBang;
+                    <button type="button" class="studio-muc-bang @MauDoiTuong.LayLop(b.TenBang) @(dangChon ? "dang-chon" : null)"
+                            aria-current="@(dangChon ? "page" : null)" id="@($"btnBang_{b.TenBang}")" @onclick="() => ChonBangAsync(b.TenBang)">
+                        <span class="dt-cham"></span>
+                        <span class="studio-ten-bang">@b.TenHienThi</span>
+                        @if (b.ChiDoc || !CoQuyenGhiBang(b.TenBang)) { <i class="bi bi-lock" title="Chỉ xem" aria-label="Chỉ xem"></i> }
+                        <span class="studio-dem">@b.SoBanGhi.ToString("N0")</span>
+                    </button>
+                }
+            }
+        </nav>
+
+        <section class="studio-bang @MauDoiTuong.LayLop(_tenBang)" id="pnlBangLiveCrud" aria-labelledby="lblTenBang">
+            <div class="studio-thanh-cong-cu">
+                <h2 id="lblTenBang"><span class="dt-o-bieu-tuong"><i class="bi @(BangHienTai?.BieuTuong ?? "bi-table")" aria-hidden="true"></i></span>@(BangHienTai?.TenHienThi ?? _tenBang)</h2>
+                <div class="o-tim-kiem studio-tim">
+                    <i class="bi bi-search" aria-hidden="true"></i>
+                    <input class="form-control form-control-sm" id="txtTimTrongBang" type="search" placeholder="Tìm trong bảng…" value="@_tuKhoa"
+                           @oninput="@(e => { _tuKhoa = e.Value?.ToString() ?? string.Empty; _trang = 0; })" />
+                </div>
+                <div class="studio-nut">
+                    @if (SoThayDoi > 0)
                     {
-                        bool dangChon = string.Equals(b.TenBang, tenBangHienTai, StringComparison.OrdinalIgnoreCase);
-                        <button type="button" class="btn btn-sm @(dangChon ? "btn-primary fw-bold shadow-sm" : "btn-outline-primary")"
-                                @onclick="() => ChonBang(b.TenBang)">
-                            <i class="bi @b.BieuTuong me-1"></i>@b.TenHienThi
-                            <span class="badge @(dangChon ? "bg-warning text-dark" : "bg-secondary") ms-1">@b.SoBanGhi</span>
+                        <span class="studio-trang-thai" role="status" id="lblSoThayDoi"><i class="bi bi-pencil-square" aria-hidden="true"></i> @SoThayDoi thay đổi chưa lưu</span>
+                        <button type="button" class="btn btn-sm btn-light" id="btnHoanTac" @onclick="HuyThayDoiAsync" disabled="@_dangLuu"><i class="bi bi-arrow-counterclockwise"></i> Hủy</button>
+                    }
+                    @if (ModuleExcel is { } module)
+                    {
+                        <a class="btn btn-sm btn-light" href="@($"Excel/XuatDuLieu?module={module}")" id="btnXuatExcel" title="Xuất toàn bộ bảng ra Excel"><i class="bi bi-file-earmark-arrow-down"></i></a>
+                        @if (CoQuyenThem)
+                        {
+                            <a class="btn btn-sm btn-light" href="@($"Excel/NhapExcel?module={module}")" id="btnNhapExcel" title="Nhập nhiều bản ghi từ Excel (kiểm tra như biểu mẫu)"><i class="bi bi-file-earmark-arrow-up"></i> Nhập Excel</a>
+                        }
+                    }
+                    @if (!ChiDoc && CoQuyenThem)
+                    {
+                        @if (_laSuperAdmin)
+                        {
+                            <button type="button" class="btn btn-sm btn-light" id="btnMoModalTruongTuyChinh" @onclick="() => _moHopCot = true" disabled="@(SoThayDoi > 0)"
+                                    title="@(SoThayDoi > 0 ? "Lưu hoặc hủy thay đổi trước khi đổi cấu trúc cột" : "Thêm trường dữ liệu riêng cho bảng này")"><i class="bi bi-layout-three-columns"></i> Cột (@(_duLieu?.DanhSachTruongTuyChinh.Count ?? 0))</button>
+                        }
+                        @if (CoBieuMau)
+                        {
+                            <button type="button" class="btn btn-sm btn-outline-primary" id="btnThemBieuMau" @onclick="() => MoBieuMauAsync(null)" disabled="@(SoThayDoi > 0)"
+                                    title="Thêm bằng biểu mẫu đầy đủ (gợi ý, kiểm tra từng trường)"><i class="bi bi-window-plus"></i> Biểu mẫu</button>
+                        }
+                        <button type="button" class="btn btn-sm btn-outline-primary" id="btnThemDongPlus" @onclick="ThemDongNhap" disabled="@(_duLieu is null)" title="Thêm dòng trống ngay trên lưới"><i class="bi bi-plus-lg"></i> Thêm dòng</button>
+                    }
+                    @if (!ChiDoc)
+                    {
+                        <button type="button" class="btn btn-sm btn-primary" id="btnLuuTatCaThayDoi" @onclick="LuuAsync" disabled="@(SoThayDoi == 0 || _dangLuu)">
+                            @if (_dangLuu) { <span class="spinner-border spinner-border-sm me-1"></span> } else { <i class="bi bi-check2-circle"></i> }
+                            Lưu@(SoThayDoi > 0 ? $" ({SoThayDoi})" : "")
                         </button>
                     }
-                }
+                </div>
             </div>
-        </div>
-    </div>
 
-    @if (thongBao != null)
-    {
-        <div class="alert alert-@(thongBaoThanhCong ? "success" : "danger") alert-dismissible fade show py-2" role="alert">
-            <i class="bi bi-@(thongBaoThanhCong ? "check-circle-fill" : "exclamation-triangle-fill") me-2"></i>@thongBao
-            <button type="button" class="btn-close" @onclick="() => thongBao = null"></button>
-        </div>
-    }
-
-    <!-- Bảng dữ liệu Spreadsheet Live-Editable -->
-    <div class="card shadow-sm border-0" id="pnlBangLiveCrud">
-        <div class="card-body p-0">
-            @if (isLoading)
+            @if (_duLieu is not null && CacLocThongMinh.Any(l => l.SoDong > 0))
             {
-                <div class="text-center py-5">
-                    <div class="spinner-border text-primary" role="status"></div>
-                    <p class="text-muted mt-2">Đang tải dữ liệu nhóm @tenBangHienTai...</p>
+                <div class="studio-can-xu-ly" id="pnlCanXuLy" role="group" aria-label="Cần xử lý">
+                    <span class="studio-can-xu-ly-nhan"><i class="bi bi-lightning-charge" aria-hidden="true"></i> Cần xử lý:</span>
+                    @foreach (var loc in CacLocThongMinh.Where(l => l.SoDong > 0))
+                    {
+                        var ma = loc.Ma;
+                        <button type="button" class="dt-chip tt-@loc.MucDo @(_locThongMinh == ma ? "dang-chon" : null)" aria-pressed="@((_locThongMinh == ma).ToString().ToLowerInvariant())"
+                                @onclick="() => { _locThongMinh = _locThongMinh == ma ? null : ma; _trang = 0; }" id="@($"btnCanXuLy_{ma}")">
+                            @loc.Nhan <b>@loc.SoDong.ToString("N0")</b>
+                        </button>
+                    }
                 </div>
             }
-            else if (duLieuBang != null)
+            @if (_duLieu is not null && CotLoc.Count > 0)
             {
-                <div class="table-responsive" style="max-height: 68vh;">
-                    <table class="table table-bordered table-hover align-middle mb-0" id="dgvBangDuLieuTrucTuyen">
-                        <thead class="table-light sticky-top" style="z-index: 5;">
-                            <tr>
-                                <th class="text-center" style="width: 130px; min-width: 130px;">
-                                    <span class="small fw-bold">THAO TÁC</span>
-                                    <button type="button" class="btn btn-sm btn-success py-0 px-2 ms-1 fw-bold" @onclick="ThemDongMoi" title="Thêm dòng [+]">+</button>
-                                </th>
-                                @foreach (var cot in duLieuBang.DanhSachCot)
-                                {
-                                    <th style="min-width: @(cot.LaKhoaChinh ? "75px" : "160px");">
-                                        <div class="d-flex align-items-center justify-content-between">
-                                            <span>
-                                                @cot.TenHienThi
-                                                @if (cot.LaBatBuoc && !cot.LaKhoaChinh)
-                                                {
-                                                    <span class="text-danger">*</span>
-                                                }
-                                            </span>
-                                            @if (cot.LaTruongTuyChinh)
-                                            {
-                                                <button type="button" class="btn btn-outline-danger btn-sm py-0 px-1 fw-bold"
-                                                        @onclick="() => XoaCotTuyChinh(cot.TruongTuyChinhId ?? 0)" title="Xóa cột tùy chỉnh [-]">&minus;</button>
-                                            }
-                                        </div>
-                                    </th>
-                                }
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @if (duLieuBang.DanhSachDong.Count == 0)
+                <div class="studio-thanh-loc" id="pnlLocCot">
+                    <i class="bi bi-funnel" aria-hidden="true"></i>
+                    @foreach (var cot in CotLoc)
+                    {
+                        var maCot = cot.MaCot;
+                        <select class="form-select form-select-sm" aria-label="@($"Lọc theo {cot.TenHienThi}")" value="@_locCot.GetValueOrDefault(maCot, "")"
+                                @onchange="@(e => DatLoc(maCot, e.Value?.ToString()))">
+                            <option value="">@cot.TenHienThi: tất cả</option>
+                            @if (cot.KieuDuLieu == "Logic")
                             {
-                                <tr>
-                                    <td colspan="@(duLieuBang.DanhSachCot.Count + 1)" class="text-center py-4 text-muted">
-                                        Chưa có bản ghi nào. Bấm nút <strong>"Thêm Dòng [+]"</strong> ở góc trên để tạo bản ghi mới!
-                                    </td>
-                                </tr>
+                                <option value="true">Có</option>
+                                <option value="false">Không</option>
                             }
                             else
                             {
-                                @for (int rIdx = 0; rIdx < duLieuBang.DanhSachDong.Count; rIdx++)
+                                @foreach (var lc in cot.DanhSachLuaChon)
                                 {
-                                    var dong = duLieuBang.DanhSachDong[rIdx];
-                                    var pkVal = dong.TryGetValue(duLieuBang.TenKhoaChinh, out var v) ? v ?? "" : "";
-                                    int rowIndex = rIdx;
+                                    <option value="@lc.GiaTri">@lc.NhanHienThi</option>
+                                }
+                            }
+                        </select>
+                    }
+                    @if (_locCot.Count > 0) { <button type="button" class="btn btn-sm btn-link" @onclick="() => { _locCot.Clear(); _trang = 0; }">Bỏ lọc</button> }
+                    @if (!_nguoiDung.LaQuanTri && !ChiDoc) { <span class="studio-goi-y-pham-vi"><i class="bi bi-shield-check"></i> Chỉ sửa được bản ghi trong phạm vi của bạn; dòng khác hiển thị khóa.</span> }
+                </div>
+            }
 
-                                    <tr>
-                                        <td class="text-center bg-light">
-                                            <div class="btn-group btn-group-sm">
-                                                <button type="button" class="btn btn-outline-success" @onclick="() => LuuDong(pkVal, rowIndex)" title="Lưu dòng này">
-                                                    <i class="bi bi-floppy-fill"></i>
-                                                </button>
-                                                <button type="button" class="btn btn-danger" @onclick="() => XoaDong(pkVal)" title="Xóa dòng này [-]">
-                                                    <i class="bi bi-trash"></i>
-                                                </button>
-                                            </div>
-                                        </td>
-                                        @foreach (var cot in duLieuBang.DanhSachCot)
+            @if (_chon.Count > 0 && _duLieu is not null)
+            {
+                <div class="studio-thanh-hang-loat" role="region" aria-label="Thao tác hàng loạt" id="pnlHangLoat">
+                    <strong>Đã chọn @_chon.Count dòng</strong>
+                    <span>Gán</span>
+                    <select class="form-select form-select-sm" aria-label="Cột cần gán" @onchange="@(e => { _cotGan = e.Value?.ToString(); _giaTriGan = null; })">
+                        <option value="">— chọn cột —</option>
+                        @foreach (var cot in CotGanDuoc)
+                        {
+                            <option value="@cot.MaCot" selected="@(cot.MaCot == _cotGan)">@cot.TenHienThi</option>
+                        }
+                    </select>
+                    @if (CotDangGan is { } cotGan)
+                    {
+                        <span>=</span>
+                        @if (cotGan.KieuDuLieu == "Logic")
+                        {
+                            <select class="form-select form-select-sm" aria-label="Giá trị" @onchange="@(e => _giaTriGan = e.Value?.ToString())"><option value="">—</option><option value="true">Có</option><option value="false">Không</option></select>
+                        }
+                        else if (cotGan.KieuDuLieu is "KhoaNgoai" or "DanhSach")
+                        {
+                            <select class="form-select form-select-sm" aria-label="Giá trị" @onchange="@(e => _giaTriGan = e.Value?.ToString())">
+                                <option value="">—</option>
+                                @foreach (var lc in cotGan.DanhSachLuaChon) { <option value="@lc.GiaTri">@lc.NhanHienThi</option> }
+                            </select>
+                        }
+                        else
+                        {
+                            <input class="form-control form-control-sm" aria-label="Giá trị" @oninput="@(e => _giaTriGan = e.Value?.ToString())" />
+                        }
+                        <button type="button" class="btn btn-sm btn-primary" id="btnApDungHangLoat" @onclick="ApDungHangLoat" disabled="@(_giaTriGan is null)">Áp dụng</button>
+                    }
+                    <span class="studio-ngan"></span>
+                    <button type="button" class="btn btn-sm btn-outline-danger" id="btnXoaHangLoat" @onclick="DanhDauXoaHangLoat"><i class="bi bi-trash3"></i> Đánh dấu xóa</button>
+                    <button type="button" class="btn btn-sm btn-light" @onclick="() => _chon.Clear()">Bỏ chọn</button>
+                </div>
+            }
+
+            @if (ChiDoc)
+            {
+                <div class="studio-chi-doc" role="note"><i class="bi bi-shield-lock" aria-hidden="true"></i> Bảng chỉ xem: nhật ký kiểm toán không được sửa hoặc xóa để giữ giá trị làm bằng chứng.</div>
+            }
+            @if (_loiTai is not null)
+            {
+                <div class="alert alert-danger py-2 m-2" role="alert">@_loiTai</div>
+            }
+
+            @if (_dangTai)
+            {
+                <div class="studio-trong"><span class="spinner-border spinner-border-sm"></span> Đang tải…</div>
+            }
+            else if (_duLieu is not null)
+            {
+                var cacCot = _duLieu.DanhSachCot;
+                var cotDinh = cacCot.FirstOrDefault(c => !c.LaKhoaChinh)?.MaCot;
+                var dongHienThi = DongLoc().ToList();
+                var tongTrang = Math.Max(1, (int)Math.Ceiling(dongHienThi.Count / (double)SoDongMoiTrang));
+                var trang = Math.Min(_trang, tongTrang - 1);
+                var trangNay = dongHienThi.Skip(trang * SoDongMoiTrang).Take(SoDongMoiTrang).ToList();
+                <div class="studio-khung-bang">
+                    <table class="studio-luoi" id="dgvBangDuLieuTrucTuyen">
+                        <thead>
+                            <tr>
+                                <th class="studio-cot-so" scope="col">
+                                    @if (!ChiDoc)
+                                    {
+                                        <input type="checkbox" class="form-check-input" aria-label="Chọn tất cả dòng trên trang" checked="@(trangNay.Count > 0 && trangNay.All(_chon.Contains))"
+                                               @onchange="@(e => ChonCaTrang(trangNay, e.Value is true))" />
+                                    }
+                                    else { <span>#</span> }
+                                </th>
+                                @foreach (var cot in cacCot)
+                                {
+                                    var maCot = cot.MaCot;
+                                    <th scope="col" class="@(cot.LaKhoaChinh ? "studio-cot-khoa" : cot.KieuDuLieu == "Logic" ? "studio-cot-logic" : null) @(maCot == cotDinh ? "studio-cot-dinh" : null)"
+                                        aria-sort="@(_cotSapXep == maCot ? (_giam ? "descending" : "ascending") : null)">
+                                        <button type="button" class="studio-sap-xep" @onclick="() => SapXep(maCot)" title="Sắp xếp theo cột này">
+                                            <span>@cot.TenHienThi</span>
+                                            @if (cot.LaBatBuoc && !cot.LaKhoaChinh) { <span class="text-danger" title="Bắt buộc">*</span> }
+                                            <i class="bi @(_cotSapXep == maCot ? (_giam ? "bi-sort-down" : "bi-sort-up") : "bi-arrow-down-up studio-sap-xep-mo")" aria-hidden="true"></i>
+                                        </button>
+                                        @if (cot.LaTruongTuyChinh)
                                         {
-                                            var colCode = cot.MaCot;
-                                            var cellVal = dong.TryGetValue(colCode, out var cv) ? cv ?? "" : "";
-
-                                            <td>
-                                                @if (cot.LaKhoaChinh)
-                                                {
-                                                    <span class="badge bg-light text-dark border font-monospace">@cellVal</span>
-                                                }
-                                                else if (cot.KieuDuLieu == "Logic")
-                                                {
-                                                    bool isChecked = cellVal.Equals("true", StringComparison.OrdinalIgnoreCase) || cellVal == "1";
-                                                    <div class="form-check form-switch d-flex justify-content-center">
-                                                        <input type="checkbox" class="form-check-input" checked="@isChecked"
-                                                               @onchange="(e) => OnCheckboxChanged(rowIndex, colCode, e)" />
-                                                    </div>
-                                                }
-                                                else if (cot.KieuDuLieu == "KhoaNgoai" || cot.KieuDuLieu == "DanhSach")
-                                                {
-                                                    <select class="form-select form-select-sm" value="@cellVal"
-                                                            @onchange="(e) => OnInputChanged(rowIndex, colCode, e)">
-                                                        <option value="">-- Trống --</option>
-                                                        @foreach (var opt in cot.DanhSachLuaChon)
-                                                        {
-                                                            <option value="@opt.GiaTri">@opt.NhanHienThi</option>
-                                                        }
-                                                    </select>
-                                                }
-                                                else if (cot.KieuDuLieu == "NgayThang")
-                                                {
-                                                    <input type="date" class="form-control form-control-sm" value="@cellVal"
-                                                           @onchange="(e) => OnInputChanged(rowIndex, colCode, e)" />
-                                                }
-                                                else if (cot.KieuDuLieu == "SoNguyen")
-                                                {
-                                                    <input type="number" class="form-control form-control-sm" value="@cellVal"
-                                                           @onchange="(e) => OnInputChanged(rowIndex, colCode, e)" />
-                                                }
-                                                else
-                                                {
-                                                    <input type="text" class="form-control form-control-sm" value="@cellVal"
-                                                           @onchange="(e) => OnInputChanged(rowIndex, colCode, e)" />
-                                                }
-                                            </td>
+                                            <span class="studio-nhan-tuy-chinh" title="Cột tùy chỉnh">TC</span>
+                                            @if (_laSuperAdmin)
+                                            {
+                                                <button type="button" class="studio-xoa-cot" disabled="@(SoThayDoi > 0)" title="Xóa cột tùy chỉnh này" aria-label="@($"Xóa cột {cot.TenHienThi}")" @onclick="() => XoaCotAsync(cot)"><i class="bi bi-x"></i></button>
+                                            }
                                         }
-                                    </tr>
+                                    </th>
+                                }
+                                @if (!ChiDoc) { <th class="studio-cot-thao-tac" scope="col"><span class="visually-hidden">Thao tác</span></th> }
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @if (dongHienThi.Count == 0)
+                            {
+                                <tr><td colspan="@(cacCot.Count + 2)" class="studio-trong">@(string.IsNullOrEmpty(_tuKhoa) && _locCot.Count == 0 ? "Bảng chưa có dữ liệu." : "Không có dòng nào khớp tìm kiếm / bộ lọc.")</td></tr>
+                            }
+                            @foreach (var (dong, chiSo) in trangNay.Select((d, i) => (d, i + trang * SoDongMoiTrang + 1)))
+                            {
+                                var laMoi = _dongMoi.Contains(dong);
+                                var khoa = LayKhoa(dong);
+                                var seXoa = !laMoi && _dongXoa.Contains(khoa);
+                                var loi = _loiDong.GetValueOrDefault(dong);
+                                var biKhoa = !laMoi && !CoQuyenSuaDong(dong);
+                                var daSua = DongDaSua(dong);
+                                <tr class="@(laMoi ? "dong-moi" : null) @(seXoa ? "dong-xoa" : null) @(loi is not null ? "dong-loi" : null) @(biKhoa ? "dong-khoa" : null) @(_chon.Contains(dong) ? "dong-chon" : null)" @key="dong">
+                                    <td class="studio-cot-so">
+                                        @if (!ChiDoc && !biKhoa)
+                                        {
+                                            <input type="checkbox" class="form-check-input" aria-label="@($"Chọn dòng {chiSo}")" checked="@_chon.Contains(dong)"
+                                                   @onchange="@(e => { if (e.Value is true) _chon.Add(dong); else _chon.Remove(dong); })" />
+                                        }
+                                        @if (laMoi) { <span class="studio-nhan-dong moi" title="Dòng mới, chưa lưu">Mới</span> }
+                                        else if (seXoa) { <span class="studio-nhan-dong xoa" title="Sẽ xóa khi lưu">Xóa</span> }
+                                        else if (daSua) { <span class="studio-nhan-dong sua" title="Đã sửa, chưa lưu">Sửa</span> }
+                                        else if (biKhoa) { <i class="bi bi-lock text-muted" title="Ngoài phạm vi quản lý của bạn"></i> }
+                                        else { <span class="studio-stt">@chiSo</span> }
+                                    </td>
+                                    @foreach (var cot in cacCot)
+                                    {
+                                        var maCot = cot.MaCot;
+                                        var giaTri = dong.GetValueOrDefault(maCot) ?? string.Empty;
+                                        var oDaSua = !laMoi && OThayDoi(dong, maCot);
+                                        var khoaO = ChiDoc || seXoa || biKhoa || cot.LaKhoaChinh;
+                                        var thieu = cot.LaBatBuoc && !cot.LaKhoaChinh && string.IsNullOrWhiteSpace(giaTri) && (laMoi || daSua);
+                                        <td class="studio-o @(oDaSua ? "o-da-sua" : null) @(thieu ? "o-thieu" : null) @(cot.KieuDuLieu == "Logic" ? "studio-cot-logic" : null) @(maCot == cotDinh ? "studio-cot-dinh" : null)"
+                                            title="@(oDaSua ? $"Giá trị cũ: {GiaTriGoc(dong, maCot)}" : thieu ? "Trường bắt buộc" : null)">
+                                            @if (cot.LaKhoaChinh)
+                                            {
+                                                <span class="studio-ma">@(laMoi ? "—" : giaTri)</span>
+                                            }
+                                            else if (cot.KieuDuLieu == "Logic")
+                                            {
+                                                var bat = giaTri.Equals("true", StringComparison.OrdinalIgnoreCase) || giaTri == "1";
+                                                <div class="form-check form-switch m-0 d-flex justify-content-center">
+                                                    <input type="checkbox" class="form-check-input" role="switch" checked="@bat" disabled="@khoaO" aria-label="@cot.TenHienThi"
+                                                           @onchange="@(e => GanGiaTri(dong, maCot, e.Value is true ? "true" : "false"))" />
+                                                </div>
+                                            }
+                                            else if (cot.KieuDuLieu is "KhoaNgoai" or "DanhSach")
+                                            {
+                                                <select class="studio-nhap" value="@giaTri" disabled="@khoaO" aria-label="@cot.TenHienThi" @onchange="@(e => GanGiaTri(dong, maCot, e.Value?.ToString()))">
+                                                    <option value="">—</option>
+                                                    @foreach (var lc in cot.DanhSachLuaChon)
+                                                    {
+                                                        <option value="@lc.GiaTri">@lc.NhanHienThi</option>
+                                                    }
+                                                </select>
+                                            }
+                                            else
+                                            {
+                                                <input class="studio-nhap" type="@KieuNhap(cot)" value="@giaTri" readonly="@khoaO" aria-label="@cot.TenHienThi"
+                                                       @onchange="@(e => GanGiaTri(dong, maCot, e.Value?.ToString()))" />
+                                            }
+                                        </td>
+                                    }
+                                    @if (!ChiDoc)
+                                    {
+                                        <td class="studio-cot-thao-tac">
+                                            @if (laMoi)
+                                            {
+                                                <button type="button" class="studio-nut-dong" title="Bỏ dòng mới" aria-label="Bỏ dòng mới" @onclick="() => BoDongMoi(dong)"><i class="bi bi-x-lg"></i></button>
+                                            }
+                                            else if (seXoa)
+                                            {
+                                                <button type="button" class="studio-nut-dong" title="Giữ lại dòng này" aria-label="Giữ lại dòng này" @onclick="() => { _dongXoa.Remove(khoa); _loiDong.Remove(dong); }"><i class="bi bi-arrow-counterclockwise"></i></button>
+                                            }
+                                            else if (!biKhoa)
+                                            {
+                                                @if (daSua)
+                                                {
+                                                    <button type="button" class="studio-nut-dong" title="Hoàn tác các ô đã sửa trên dòng" aria-label="Hoàn tác dòng" @onclick="() => HoanTacDong(dong)"><i class="bi bi-arrow-counterclockwise"></i></button>
+                                                }
+                                                @if (CoBieuMau)
+                                                {
+                                                    <button type="button" class="studio-nut-dong" title="@(SoThayDoi > 0 ? "Lưu hoặc hủy thay đổi trước khi mở biểu mẫu" : "Mở biểu mẫu chi tiết")" aria-label="Mở biểu mẫu chi tiết"
+                                                            disabled="@(SoThayDoi > 0)" @onclick="() => MoBieuMauAsync(dong)"><i class="bi bi-window-sidebar"></i></button>
+                                                }
+                                                <button type="button" class="studio-nut-dong nguy" title="Đánh dấu xóa (xóa thật khi bấm Lưu)" aria-label="Đánh dấu xóa" @onclick="() => _dongXoa.Add(khoa)"><i class="bi bi-trash3"></i></button>
+                                            }
+                                        </td>
+                                    }
+                                </tr>
+                                @if (loi is not null)
+                                {
+                                    <tr class="dong-thong-bao-loi"><td></td><td colspan="@(cacCot.Count + 1)"><i class="bi bi-exclamation-circle" aria-hidden="true"></i> @loi</td></tr>
                                 }
                             }
                         </tbody>
                     </table>
                 </div>
-                <!-- Thanh công cụ tích hợp trực tiếp ngay bên dưới bảng -->
-                <div class="card-footer bg-white border-top py-3 px-4 d-flex flex-wrap justify-content-between align-items-center gap-2">
-                    <div class="d-flex align-items-center gap-2">
-                        <span class="text-muted small fw-semibold">
-                            <i class="bi bi-info-circle me-1 text-primary"></i>Nhóm DB: <strong>@(duLieuBang?.TenHienThi ?? tenBangHienTai)</strong> • Tổng: <strong>@(duLieuBang?.DanhSachDong.Count ?? 0)</strong> bản ghi
-                        </span>
+
+                <div class="studio-chan">
+                    <div class="chu-giai-mau" aria-label="Chú giải">
+                        <span><span class="studio-mau-mau o-da-sua"></span>Ô đã sửa</span>
+                        <span><span class="studio-mau-mau o-thieu"></span>Thiếu bắt buộc</span>
+                        <span><span class="studio-mau-mau dong-moi"></span>Dòng mới</span>
+                        <span><span class="studio-mau-mau dong-xoa"></span>Sẽ xóa</span>
                     </div>
-                    <div class="d-flex flex-wrap gap-2 align-items-center">
-                        <button type="button" class="btn btn-warning fw-bold text-dark shadow-sm" id="btnThemDongPlus" @onclick="ThemDongMoi">
-                            <i class="bi bi-plus-lg me-1"></i>Thêm Dòng [+]
-                        </button>
-                        <button type="button" class="btn btn-danger fw-bold shadow-sm" id="btnXoaDongMinus" @onclick="XoaDongCuoi" disabled="@(duLieuBang?.DanhSachDong.Count == 0)">
-                            <i class="bi bi-dash-lg me-1"></i>Bớt Dòng Cuối [-]
-                        </button>
-                        <button type="button" class="btn btn-info fw-bold text-dark shadow-sm" id="btnMoModalTruongTuyChinh" @onclick="() => showModalCustomCols = true">
-                            <i class="bi bi-columns-gap me-1"></i>+/- Cột Tùy Chỉnh (@(duLieuBang?.DanhSachTruongTuyChinh.Count ?? 0))
-                        </button>
-                        <button type="button" class="btn btn-success fw-bold shadow-sm" id="btnLuuTatCaThayDoi" @onclick="LuuTatCa">
-                            <i class="bi bi-cloud-check-fill me-1"></i>Lưu Dữ Liệu
-                        </button>
-                    </div>
+                    <span class="ms-auto small text-muted">@(dongHienThi.Count == 0 ? 0 : trang * SoDongMoiTrang + 1)–@Math.Min(dongHienThi.Count, (trang + 1) * SoDongMoiTrang) / @dongHienThi.Count.ToString("N0") dòng</span>
+                    <button type="button" class="btn btn-sm btn-light" id="btnTrangTruoc" disabled="@(trang == 0)" @onclick="() => _trang = trang - 1" aria-label="Trang trước"><i class="bi bi-chevron-left"></i></button>
+                    <span class="small">Trang @(trang + 1)/@tongTrang</span>
+                    <button type="button" class="btn btn-sm btn-light" id="btnTrangSau" disabled="@(trang >= tongTrang - 1)" @onclick="() => _trang = trang + 1" aria-label="Trang sau"><i class="bi bi-chevron-right"></i></button>
                 </div>
             }
-        </div>
+        </section>
     </div>
 </div>
 
-<!-- Modal thêm cột tùy chỉnh -->
-@if (showModalCustomCols)
+@if (_moHopCot)
 {
-    <div class="modal fade show d-block" tabindex="-1" style="background: rgba(0,0,0,0.5);">
-        <div class="modal-dialog">
+    <div class="modal fade show d-block" tabindex="-1" role="dialog" aria-modal="true" aria-labelledby="lblTieuDeHopCot" style="background: rgba(15,23,42,.45);">
+        <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content border-0 shadow">
-                <div class="modal-header bg-primary text-white">
-                    <h5 class="modal-title fw-bold">Thêm Trường (Cột) Mới Vào Bảng @tenBangHienTai</h5>
-                    <button type="button" class="btn-close btn-close-white" @onclick="() => showModalCustomCols = false"></button>
+                <div class="modal-header py-2">
+                    <h5 class="modal-title h6 fw-bold" id="lblTieuDeHopCot">Thêm cột cho bảng “@(BangHienTai?.TenHienThi ?? _tenBang)”</h5>
+                    <button type="button" class="btn-close" aria-label="Đóng" @onclick="() => _moHopCot = false"></button>
                 </div>
-                <div class="modal-body p-4">
-                    <div class="mb-3">
-                        <label class="form-label fw-bold">Mã trường (không dấu) *</label>
-                        <input type="text" class="form-control" @bind="newColCode" placeholder="VD: GhiChuNoiBo" />
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label fw-bold">Tên hiển thị cột *</label>
-                        <input type="text" class="form-control" @bind="newColName" placeholder="VD: Ghi Chú Nội Bộ" />
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label fw-bold">Kiểu dữ liệu</label>
-                        <select class="form-select" @bind="newColType">
-                            <option value="VanBan">Văn bản</option>
-                            <option value="SoNguyen">Số nguyên</option>
-                            <option value="NgayThang">Ngày tháng</option>
-                            <option value="Logic">Có / Không</option>
-                        </select>
-                    </div>
+                <div class="modal-body">
+                    <label class="form-label small fw-semibold" for="txtTenCotMoi">Tên hiển thị *</label>
+                    <input id="txtTenCotMoi" class="form-control form-control-sm mb-2" @bind="_tenCotMoi" @bind:after="GoiYMaCot" placeholder="VD: Ghi chú nội bộ" />
+                    <label class="form-label small fw-semibold" for="txtMaCotMoi">Mã trường (không dấu) *</label>
+                    <input id="txtMaCotMoi" class="form-control form-control-sm mb-2 font-monospace" @bind="_maCotMoi" placeholder="VD: GhiChuNoiBo" />
+                    <label class="form-label small fw-semibold" for="cboKieuCotMoi">Kiểu dữ liệu</label>
+                    <select id="cboKieuCotMoi" class="form-select form-select-sm" @bind="_kieuCotMoi">
+                        <option value="VanBan">Văn bản</option>
+                        <option value="SoNguyen">Số nguyên</option>
+                        <option value="NgayThang">Ngày tháng</option>
+                        <option value="Logic">Có / Không</option>
+                    </select>
+                    @if (_loiCot is not null) { <div class="text-danger small mt-2" role="alert">@_loiCot</div> }
                 </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" @onclick="() => showModalCustomCols = false">Hủy</button>
-                    <button type="button" class="btn btn-primary" @onclick="ThemCotMoi">Thêm Cột</button>
+                <div class="modal-footer py-2">
+                    <button type="button" class="btn btn-sm btn-light" @onclick="() => _moHopCot = false">Hủy</button>
+                    <button type="button" class="btn btn-sm btn-primary" id="btnXacNhanThemCot" @onclick="ThemCotAsync">Thêm cột</button>
                 </div>
             </div>
         </div>
@@ -225,210 +375,604 @@
 }
 
 @code {
-    private string tenBangHienTai = "Khoa";
-    private List<ThongTinBangHeThong>? danhSachBang;
-    private DuLieuBangTrucTuyen? duLieuBang;
-    private bool isLoading = true;
-    private string? thongBao;
-    private bool thongBaoThanhCong = true;
+    private const int SoDongMoiTrang = 50;
 
-    private bool showModalCustomCols = false;
-    private string newColCode = "";
-    private string newColName = "";
-    private string newColType = "VanBan";
+    /// <summary>Bảng tạm ẩn khỏi Studio (bài toán riêng sẽ phát triển sau).</summary>
+    /// <summary>
+    /// Bảng không quản lý ở Studio: Phân công (bài toán riêng sẽ phát triển sau); Tài khoản và Nhật ký có trang riêng
+    /// trong "Quản trị hệ thống" (tài khoản phải thao tác qua Identity: mật khẩu, khóa; nhật ký chỉ xem).
+    /// </summary>
+    private static readonly HashSet<string> BangTamAn = ["PhanCongGiangDay", "TaiKhoan", "NhatKyHeThong"];
+
+    /// <summary>Bảng có module Nhập / Xuất Excel.</summary>
+    private static readonly HashSet<string> BangCoExcel = ["Khoa", "BoMon", "NhanSu", "LopHoc", "HocVien", "MonHoc"];
+
+    /// <summary>Mở sẵn một bảng (?bang=ChucVu), dùng cho liên kết từ trang khác.</summary>
+    [SupplyParameterFromQuery(Name = "bang")] public string? BangTuDuongDan { get; set; }
+
+    /// <summary>Mở sẵn một nhóm "cần xử lý" (?can=thieu-dinh-danh), dùng cho mục Cần chú ý ở trang chủ.</summary>
+    [SupplyParameterFromQuery(Name = "can")] public string? CanXuLyTuDuongDan { get; set; }
+
+    private string _tenBang = "ChucVu";
+    private List<ThongTinBangHeThong> _danhSachBang = [];
+    private DuLieuBangTrucTuyen? _duLieu;
+    private bool _dangTai = true;
+    private bool _dangLuu;
+    private string? _loiTai;
+    private string _tuKhoa = string.Empty;
+    private int _trang;
+    private bool _laSuperAdmin;
+    private NguoiDungHienTai _nguoiDung = NguoiDungHienTai.AnDanh;
+
+    // Phiếu thay đổi
+    private Dictionary<string, Dictionary<string, string?>> _banGoc = [];
+    private readonly List<Dictionary<string, string?>> _dongMoi = [];
+    private readonly HashSet<string> _dongXoa = [];
+    private readonly Dictionary<Dictionary<string, string?>, string> _loiDong = new(ReferenceEqualityComparer.Instance);
+
+    // Sắp xếp, lọc, chọn hàng loạt
+    private string? _cotSapXep;
+    private bool _giam;
+    private readonly Dictionary<string, string> _locCot = [];
+    private readonly HashSet<Dictionary<string, string?>> _chon = new(ReferenceEqualityComparer.Instance);
+    private string? _cotGan;
+    private string? _giaTriGan;
+    private string? _locThongMinh;
+
+    // ---------------- Danh mục thông minh: các nhóm bản ghi cần xử lý theo từng bảng ----------------
+
+    private sealed record LocThongMinh(string Ma, string Nhan, string MucDo, Func<Dictionary<string, string?>, bool> DieuKien);
+    private sealed record KetQuaLoc(string Ma, string Nhan, string MucDo, int SoDong);
+
+    private static bool Trong(Dictionary<string, string?> d, string maCot) => string.IsNullOrWhiteSpace(d.GetValueOrDefault(maCot));
+    private static bool NgungHoatDong(Dictionary<string, string?> d) => string.Equals(d.GetValueOrDefault("CoHoatDong"), "false", StringComparison.OrdinalIgnoreCase);
+
+    /// <summary>Quy tắc "cần xử lý" dùng chung một định nghĩa với mục Cần chú ý ở trang chủ (thiếu định danh, thiếu liên kết, ngừng hoạt động).</summary>
+    private List<LocThongMinh> DinhNghiaLocThongMinh() => _tenBang switch
+    {
+        "HocVien" =>
+        [
+            new("thieu-dinh-danh", "Thiếu CCCD hoặc SĐT", "canh-bao", d => Trong(d, "SoCCCD") || Trong(d, "SoDienThoai")),
+            new("khong-dang-hoc", "Không còn đang học", "trung-tinh", d => d.GetValueOrDefault("TrangThai") != "Đang học")
+        ],
+        "NhanSu" =>
+        [
+            new("thieu-dinh-danh", "Thiếu CCCD hoặc SĐT", "canh-bao", d => Trong(d, "SoCCCD") || Trong(d, "SoDienThoai")),
+            new("chua-bo-mon", "Chưa gán bộ môn", "canh-bao", d => Trong(d, "BoMonId") && d.GetValueOrDefault("TrangThai") != "Đã nghỉ việc"),
+            new("chua-chuc-vu", "Chưa có chức vụ", "trung-tinh", d => Trong(d, "ChucVuId")),
+            new("da-nghi", "Đã nghỉ việc", "trung-tinh", d => d.GetValueOrDefault("TrangThai") == "Đã nghỉ việc")
+        ],
+        "LopHoc" =>
+        [
+            new("chua-khoa-hoc", "Chưa khai báo khóa", "canh-bao", d => Trong(d, "KhoaHoc")),
+            new("chua-chuyen-nganh", "Chưa có chuyên ngành", "canh-bao", d => Trong(d, "ChuyenNganh")),
+            new("ngung", "Ngừng hoạt động", "trung-tinh", NgungHoatDong)
+        ],
+        "Khoa" =>
+        [
+            new("thieu-lien-he", "Thiếu điện thoại / email", "canh-bao", d => Trong(d, "SoDienThoai") && Trong(d, "Email")),
+            new("ngung", "Ngừng hoạt động", "trung-tinh", NgungHoatDong)
+        ],
+        "MonHoc" =>
+        [
+            new("chua-bo-mon", "Chưa gán bộ môn phụ trách", "canh-bao", d => Trong(d, "BoMonId")),
+            new("ngung", "Ngừng giảng dạy", "trung-tinh", NgungHoatDong)
+        ],
+        _ => [new("ngung", "Ngừng sử dụng", "trung-tinh", NgungHoatDong)]
+    };
+
+    private IEnumerable<KetQuaLoc> CacLocThongMinh => _duLieu is null ? []
+        : DinhNghiaLocThongMinh().Select(l => new KetQuaLoc(l.Ma, l.Nhan, l.MucDo, _duLieu.DanhSachDong.Count(l.DieuKien)));
+
+    private bool _moHopCot;
+    private string _tenCotMoi = string.Empty;
+    private string _maCotMoi = string.Empty;
+    private string _kieuCotMoi = "VanBan";
+    private string? _loiCot;
+
+    // ---------------- Phạm vi ----------------
+
+    private static string? VungCuaBang(string bang) => bang switch
+    {
+        "Khoa" or "BoMon" or "NhanSu" => VungQuanLy.ToChuc,
+        "LopHoc" or "HocVien" or "MonHoc" => VungQuanLy.DaoTao,
+        _ => null
+    };
+
+    /// <summary>Siêu quản trị: mọi bảng; Quản trị viên: trừ nhóm Hệ thống; Quản lý: chỉ bảng thuộc vùng của mình.</summary>
+    private IEnumerable<ThongTinBangHeThong> CacBangDuocPhep => _danhSachBang.Where(b => !BangTamAn.Contains(b.TenBang) && (
+        _laSuperAdmin
+        || (_nguoiDung.LaQuanTri && b.Nhom != QuanTriDuLieuDichVu.NhomHeThong)
+        || (!_nguoiDung.LaQuanTri && VungCuaBang(b.TenBang) is { } vung && vung == _nguoiDung.VungQuanLy)));
+
+    private bool CoQuyenGhiBang(string bang) => _nguoiDung.LaQuanTri || (_nguoiDung.VungQuanLy is not null && VungCuaBang(bang) == _nguoiDung.VungQuanLy);
+
+    private bool CoQuyenThem => CoQuyenGhiBang(_tenBang) && (_nguoiDung.LaQuanTri || _tenBang != "Khoa");
+
+    /// <summary>Dòng ngoài khoa phụ trách của Quản lý bị khóa (dịch vụ cũng chặn ở phía máy chủ).</summary>
+    private bool CoQuyenSuaDong(Dictionary<string, string?> dong)
+    {
+        if (_nguoiDung.LaQuanTri) { return true; }
+        if (VungCuaBang(_tenBang) is not { } vung) { return false; }
+        var khoaText = _tenBang == "Khoa" ? LayKhoa(dong) : dong.GetValueOrDefault("__KhoaId") ?? dong.GetValueOrDefault("KhoaId");
+        int? khoaId = int.TryParse(khoaText, out var k) && k > 0 ? k : null;
+        return _nguoiDung.CoQuyenGhi(vung, khoaId);
+    }
+
+    private ThongTinBangHeThong? BangHienTai => _danhSachBang.FirstOrDefault(b => b.TenBang == _tenBang);
+    private bool ChiDoc => BangHienTai?.ChiDoc == true || !CoQuyenGhiBang(_tenBang);
+    private string? ModuleExcel => BangCoExcel.Contains(_tenBang) ? _tenBang : null;
+    private bool CoBieuMau => _tenBang is "Khoa" or "BoMon" or "NhanSu" or "LopHoc" or "HocVien" or "MonHoc";
+    private int SoThayDoi => _dongMoi.Count + _dongXoa.Count + (_duLieu?.DanhSachDong.Count(d => !_dongXoa.Contains(LayKhoa(d)) && DongDaSua(d)) ?? 0);
+
+    /// <summary>Cột có thể lọc nhanh: khóa ngoại, danh sách ngắn, có/không (tối đa 4).</summary>
+    private List<MoTaCotDuLieu> CotLoc => _duLieu?.DanhSachCot
+        .Where(c => !c.LaKhoaChinh && (c.KieuDuLieu is "KhoaNgoai" or "Logic" || (c.KieuDuLieu == "DanhSach" && c.DanhSachLuaChon.Count <= 12)))
+        .Take(4).ToList() ?? [];
+
+    /// <summary>Cột gán hàng loạt được: không gán mã/tên định danh riêng từng dòng.</summary>
+    private IEnumerable<MoTaCotDuLieu> CotGanDuoc => _duLieu?.DanhSachCot
+        .Where(c => !c.LaKhoaChinh && (c.KieuDuLieu is "KhoaNgoai" or "DanhSach" or "Logic" or "NgayThang" || !c.LaBatBuoc)) ?? [];
+
+    private MoTaCotDuLieu? CotDangGan => _duLieu?.DanhSachCot.FirstOrDefault(c => c.MaCot == _cotGan);
+
+    // ---------------- Nạp ----------------
 
     protected override async Task OnInitializedAsync()
     {
-        danhSachBang = await QuanTriDuLieuDichVu.LayDanhSachBangHeThongAsync();
-        await LoadTable(tenBangHienTai);
+        _nguoiDung = await PhanQuyen.LayNguoiDungAsync();
+        _laSuperAdmin = _nguoiDung.LaSuperAdmin;
+        _danhSachBang = await DichVuDuLieu.LayDanhSachBangHeThongAsync();
+        var bangYeuCau = string.IsNullOrWhiteSpace(BangTuDuongDan) ? null : QuanTriDuLieuDichVu.ChuanHoaTenBang(BangTuDuongDan);
+        _tenBang = CacBangDuocPhep.FirstOrDefault(b => b.TenBang == bangYeuCau)?.TenBang ?? CacBangDuocPhep.FirstOrDefault()?.TenBang ?? "ChucVu";
+        await NapBangAsync();
+        if (_tenBang == bangYeuCau && DinhNghiaLocThongMinh().Any(l => l.Ma == CanXuLyTuDuongDan))
+        {
+            _locThongMinh = CanXuLyTuDuongDan;
+        }
     }
 
-    private async Task ChonBang(string bang)
+    private async Task NapBangAsync()
     {
-        tenBangHienTai = bang;
-        await LoadTable(bang);
-    }
-
-    private async Task LoadTable(string bang)
-    {
-        isLoading = true;
-        thongBao = null;
+        _dangTai = true;
+        _loiTai = null;
         try
         {
-            duLieuBang = await QuanTriDuLieuDichVu.LayDuLieuBangTrucTuyenAsync(bang);
+            _duLieu = await DichVuDuLieu.LayDuLieuBangTrucTuyenAsync(_tenBang);
+            _banGoc = _duLieu.DanhSachDong.ToDictionary(LayKhoa, d => new Dictionary<string, string?>(d));
         }
         catch (Exception ex)
         {
-            thongBao = ex.Message;
-            thongBaoThanhCong = false;
+            _duLieu = null;
+            _loiTai = ex.Message;
         }
         finally
         {
-            isLoading = false;
+            _dangTai = false;
         }
     }
 
-    private void OnInputChanged(int rowIndex, string colCode, ChangeEventArgs e)
+    private async Task ChonBangAsync(string tenBang)
     {
-        if (duLieuBang != null && rowIndex < duLieuBang.DanhSachDong.Count)
+        if (tenBang == _tenBang) { return; }
+        if (SoThayDoi > 0 && await HopThoai.Confirm($"Bảng hiện tại còn {SoThayDoi} thay đổi chưa lưu. Bỏ các thay đổi này?", "Chuyển bảng",
+                new ConfirmOptions { OkButtonText = "Bỏ thay đổi", CancelButtonText = "Ở lại" }) != true)
         {
-            duLieuBang.DanhSachDong[rowIndex][colCode] = e.Value?.ToString();
+            return;
         }
+        XoaPhieu();
+        _tenBang = tenBang;
+        _tuKhoa = string.Empty;
+        _trang = 0;
+        _cotSapXep = null;
+        _locCot.Clear();
+        _locThongMinh = null;
+        await NapBangAsync();
     }
 
-    private void OnCheckboxChanged(int rowIndex, string colCode, ChangeEventArgs e)
+    private void XoaPhieu()
     {
-        if (duLieuBang != null && rowIndex < duLieuBang.DanhSachDong.Count)
-        {
-            bool isChecked = e.Value is bool b && b;
-            duLieuBang.DanhSachDong[rowIndex][colCode] = isChecked ? "true" : "false";
-        }
+        _dongMoi.Clear();
+        _dongXoa.Clear();
+        _loiDong.Clear();
+        _chon.Clear();
+        _cotGan = _giaTriGan = null;
     }
 
-    private async Task LuuDong(string pk, int rowIndex)
-    {
-        if (duLieuBang == null || rowIndex >= duLieuBang.DanhSachDong.Count) return;
-        var rowData = duLieuBang.DanhSachDong[rowIndex];
-        try
-        {
-            await QuanTriDuLieuDichVu.CapNhatNhanhBanGhiAsync(tenBangHienTai, pk, rowData, "Admin");
-            thongBao = $"Đã lưu bản ghi #{pk} vào cơ sở dữ liệu thành công!";
-            thongBaoThanhCong = true;
-        }
-        catch (Exception ex)
-        {
-            thongBao = ex.Message;
-            thongBaoThanhCong = false;
-        }
-    }
+    // ---------------- So sánh / lọc / sắp xếp ----------------
 
-    private async Task LuuTatCa()
+    private static string KieuNhap(MoTaCotDuLieu cot) => cot.KieuDuLieu switch { "NgayThang" => "date", "SoNguyen" => "number", _ => "text" };
+
+    private string LayKhoa(Dictionary<string, string?> dong) =>
+        _duLieu is null ? string.Empty : dong.GetValueOrDefault(_duLieu.TenKhoaChinh) ?? string.Empty;
+
+    private string? GiaTriGoc(Dictionary<string, string?> dong, string maCot) =>
+        _banGoc.TryGetValue(LayKhoa(dong), out var goc) ? goc.GetValueOrDefault(maCot) : null;
+
+    private bool OThayDoi(Dictionary<string, string?> dong, string maCot) =>
+        !string.Equals(GiaTriGoc(dong, maCot) ?? string.Empty, dong.GetValueOrDefault(maCot) ?? string.Empty, StringComparison.Ordinal);
+
+    private bool DongDaSua(Dictionary<string, string?> dong) =>
+        _duLieu is not null && !_dongMoi.Contains(dong) && _duLieu.DanhSachCot.Any(c => !c.LaKhoaChinh && OThayDoi(dong, c.MaCot));
+
+    private static string NhanHienThi(MoTaCotDuLieu cot, string? giaTri) =>
+        cot.DanhSachLuaChon.FirstOrDefault(l => l.GiaTri == giaTri)?.NhanHienThi ?? giaTri ?? string.Empty;
+
+    /// <summary>Dòng mới luôn ở đầu; sau đó lọc cột, tìm kiếm (cả theo nhãn khóa ngoại), sắp xếp.</summary>
+    private IEnumerable<Dictionary<string, string?>> DongLoc()
     {
-        if (duLieuBang == null) return;
-        int saved = 0;
-        foreach (var dong in duLieuBang.DanhSachDong)
+        if (_duLieu is null) { return []; }
+        IEnumerable<Dictionary<string, string?>> ds = _duLieu.DanhSachDong;
+        if (_locThongMinh is not null && DinhNghiaLocThongMinh().FirstOrDefault(l => l.Ma == _locThongMinh) is { } locTm)
         {
-            var pk = dong.TryGetValue(duLieuBang.TenKhoaChinh, out var v) ? v ?? "" : "";
-            if (!string.IsNullOrEmpty(pk))
+            ds = ds.Where(locTm.DieuKien);
+        }
+        foreach (var (maCot, giaTri) in _locCot)
+        {
+            ds = ds.Where(d => string.Equals(d.GetValueOrDefault(maCot) ?? string.Empty, giaTri, StringComparison.OrdinalIgnoreCase));
+        }
+        if (!string.IsNullOrWhiteSpace(_tuKhoa))
+        {
+            var cacCot = _duLieu.DanhSachCot;
+            ds = ds.Where(d => cacCot.Any(c => QuyTacNghiepVu.ChuaTuKhoa(c.KieuDuLieu == "KhoaNgoai" ? NhanHienThi(c, d.GetValueOrDefault(c.MaCot)) : d.GetValueOrDefault(c.MaCot), _tuKhoa)));
+        }
+        if (_cotSapXep is not null && _duLieu.DanhSachCot.FirstOrDefault(c => c.MaCot == _cotSapXep) is { } cotSx)
+        {
+            Func<Dictionary<string, string?>, string> khoaSx = cotSx.KieuDuLieu == "KhoaNgoai"
+                ? d => NhanHienThi(cotSx, d.GetValueOrDefault(cotSx.MaCot))
+                : d => d.GetValueOrDefault(cotSx.MaCot) ?? string.Empty;
+            if (cotSx.KieuDuLieu == "SoNguyen" || cotSx.LaKhoaChinh)
             {
-                try
-                {
-                    await QuanTriDuLieuDichVu.CapNhatNhanhBanGhiAsync(tenBangHienTai, pk, dong, "Admin");
-                    saved++;
-                }
-                catch { }
+                Func<Dictionary<string, string?>, long> so = d => long.TryParse(khoaSx(d), out var n) ? n : long.MinValue;
+                ds = _giam ? ds.OrderByDescending(so) : ds.OrderBy(so);
+            }
+            else
+            {
+                ds = _giam ? ds.OrderByDescending(khoaSx, QuyTacNghiepVu.SoSanhTiengViet) : ds.OrderBy(khoaSx, QuyTacNghiepVu.SoSanhTiengViet);
             }
         }
-        thongBao = $"Đã cập nhật thành công {saved} bản ghi trực tiếp lên cơ sở dữ liệu!";
-        thongBaoThanhCong = true;
+        return _dongMoi.Concat(ds);
     }
 
-    private async Task ThemDongMoi()
+    private void SapXep(string maCot)
     {
-        var duLieuMacDinh = new Dictionary<string, string?>();
-        if (tenBangHienTai == "Khoa")
+        if (_cotSapXep == maCot)
         {
-            var rnd = new Random().Next(100, 999);
-            duLieuMacDinh["MaKhoa"] = $"K_{rnd}";
-            duLieuMacDinh["TenKhoa"] = $"Khoa Mới {rnd}";
-            duLieuMacDinh["CoHoatDong"] = "true";
-        }
-        else if (tenBangHienTai == "BoMon")
-        {
-            var rnd = new Random().Next(100, 999);
-            duLieuMacDinh["MaBoMon"] = $"BM_{rnd}";
-            duLieuMacDinh["TenBoMon"] = $"Bộ Môn Mới {rnd}";
-            var k = (await QuanTriDuLieuDichVu.LayDuLieuBangTrucTuyenAsync("Khoa")).DanhSachDong.FirstOrDefault();
-            duLieuMacDinh["KhoaId"] = k != null && k.TryGetValue("KhoaId", out var kid) ? kid : "1";
+            if (_giam) { _cotSapXep = null; }
+            _giam = !_giam;
         }
         else
         {
-            var rnd = new Random().Next(100, 999);
-            duLieuMacDinh["CoHoatDong"] = "true";
+            _cotSapXep = maCot;
+            _giam = false;
         }
+        _trang = 0;
+    }
 
-        try
+    private void DatLoc(string maCot, string? giaTri)
+    {
+        if (string.IsNullOrEmpty(giaTri)) { _locCot.Remove(maCot); } else { _locCot[maCot] = giaTri; }
+        _trang = 0;
+    }
+
+    // ---------------- Sửa trên lưới ----------------
+
+    private void GanGiaTri(Dictionary<string, string?> dong, string maCot, string? giaTri)
+    {
+        dong[maCot] = giaTri;
+        _loiDong.Remove(dong);
+    }
+
+    private void ThemDongNhap()
+    {
+        if (_duLieu is null) { return; }
+        var dong = _duLieu.DanhSachCot.ToDictionary(c => c.MaCot, c => c.KieuDuLieu == "Logic" ? "true" : (string?)null);
+        // Điền sẵn theo bộ lọc đang chọn (ví dụ đang lọc lớp B2D57 thì học viên mới thuộc B2D57).
+        foreach (var (maCot, giaTri) in _locCot) { dong[maCot] = giaTri; }
+        if (_duLieu.DanhSachCot.FirstOrDefault(c => c.MaCot == "TrangThai") is { } cotTt && dong["TrangThai"] is null && cotTt.DanhSachLuaChon.Count > 0)
         {
-            await QuanTriDuLieuDichVu.ThemNhanhBanGhiAsync(tenBangHienTai, duLieuMacDinh, "Admin");
-            await LoadTable(tenBangHienTai);
-            thongBao = "Đã thêm 1 dòng mới vào bảng!";
-            thongBaoThanhCong = true;
+            dong["TrangThai"] = cotTt.DanhSachLuaChon[0].GiaTri;
         }
-        catch (Exception ex)
+        _dongMoi.Insert(0, dong);
+        _tuKhoa = string.Empty;
+        _trang = 0;
+    }
+
+    private void BoDongMoi(Dictionary<string, string?> dong)
+    {
+        _dongMoi.Remove(dong);
+        _loiDong.Remove(dong);
+        _chon.Remove(dong);
+    }
+
+    private void HoanTacDong(Dictionary<string, string?> dong)
+    {
+        if (_banGoc.TryGetValue(LayKhoa(dong), out var goc))
         {
-            thongBao = ex.Message;
-            thongBaoThanhCong = false;
+            foreach (var (k, v) in goc) { dong[k] = v; }
+        }
+        _loiDong.Remove(dong);
+    }
+
+    private void ChonCaTrang(List<Dictionary<string, string?>> trangNay, bool chon)
+    {
+        foreach (var d in trangNay.Where(d => _dongMoi.Contains(d) || CoQuyenSuaDong(d)))
+        {
+            if (chon) { _chon.Add(d); } else { _chon.Remove(d); }
         }
     }
 
-    private async Task XoaDong(string pk)
+    private void ApDungHangLoat()
     {
-        try
+        if (_cotGan is null || _giaTriGan is null) { return; }
+        foreach (var d in _chon) { d[_cotGan] = _giaTriGan; _loiDong.Remove(d); }
+        ThongBaoNhanh.Notify(NotificationSeverity.Info, "Đã gán", $"{_chon.Count} dòng — bấm Lưu để ghi xuống CSDL.", 3500);
+        _chon.Clear();
+        _cotGan = _giaTriGan = null;
+    }
+
+    private void DanhDauXoaHangLoat()
+    {
+        foreach (var d in _chon.ToList())
         {
-            await QuanTriDuLieuDichVu.XoaNhanhBanGhiAsync(tenBangHienTai, pk, "Admin");
-            await LoadTable(tenBangHienTai);
-            thongBao = $"Đã xóa bản ghi #{pk} khỏi cơ sở dữ liệu!";
-            thongBaoThanhCong = true;
+            if (_dongMoi.Contains(d)) { _dongMoi.Remove(d); }
+            else { _dongXoa.Add(LayKhoa(d)); }
         }
-        catch (Exception ex)
+        _chon.Clear();
+    }
+
+    private async Task HuyThayDoiAsync()
+    {
+        if (await HopThoai.Confirm($"Bỏ toàn bộ {SoThayDoi} thay đổi chưa lưu?", "Hủy thay đổi",
+                new ConfirmOptions { OkButtonText = "Bỏ thay đổi", CancelButtonText = "Không" }) == true)
         {
-            thongBao = ex.Message;
-            thongBaoThanhCong = false;
+            XoaPhieu();
+            await NapBangAsync();
         }
     }
 
-    private async Task XoaDongCuoi()
+    private string? KiemTraBatBuoc(Dictionary<string, string?> dong)
     {
-        if (duLieuBang == null || duLieuBang.DanhSachDong.Count == 0) return;
-        var lastRow = duLieuBang.DanhSachDong.Last();
-        var pk = lastRow.TryGetValue(duLieuBang.TenKhoaChinh, out var v) ? v ?? "" : "";
-        if (!string.IsNullOrEmpty(pk))
-        {
-            await XoaDong(pk);
-        }
+        var thieu = _duLieu!.DanhSachCot.Where(c => c.LaBatBuoc && !c.LaKhoaChinh && string.IsNullOrWhiteSpace(dong.GetValueOrDefault(c.MaCot)))
+            .Select(c => c.TenHienThi).ToList();
+        return thieu.Count == 0 ? null : $"Chưa nhập: {string.Join(", ", thieu)}.";
     }
 
-    private async Task ThemCotMoi()
+    /// <summary>Ghi phiếu thay đổi: thêm → sửa → xóa. Dòng lỗi được giữ nguyên kèm thông báo để sửa tiếp.</summary>
+    private async Task LuuAsync()
     {
-        if (string.IsNullOrWhiteSpace(newColCode) || string.IsNullOrWhiteSpace(newColName)) return;
+        if (_duLieu is null || SoThayDoi == 0) { return; }
+        _loiDong.Clear();
+        foreach (var dong in _dongMoi.Concat(_duLieu.DanhSachDong.Where(DongDaSua)))
+        {
+            if (KiemTraBatBuoc(dong) is { } loi) { _loiDong[dong] = loi; }
+        }
+        if (_loiDong.Count > 0)
+        {
+            ThongBaoNhanh.Notify(NotificationSeverity.Warning, "Chưa lưu", $"{_loiDong.Count} dòng thiếu thông tin bắt buộc (ô tô đỏ).", 5000);
+            return;
+        }
+        if (_dongXoa.Count > 0 && await HopThoai.Confirm($"Xóa vĩnh viễn {_dongXoa.Count} bản ghi khỏi “{BangHienTai?.TenHienThi}”? Thao tác không hoàn tác được.",
+                "Xác nhận xóa", new ConfirmOptions { OkButtonText = "Xóa và lưu", CancelButtonText = "Xem lại" }) != true)
+        {
+            return;
+        }
+
+        _dangLuu = true;
+        var nguoi = _nguoiDung.TenDangNhap;
+        var dongMoiLoi = new List<(Dictionary<string, string?> Dong, string Loi)>();
+        var dongSuaLoi = new List<(string Khoa, Dictionary<string, string?> Dong, string Loi)>();
+        var xoaLoi = new List<(string Khoa, string Loi)>();
+        int soThanhCong = 0;
         try
         {
-            await QuanTriDuLieuDichVu.ThemTruongTuyChinhAsync(new TruongTuyChinh
+            foreach (var dong in _dongMoi.ToList())
             {
-                TenBang = tenBangHienTai,
-                MaTruong = newColCode.Trim(),
-                TenHienThi = newColName.Trim(),
-                KieuDuLieu = newColType,
-                CoHoatDong = true
-            }, "Admin");
-            showModalCustomCols = false;
-            newColCode = "";
-            newColName = "";
-            await LoadTable(tenBangHienTai);
-            thongBao = "Đã tạo cột tùy chỉnh mới!";
-            thongBaoThanhCong = true;
+                try
+                {
+                    var duLieuGhi = dong.Where(kv => kv.Key != _duLieu.TenKhoaChinh && !kv.Key.StartsWith("__") && !string.IsNullOrEmpty(kv.Value)).ToDictionary(kv => kv.Key, kv => kv.Value);
+                    await DichVuDuLieu.ThemNhanhBanGhiAsync(_tenBang, duLieuGhi, nguoi);
+                    soThanhCong++;
+                }
+                catch (Exception ex) { dongMoiLoi.Add((dong, ex.Message)); }
+            }
+            foreach (var dong in _duLieu.DanhSachDong.Where(d => !_dongXoa.Contains(LayKhoa(d)) && DongDaSua(d)).ToList())
+            {
+                try
+                {
+                    // Chỉ gửi các ô thực sự đổi: không ghi đè giá trị người khác vừa sửa ở cột khác.
+                    var thayDoi = _duLieu.DanhSachCot.Where(c => !c.LaKhoaChinh && OThayDoi(dong, c.MaCot)).ToDictionary(c => c.MaCot, c => dong.GetValueOrDefault(c.MaCot));
+                    await DichVuDuLieu.CapNhatNhanhBanGhiAsync(_tenBang, LayKhoa(dong), thayDoi, nguoi);
+                    soThanhCong++;
+                }
+                catch (Exception ex) { dongSuaLoi.Add((LayKhoa(dong), new Dictionary<string, string?>(dong), ex.Message)); }
+            }
+            foreach (var khoa in _dongXoa.ToList())
+            {
+                try
+                {
+                    await DichVuDuLieu.XoaNhanhBanGhiAsync(_tenBang, khoa, nguoi);
+                    soThanhCong++;
+                }
+                catch (Exception ex) { xoaLoi.Add((khoa, ex.Message)); }
+            }
+
+            XoaPhieu();
+            await NapBangAsync();
+            if (_duLieu is not null)
+            {
+                foreach (var (dong, loi) in dongMoiLoi) { _dongMoi.Add(dong); _loiDong[dong] = loi; }
+                foreach (var (khoa, banSua, loi) in dongSuaLoi)
+                {
+                    var dongMoiNap = _duLieu.DanhSachDong.FirstOrDefault(d => LayKhoa(d) == khoa);
+                    if (dongMoiNap is null) { continue; }
+                    foreach (var (k, v) in banSua) { dongMoiNap[k] = v; }
+                    _loiDong[dongMoiNap] = loi;
+                }
+                foreach (var (khoa, loi) in xoaLoi)
+                {
+                    var dongMoiNap = _duLieu.DanhSachDong.FirstOrDefault(d => LayKhoa(d) == khoa);
+                    if (dongMoiNap is null) { continue; }
+                    _dongXoa.Add(khoa);
+                    _loiDong[dongMoiNap] = loi;
+                }
+            }
+            _danhSachBang = await DichVuDuLieu.LayDanhSachBangHeThongAsync();
         }
-        catch (Exception ex)
+        finally
         {
-            thongBao = ex.Message;
-            thongBaoThanhCong = false;
+            _dangLuu = false;
+        }
+
+        var soLoi = dongMoiLoi.Count + dongSuaLoi.Count + xoaLoi.Count;
+        if (soLoi == 0)
+        {
+            ThongBaoNhanh.Notify(NotificationSeverity.Success, "Đã lưu", $"Đã ghi {soThanhCong} thay đổi xuống cơ sở dữ liệu.", 4000);
+        }
+        else
+        {
+            ThongBaoNhanh.Notify(NotificationSeverity.Error, "Lưu chưa trọn vẹn", $"{soThanhCong} thay đổi thành công, {soLoi} dòng lỗi (đánh dấu đỏ trong bảng).", 7000);
         }
     }
 
-    private async Task XoaCotTuyChinh(int id)
+    // ---------------- Biểu mẫu chi tiết (dùng lại biểu mẫu nghiệp vụ) ----------------
+
+    private async Task MoBieuMauAsync(Dictionary<string, string?>? dong)
     {
-        if (id <= 0) return;
+        int? id = dong is null ? null : int.TryParse(LayKhoa(dong), out var so) ? so : null;
+        int? khoaLoc = _locCot.TryGetValue("KhoaId", out var kl) && int.TryParse(kl, out var k) ? k : null;
+        object? ketQua = null;
+        var tuyChon = new DialogOptions { Width = "820px", CloseDialogOnOverlayClick = false };
         try
         {
-            await QuanTriDuLieuDichVu.XoaTruongTuyChinhAsync(id, "Admin");
-            await LoadTable(tenBangHienTai);
-            thongBao = "Đã xóa cột tùy chỉnh!";
-            thongBaoThanhCong = true;
+            switch (_tenBang)
+            {
+                case "Khoa":
+                    ketQua = await HopThoai.OpenAsync<BieuMauKhoa>(id is null ? "Thêm khoa" : "Sửa khoa",
+                        new Dictionary<string, object?> { [nameof(BieuMauKhoa.KhoaGoc)] = id is null ? null : await DichVuKhoa.LayTheoIdAsync(id.Value) }, tuyChon);
+                    break;
+                case "BoMon":
+                    ketQua = await HopThoai.OpenAsync<BieuMauBoMon>(id is null ? "Thêm bộ môn" : "Sửa bộ môn", new Dictionary<string, object?>
+                    {
+                        [nameof(BieuMauBoMon.BoMonGoc)] = id is null ? null : await DichVuBoMon.LayTheoIdAsync(id.Value),
+                        [nameof(BieuMauBoMon.DanhSachKhoa)] = await KhoaDuocGhiAsync(VungQuanLy.ToChuc),
+                        [nameof(BieuMauBoMon.KhoaMacDinhId)] = khoaLoc
+                    }, tuyChon);
+                    break;
+                case "NhanSu":
+                    ketQua = await HopThoai.OpenAsync<BieuMauNhanSu>(id is null ? "Thêm cán bộ" : "Sửa hồ sơ cán bộ", new Dictionary<string, object?>
+                    {
+                        [nameof(BieuMauNhanSu.NhanSuGoc)] = id is null ? null : await DichVuNhanSu.LayTheoIdAsync(id.Value),
+                        [nameof(BieuMauNhanSu.DanhSachKhoa)] = await KhoaDuocGhiAsync(VungQuanLy.ToChuc),
+                        [nameof(BieuMauNhanSu.DanhSachBoMon)] = await DichVuBoMon.LayDanhSachAsync(),
+                        [nameof(BieuMauNhanSu.DanhSachChucVu)] = await DichVuChucVu.LayDanhSachAsync(),
+                        [nameof(BieuMauNhanSu.DanhSachTrinhDo)] = await DichVuTrinhDo.LayDanhSachAsync(),
+                        [nameof(BieuMauNhanSu.KhoaMacDinhId)] = khoaLoc
+                    }, new DialogOptions { Width = "900px", CloseDialogOnOverlayClick = false });
+                    break;
+                case "LopHoc":
+                    var tatCaLop = await DichVuLop.LayDanhSachAsync();
+                    ketQua = await HopThoai.OpenAsync<BieuMauLopHoc>(id is null ? "Thêm lớp" : "Sửa lớp", new Dictionary<string, object?>
+                    {
+                        [nameof(BieuMauLopHoc.LopGoc)] = id is null ? null : await DichVuLop.LayTheoIdAsync(id.Value),
+                        [nameof(BieuMauLopHoc.DanhSachKhoa)] = await KhoaDuocGhiAsync(VungQuanLy.DaoTao),
+                        [nameof(BieuMauLopHoc.ChuyenNganhGoiY)] = (IReadOnlyList<string>)tatCaLop.Where(l => l.ChuyenNganh != null).Select(l => l.ChuyenNganh!).Distinct().Order().ToList()
+                    }, tuyChon);
+                    break;
+                case "HocVien":
+                    int? lopLoc = _locCot.TryGetValue("LopHocId", out var ll) && int.TryParse(ll, out var l2) ? l2 : null;
+                    var lopGhi = (await DichVuLop.LayDanhSachAsync()).Where(l => _nguoiDung.CoQuyenGhi(VungQuanLy.DaoTao, l.KhoaId)).ToList();
+                    ketQua = await HopThoai.OpenAsync<BieuMauHocVien>(id is null ? "Thêm học viên" : "Sửa hồ sơ học viên", new Dictionary<string, object?>
+                    {
+                        [nameof(BieuMauHocVien.HocVienGoc)] = id is null ? null : await DichVuHocVien.LayTheoIdAsync(id.Value),
+                        [nameof(BieuMauHocVien.DanhSachLop)] = (IReadOnlyList<LopHoc>)lopGhi,
+                        [nameof(BieuMauHocVien.LopMacDinhId)] = lopLoc
+                    }, tuyChon);
+                    break;
+                case "MonHoc":
+                    ketQua = await HopThoai.OpenAsync<BieuMauMonHoc>(id is null ? "Thêm môn học" : "Sửa môn học", new Dictionary<string, object?>
+                    {
+                        [nameof(BieuMauMonHoc.MonHocGoc)] = id is null ? null : await DichVuMonHoc.LayTheoIdAsync(id.Value),
+                        [nameof(BieuMauMonHoc.DanhSachBoMon)] = (IReadOnlyList<BoMon>)await DichVuBoMon.LayDanhSachAsync()
+                    }, tuyChon);
+                    break;
+            }
         }
         catch (Exception ex)
         {
-            thongBao = ex.Message;
-            thongBaoThanhCong = false;
+            ThongBaoNhanh.Notify(NotificationSeverity.Error, "Không mở được biểu mẫu", ex.Message, 6000);
+            return;
+        }
+
+        if (ketQua is KetQuaBieuMau daLuu)
+        {
+            ThongBaoNhanh.Notify(NotificationSeverity.Success, "Đã lưu", daLuu.ThongDiep, 4000);
+            XoaPhieu();
+            await NapBangAsync();
+            _danhSachBang = await DichVuDuLieu.LayDanhSachBangHeThongAsync();
+            if (!string.IsNullOrEmpty(daLuu.MaBanGhi)) { _tuKhoa = daLuu.MaBanGhi; _trang = 0; }
+        }
+    }
+
+    private async Task<IReadOnlyList<Khoa>> KhoaDuocGhiAsync(string vung) =>
+        (await DichVuKhoa.LayDanhSachAsync()).Where(k => _nguoiDung.CoQuyenGhi(vung, k.KhoaId)).ToList();
+
+    // ---------------- Cột tùy chỉnh ----------------
+
+    private void GoiYMaCot()
+    {
+        if (!string.IsNullOrWhiteSpace(_maCotMoi)) { return; }
+        var khongDau = new string(_tenCotMoi.Normalize(System.Text.NormalizationForm.FormD)
+            .Where(c => System.Globalization.CharUnicodeInfo.GetUnicodeCategory(c) != System.Globalization.UnicodeCategory.NonSpacingMark).ToArray())
+            .Replace('đ', 'd').Replace('Đ', 'D');
+        _maCotMoi = string.Concat(khongDau.Split(' ', StringSplitOptions.RemoveEmptyEntries)
+            .Select(t => char.ToUpperInvariant(t[0]) + t[1..])).Where(char.IsLetterOrDigit).Aggregate(string.Empty, (a, c) => a + c);
+    }
+
+    private async Task ThemCotAsync()
+    {
+        _loiCot = null;
+        if (string.IsNullOrWhiteSpace(_tenCotMoi) || string.IsNullOrWhiteSpace(_maCotMoi))
+        {
+            _loiCot = "Nhập tên hiển thị và mã trường.";
+            return;
+        }
+        try
+        {
+            await DichVuDuLieu.ThemTruongTuyChinhAsync(new TruongTuyChinh
+            {
+                TenBang = _tenBang, MaTruong = _maCotMoi.Trim(), TenHienThi = _tenCotMoi.Trim(), KieuDuLieu = _kieuCotMoi, CoHoatDong = true
+            }, _nguoiDung.TenDangNhap);
+            _moHopCot = false;
+            _tenCotMoi = _maCotMoi = string.Empty;
+            XoaPhieu();
+            await NapBangAsync();
+            ThongBaoNhanh.Notify(NotificationSeverity.Success, "Đã thêm cột", "", 3000);
+        }
+        catch (Exception ex)
+        {
+            _loiCot = ex.Message;
+        }
+    }
+
+    private async Task XoaCotAsync(MoTaCotDuLieu cot)
+    {
+        if (cot.TruongTuyChinhId is not int id) { return; }
+        if (await HopThoai.Confirm($"Xóa cột “{cot.TenHienThi}” và toàn bộ giá trị đã nhập trong cột này?", "Xóa cột tùy chỉnh",
+                new ConfirmOptions { OkButtonText = "Xóa cột", CancelButtonText = "Không" }) != true)
+        {
+            return;
+        }
+        try
+        {
+            await DichVuDuLieu.XoaTruongTuyChinhAsync(id, _nguoiDung.TenDangNhap);
+            XoaPhieu();
+            await NapBangAsync();
+            ThongBaoNhanh.Notify(NotificationSeverity.Success, "Đã xóa cột", "", 3000);
+        }
+        catch (Exception ex)
+        {
+            ThongBaoNhanh.Notify(NotificationSeverity.Error, "Không xóa được cột", ex.Message, 6000);
         }
     }
 }

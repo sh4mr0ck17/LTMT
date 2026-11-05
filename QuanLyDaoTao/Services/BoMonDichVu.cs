@@ -7,18 +7,20 @@ namespace QuanLyDaoTao.Services;
 /// <summary>
 /// Lớp triển khai dịch vụ nghiệp vụ quản lý Bộ môn trực thuộc Khoa.
 /// </summary>
-public class BoMonDichVu : IBoMonDichVu
+public class BoMonDichVu : DichVuNghiepVuCoSo, IBoMonDichVu
 {
-    private readonly QuanLyDaoTaoDbContext _coSoDuLieu;
+    private const string TenBang = "BoMon";
 
     /// <summary>
-    /// Khởi tạo dịch vụ bộ môn với DbContext.
+    /// Khởi tạo dịch vụ bộ môn.
     /// </summary>
-    /// <param name="coSoDuLieu">Ngữ cảnh cơ sở dữ liệu.</param>
-    public BoMonDichVu(QuanLyDaoTaoDbContext coSoDuLieu)
+    public BoMonDichVu(
+        QuanLyDaoTaoDbContext coSoDuLieu,
+        IPhanQuyenDichVu? phanQuyen = null,
+        INhatKyDichVu? nhatKy = null,
+        IBusThayDoiDuLieu? bus = null)
+        : base(coSoDuLieu, phanQuyen, nhatKy, bus)
     {
-        ArgumentNullException.ThrowIfNull(coSoDuLieu);
-        _coSoDuLieu = coSoDuLieu;
     }
 
     /// <summary>
@@ -101,6 +103,10 @@ public class BoMonDichVu : IBoMonDichVu
             throw new InvalidOperationException($"Khoa chủ quản có ID {boMon.KhoaId} không tồn tại.");
         }
 
+        var nguoiDung = await DamBaoQuyenGhiAsync(VungQuanLy.ToChuc, boMon.KhoaId);
+        boMon.MaBoMon = QuyTacNghiepVu.ChuanHoaMa(boMon.MaBoMon);
+        boMon.TenBoMon = QuyTacNghiepVu.ChuanHoaChuoi(boMon.TenBoMon);
+
         if (await KiemTraTonTaiMaAsync(boMon.MaBoMon, null, cancellationToken))
         {
             throw new InvalidOperationException($"Mã bộ môn '{boMon.MaBoMon}' đã tồn tại trong hệ thống.");
@@ -109,6 +115,9 @@ public class BoMonDichVu : IBoMonDichVu
         boMon.NgayTao = DateTime.UtcNow;
         await _coSoDuLieu.BoMons.AddAsync(boMon, cancellationToken);
         await _coSoDuLieu.SaveChangesAsync(cancellationToken);
+
+        await HoanTatThaoTacAsync(nguoiDung, "Thêm mới", TenBang, boMon.MaBoMon, null,
+            $"{boMon.TenBoMon} (khoa {boMon.KhoaId})", cancellationToken);
         return boMon;
     }
 
@@ -132,11 +141,24 @@ public class BoMonDichVu : IBoMonDichVu
             throw new InvalidOperationException($"Khoa chủ quản có ID {boMon.KhoaId} không tồn tại.");
         }
 
+        var nguoiDung = await DamBaoQuyenGhiAsync(VungQuanLy.ToChuc, boMonTonTai.KhoaId);
+        if (boMon.KhoaId != boMonTonTai.KhoaId)
+        {
+            await DamBaoQuyenGhiAsync(VungQuanLy.ToChuc, boMon.KhoaId);
+            if (await _coSoDuLieu.NhanSus.AnyAsync(ns => ns.BoMonId == boMon.BoMonId, cancellationToken))
+            {
+                throw new InvalidOperationException("Không thể chuyển bộ môn sang khoa khác khi còn cán bộ trực thuộc.");
+            }
+        }
+
+        boMon.MaBoMon = QuyTacNghiepVu.ChuanHoaMa(boMon.MaBoMon);
+        boMon.TenBoMon = QuyTacNghiepVu.ChuanHoaChuoi(boMon.TenBoMon);
         if (await KiemTraTonTaiMaAsync(boMon.MaBoMon, boMon.BoMonId, cancellationToken))
         {
             throw new InvalidOperationException($"Mã bộ môn '{boMon.MaBoMon}' đã tồn tại ở bản ghi khác.");
         }
 
+        var giaTriCu = $"{boMonTonTai.TenBoMon} (khoa {boMonTonTai.KhoaId})";
         boMonTonTai.MaBoMon = boMon.MaBoMon;
         boMonTonTai.TenBoMon = boMon.TenBoMon;
         boMonTonTai.MoTa = boMon.MoTa;
@@ -144,6 +166,9 @@ public class BoMonDichVu : IBoMonDichVu
         boMonTonTai.CoHoatDong = boMon.CoHoatDong;
 
         await _coSoDuLieu.SaveChangesAsync(cancellationToken);
+
+        await HoanTatThaoTacAsync(nguoiDung, "Cập nhật", TenBang, boMonTonTai.MaBoMon, giaTriCu,
+            $"{boMonTonTai.TenBoMon} (khoa {boMonTonTai.KhoaId})", cancellationToken);
         return boMonTonTai;
     }
 
@@ -158,6 +183,8 @@ public class BoMonDichVu : IBoMonDichVu
             throw new KeyNotFoundException($"Không tìm thấy bộ môn có ID {id}.");
         }
 
+        var nguoiDung = await DamBaoQuyenGhiAsync(VungQuanLy.ToChuc, boMon.KhoaId);
+
         if (!await CoTheXoaAsync(id, cancellationToken))
         {
             throw new InvalidOperationException("Không thể xóa bộ môn vì còn nhân sự hoặc môn học trực thuộc.");
@@ -165,6 +192,8 @@ public class BoMonDichVu : IBoMonDichVu
 
         _coSoDuLieu.BoMons.Remove(boMon);
         await _coSoDuLieu.SaveChangesAsync(cancellationToken);
+
+        await HoanTatThaoTacAsync(nguoiDung, "Xóa", TenBang, boMon.MaBoMon, boMon.TenBoMon, null, cancellationToken);
         return true;
     }
 

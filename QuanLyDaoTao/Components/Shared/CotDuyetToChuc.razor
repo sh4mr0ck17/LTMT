@@ -1,0 +1,157 @@
+﻿@using QuanLyDaoTao.Models.ToChuc
+@inject IJSRuntime Js
+@* Duyệt cơ cấu dạng cột (kiểu Finder): mỗi cấp một cột danh sách, chọn một mục thì cột kế tiếp mở ra.
+   Đường đi từ gốc tới mục đang chọn luôn được tô sáng, không cần phóng to / kéo như canvas — dễ theo dõi cả với cây sâu. *@
+<div class="cot-duyet-khung">
+<nav class="cot-duyet-duong" aria-label="Vị trí đang xem" id="pnlDuongDanCot">
+    @for (var i = 0; i < DuongDan.Count; i++)
+    {
+        var nutDuong = DuongDan[i];
+        var laCuoi = i == DuongDan.Count - 1;
+        @if (i > 0) { <i class="bi bi-chevron-right cot-duyet-duong-ngan" aria-hidden="true"></i> }
+        <button type="button" class="cot-duyet-duong-muc @MauDoiTuong.LayLop(nutDuong.Loai) @(laCuoi ? "dang-o" : null)" aria-current="@(laCuoi ? "location" : null)"
+                @onclick="() => KhiChon.InvokeAsync(nutDuong)">
+            <i class="bi @nutDuong.BieuTuong" aria-hidden="true"></i> @nutDuong.Ten
+        </button>
+    }
+</nav>
+<div class="cot-duyet" id="pnlCotDuyet" role="group" aria-label="Duyệt cơ cấu theo cột" @ref="_khung">
+    @for (var cap = 0; cap < DuongDan.Count; cap++)
+    {
+        var cha = DuongDan[cap];
+        var cacCon = cha.Con.Where(n => NutHienThi.Contains(n.KhoaNut)).ToList();
+        if (cacCon.Count == 0) { break; }
+        var khoaChon = cap + 1 < DuongDan.Count ? DuongDan[cap + 1].KhoaNut : null;
+        var tuKhoa = _locCot.GetValueOrDefault(cha.KhoaNut, string.Empty);
+        var hienThi = string.IsNullOrWhiteSpace(tuKhoa) ? cacCon : cacCon.Where(n => n.KhopTuKhoa(tuKhoa)).ToList();
+        var loaiCon = cacCon[0].Loai;
+        var khoaCha = cha.KhoaNut;
+        <section class="cot-duyet-cot @MauDoiTuong.LayLop(loaiCon)" aria-label="@($"{TenNhom(loaiCon)} thuộc {cha.Ten}")" @key="khoaCha">
+            <header class="cot-duyet-dau">
+                <span class="dt-cham"></span>
+                <strong>@TenNhom(loaiCon)</strong>
+                <span class="cot-duyet-dem">@cacCon.Count</span>
+                <span class="cot-duyet-thuoc" title="@cha.Ten">· @cha.Ten</span>
+            </header>
+            @if (cacCon.Count > 8)
+            {
+                <div class="cot-duyet-loc">
+                    <i class="bi bi-search" aria-hidden="true"></i>
+                    <input type="search" placeholder="@($"Lọc {TenNhom(loaiCon).ToLowerInvariant()}…")" value="@tuKhoa" aria-label="@($"Lọc {TenNhom(loaiCon)}")"
+                           @oninput="@(e => _locCot[khoaCha] = e.Value?.ToString() ?? string.Empty)" />
+                </div>
+            }
+            <ul class="cot-duyet-ds">
+                @foreach (var nut in hienThi)
+                {
+                    var coCon = nut.Con.Any(n => NutHienThi.Contains(n.KhoaNut));
+                    var dangChon = nut.KhoaNut == KhoaNutChon;
+                    var trenDuong = nut.KhoaNut == khoaChon;
+                    <li @key="nut.KhoaNut">
+                        <button type="button" class="cot-duyet-muc @(dangChon ? "dang-chon" : trenDuong ? "tren-duong" : null) @(nut.CoHoatDong == false ? "ngung" : null)"
+                                aria-current="@(dangChon ? "true" : null)" aria-expanded="@(coCon ? (trenDuong || dangChon).ToString().ToLowerInvariant() : null)"
+                                id="@($"btnCot_{nut.KhoaNut}")" @onclick="() => KhiChon.InvokeAsync(nut)">
+                            @if (nut.Loai is "Nhân sự" or "Học viên")
+                            {
+                                <span class="cot-duyet-anh" aria-hidden="true">@ChuCaiDau(nut.Ten)</span>
+                            }
+                            else
+                            {
+                                <i class="bi @nut.BieuTuong cot-duyet-bieu-tuong" aria-hidden="true"></i>
+                            }
+                            <span class="cot-duyet-noi-dung">
+                                <span class="cot-duyet-ten">@nut.Ten</span>
+                                <span class="cot-duyet-phu">@MoTaNgan(nut)</span>
+                                @if (nut.SucChua is > 0)
+                                {
+                                    var phanTram = Math.Min(100, nut.SiSo * 100 / nut.SucChua.Value);
+                                    <span class="cot-duyet-si-so @(nut.SiSo > nut.SucChua ? "tt-nguy" : phanTram >= 90 ? "tt-canh-bao" : "tt-tot")"><span style="width: @(phanTram)%"></span></span>
+                                }
+                            </span>
+                            @if (nut.CanhBao != null || nut.SoCanRaSoat > 0)
+                            {
+                                <i class="bi bi-exclamation-triangle-fill cot-duyet-canh-bao" title="@(nut.CanhBao ?? $"{nut.SoCanRaSoat} bản ghi cần rà soát")" aria-label="Cần rà soát"></i>
+                            }
+                            @if (nut.CoHoatDong == false) { <span class="dt-chip tt-trung-tinh">@nut.TrangThai</span> }
+                            @if (coCon) { <i class="bi bi-chevron-right cot-duyet-mui-ten" aria-hidden="true"></i> }
+                        </button>
+                    </li>
+                }
+                @if (hienThi.Count == 0)
+                {
+                    <li class="cot-duyet-trong">Không có mục khớp “@tuKhoa”.</li>
+                }
+            </ul>
+        </section>
+    }
+    @if (DuongDan.Count > 0 && !DuongDan[^1].Con.Any(n => NutHienThi.Contains(n.KhoaNut)) && SoCotHienThi < 3)
+    {
+        <section class="cot-duyet-cot cot-duyet-goi-y" aria-hidden="true">
+            <i class="bi bi-info-circle"></i>
+            <strong>@DuongDan[^1].Ten</strong>
+            <span>Đây là cấp cuối của nhánh. Thông tin chi tiết hiển thị ở khung bên phải.</span>
+        </section>
+    }
+</div>
+</div>
+
+@code {
+    /// <summary>Đường dẫn từ gốc tới mục đang chọn (gồm cả gốc).</summary>
+    [Parameter, EditorRequired] public IReadOnlyList<NutToChuc> DuongDan { get; set; } = [];
+
+    /// <summary>Các nút khớp bộ lọc chung của trang.</summary>
+    [Parameter, EditorRequired] public HashSet<string> NutHienThi { get; set; } = default!;
+
+    /// <summary>Khóa nút đang chọn.</summary>
+    [Parameter] public string? KhoaNutChon { get; set; }
+
+    /// <summary>Chọn một mục.</summary>
+    [Parameter] public EventCallback<NutToChuc> KhiChon { get; set; }
+
+    private readonly Dictionary<string, string> _locCot = new();
+    private ElementReference _khung;
+    private string? _duongDaCuon;
+
+    /// <summary>Số cột đang vẽ (mỗi nút trên đường dẫn có con hiển thị = một cột).</summary>
+    private int SoCotHienThi => DuongDan.Count(n => n.Con.Any(c => NutHienThi.Contains(c.KhoaNut)));
+
+    /// <summary>Khi đi sâu thêm một cấp, cuộn ngang tới cột mới nhất để không phải tự kéo.</summary>
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        var khoaDuong = string.Join('/', DuongDan.Select(n => n.KhoaNut));
+        if (khoaDuong == _duongDaCuon) { return; }
+        _duongDaCuon = khoaDuong;
+        try { await Js.InvokeVoidAsync("cuonCuoiNgang", _khung); }
+        catch (JSException) { }
+        catch (JSDisconnectedException) { }
+    }
+
+    /// <summary>Chữ cái đầu của tên riêng (từ cuối) làm ảnh đại diện.</summary>
+    private static string ChuCaiDau(string ten)
+    {
+        var tu = ten.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+        return tu.Length == 0 ? "?" : tu[^1][..1].ToUpperInvariant();
+    }
+
+    private static string TenNhom(string loai) => loai switch
+    {
+        "Khoa" => "Khoa",
+        "Bộ môn" => "Bộ môn",
+        "Nhân sự" => "Cán bộ",
+        "Hệ đào tạo" => "Hệ đào tạo",
+        "Khóa" => "Niên khóa",
+        "Lớp học" => "Lớp",
+        "Học viên" => "Học viên",
+        _ => loai
+    };
+
+    /// <summary>Một dòng số liệu ngắn, khác nhau theo loại đối tượng.</summary>
+    private static string MoTaNgan(NutToChuc nut) => nut.Loai switch
+    {
+        "Khoa" => $"{nut.Ma} · {nut.SoBoMon} bộ môn · {nut.SoNhanSu} cán bộ",
+        "Bộ môn" => $"{nut.Ma} · {nut.SoNhanSu} cán bộ",
+        "Hệ đào tạo" or "Khóa" or "Nhóm" => $"{nut.SoLop} lớp · {nut.SoHocVien:N0} học viên",
+        "Lớp học" => $"{nut.SiSo}/{nut.SucChua} học viên" + (string.IsNullOrEmpty(nut.MoTa) ? string.Empty : $" · {nut.MoTa}"),
+        _ => string.IsNullOrEmpty(nut.MoTa) ? nut.Ma : $"{nut.Ma} · {nut.MoTa}"
+    };
+}

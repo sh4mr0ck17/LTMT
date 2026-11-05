@@ -3,7 +3,7 @@
 @{
     ViewData["Title"] = $"Chi tiết Bộ môn: {Model.TenBoMon}";
     Layout = "_Layout";
-    bool laQuanTri = User.IsInRole(VaiTroMacDinh.SuperAdmin) || User.IsInRole(VaiTroMacDinh.GiaoVien) || User.IsInRole(VaiTroMacDinh.QuanTriVien) || User.IsInRole(VaiTroMacDinh.QuanLyDaoTao);
+    bool laQuanTri = User.IsInRole(VaiTroMacDinh.SuperAdmin) || User.IsInRole(VaiTroMacDinh.QuanTriVien) || User.IsInRole(VaiTroMacDinh.QuanLy);
 }
 
 <div class="container-fluid px-4 py-3" id="pnlChiTietBoMon">
@@ -116,7 +116,7 @@
                                                 <tr>
                                                     <td class="ps-3 font-monospace fw-bold">@ns.MaNhanSu</td>
                                                     <td><a asp-controller="NhanSu" asp-action="ChiTiet" asp-route-id="@ns.NhanSuId">@ns.HoVaTen</a></td>
-                                                    <td>@ns.EmailCongViec</td>
+                                                    <td>@ns.Email</td>
                                                     <td>@(ns.SoDienThoai ?? "-")</td>
                                                 </tr>
                                             }

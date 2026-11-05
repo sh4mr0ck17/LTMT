@@ -66,21 +66,21 @@ public class PhanQuyenVaDangKyTests : IClassFixture<WebApplicationFactory<Progra
     }
 
     [Fact]
-    public async Task DangKy_HienThiBieuMauDangKyAnToan()
+    public async Task DangKyTuDo_BiKhoa_ChuyenHuongVeDangNhap()
     {
         // Arrange
-        var client = _factory.CreateClient();
+        var client = _factory.CreateClient(new WebApplicationFactoryClientOptions
+        {
+            AllowAutoRedirect = false
+        });
 
-        // Act: Khách truy cập cổng đăng ký an toàn
+        // Act: Khách cố gắng truy cập đăng ký tự do
         var response = await client.GetAsync("/TaiKhoan/DangKy");
 
-        // Assert: Trả về HTTP 200 OK và hiển thị phom đăng ký an toàn
-        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-        var html = await response.Content.ReadAsStringAsync();
-        Assert.Contains("pnlDangKy", html);
-        Assert.Contains("btnDangKy", html);
-        Assert.Contains("txtHoVaTen", html);
-        Assert.Contains("txtEmail", html);
+        // Assert: Bị khóa đăng ký tự do, chuyển hướng 302 về Đăng nhập
+        Assert.Equal(HttpStatusCode.Redirect, response.StatusCode);
+        Assert.NotNull(response.Headers.Location);
+        Assert.Contains("/TaiKhoan/DangNhap", response.Headers.Location.ToString());
     }
     [Fact]
     public async Task DangKy_TaoTaiKhoanThanhCong_TuDongGanRoleNguoiDung()
@@ -90,10 +90,10 @@ public class PhanQuyenVaDangKyTests : IClassFixture<WebApplicationFactory<Progra
         var userManager = scope.ServiceProvider.GetRequiredService<UserManager<TaiKhoan>>();
         var roleManager = scope.ServiceProvider.GetRequiredService<RoleManager<VaiTro>>();
 
-        // Đảm bảo role User tồn tại
-        if (!await roleManager.RoleExistsAsync(VaiTroMacDinh.NguoiDung))
+        // Đảm bảo role Viewer tồn tại
+        if (!await roleManager.RoleExistsAsync(VaiTroMacDinh.NguoiXem))
         {
-            await roleManager.CreateAsync(new VaiTro(VaiTroMacDinh.NguoiDung) { MoTa = "Người dùng nghiệp vụ" });
+            await roleManager.CreateAsync(new VaiTro(VaiTroMacDinh.NguoiXem) { MoTa = "Người xem" });
         }
 
         string emailTest = $"canbo_{Guid.NewGuid():N}@c500.edu.vn";
@@ -111,11 +111,11 @@ public class PhanQuyenVaDangKyTests : IClassFixture<WebApplicationFactory<Progra
         var ketQua = await userManager.CreateAsync(userMoi, "CanBo@123456");
         Assert.True(ketQua.Succeeded);
 
-        await userManager.AddToRoleAsync(userMoi, VaiTroMacDinh.NguoiDung);
+        await userManager.AddToRoleAsync(userMoi, VaiTroMacDinh.NguoiXem);
 
-        // Assert: Xác nhận tài khoản được gán đúng role NguoiDung (User)
+        // Assert: Xác nhận tài khoản được gán đúng role Người xem
         var roles = await userManager.GetRolesAsync(userMoi);
-        Assert.Contains(VaiTroMacDinh.NguoiDung, roles);
+        Assert.Contains(VaiTroMacDinh.NguoiXem, roles);
         Assert.DoesNotContain(VaiTroMacDinh.QuanTriVien, roles);
 
         // Xác nhận không có quyền Admin
@@ -155,16 +155,20 @@ public class PhanQuyenVaDangKyTests : IClassFixture<WebApplicationFactory<Progra
         Assert.True(response.StatusCode == HttpStatusCode.Unauthorized || response.StatusCode == HttpStatusCode.Redirect);
     }
     [Fact]
-    public void VaiTroMacDinh_CoDayDuRoleSuperAdminGiaoVienCanBoUser()
+    public void VaiTroMacDinh_GomBonVaiTroVaAnhXaVaiTroCu()
     {
-        // Assert: Các hằng số quyền chuẩn hóa
+        // Assert: 4 vai trò chuẩn v4
         Assert.Equal("Superadmin", VaiTroMacDinh.SuperAdmin);
         Assert.Equal("Admin", VaiTroMacDinh.QuanTriVien);
-        Assert.Equal("GiaoVien", VaiTroMacDinh.GiaoVien);
-        Assert.Equal("CanBo", VaiTroMacDinh.CanBo);
-        Assert.Equal("User", VaiTroMacDinh.NguoiDung);
-        Assert.Equal("DataManager", VaiTroMacDinh.QuanLyDaoTao);
+        Assert.Equal("Manager", VaiTroMacDinh.QuanLy);
         Assert.Equal("Viewer", VaiTroMacDinh.NguoiXem);
+        Assert.Equal(4, VaiTroMacDinh.TatCa.Count);
+
+        // Vai trò cũ được ánh xạ sang vai trò mới kèm vùng quản lý
+        Assert.Equal((VaiTroMacDinh.QuanLy, VungQuanLy.DaoTao), VaiTroMacDinh.AnhXaVaiTroCu["DataManager"]);
+        Assert.Equal((VaiTroMacDinh.QuanLy, VungQuanLy.ToChuc), VaiTroMacDinh.AnhXaVaiTroCu["CanBo"]);
+        Assert.Equal(VaiTroMacDinh.NguoiXem, VaiTroMacDinh.AnhXaVaiTroCu["GiaoVien"].VaiTroMoi);
+        Assert.Equal(VaiTroMacDinh.NguoiXem, VaiTroMacDinh.AnhXaVaiTroCu["User"].VaiTroMoi);
     }
 
     [Fact]

@@ -63,7 +63,7 @@ public class NhanSuApiController : ControllerBase
     /// Tạo mới một hồ sơ cán bộ / giảng viên.
     /// </summary>
     [HttpPost]
-    [Authorize(Roles = $"{VaiTroMacDinh.SuperAdmin},{VaiTroMacDinh.GiaoVien},{VaiTroMacDinh.QuanTriVien},{VaiTroMacDinh.QuanLyDaoTao}")]
+    [Authorize(Roles = VaiTroMacDinh.NhomCoQuyenGhi)]
     [ProducesResponseType(typeof(ApiResponse<NhanSu>), StatusCodes.Status201Created)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> ThemNhanSu([FromBody] NhanSu nhanSu)
@@ -88,7 +88,7 @@ public class NhanSuApiController : ControllerBase
     /// Cập nhật hồ sơ cán bộ hiện có.
     /// </summary>
     [HttpPut("{id:int}")]
-    [Authorize(Roles = $"{VaiTroMacDinh.SuperAdmin},{VaiTroMacDinh.GiaoVien},{VaiTroMacDinh.QuanTriVien},{VaiTroMacDinh.QuanLyDaoTao}")]
+    [Authorize(Roles = VaiTroMacDinh.NhomCoQuyenGhi)]
     [ProducesResponseType(typeof(ApiResponse<NhanSu>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
@@ -118,7 +118,7 @@ public class NhanSuApiController : ControllerBase
     /// Xóa hồ sơ cán bộ nếu không còn ràng buộc phân công.
     /// </summary>
     [HttpDelete("{id:int}")]
-    [Authorize(Roles = $"{VaiTroMacDinh.SuperAdmin},{VaiTroMacDinh.GiaoVien},{VaiTroMacDinh.QuanTriVien},{VaiTroMacDinh.QuanLyDaoTao}")]
+    [Authorize(Roles = VaiTroMacDinh.NhomCoQuyenGhi)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]

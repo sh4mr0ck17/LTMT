@@ -64,7 +64,7 @@ public class BoMonController : Controller
     /// Hiển thị biểu mẫu thêm mới một bộ môn.
     /// </summary>
     [HttpGet]
-    [Authorize(Roles = $"{VaiTroMacDinh.SuperAdmin},{VaiTroMacDinh.GiaoVien},{VaiTroMacDinh.QuanTriVien},{VaiTroMacDinh.QuanLyDaoTao}")]
+    [Authorize(Roles = VaiTroMacDinh.NhomCoQuyenGhi)]
     public async Task<IActionResult> ThemMoi()
     {
         ViewBag.DanhSachKhoa = await _khoaDichVu.LayDanhSachAsync(null, true, HttpContext.RequestAborted);
@@ -75,7 +75,7 @@ public class BoMonController : Controller
     /// Xử lý lưu thông tin bộ môn mới.
     /// </summary>
     [HttpPost]
-    [Authorize(Roles = $"{VaiTroMacDinh.SuperAdmin},{VaiTroMacDinh.GiaoVien},{VaiTroMacDinh.QuanTriVien},{VaiTroMacDinh.QuanLyDaoTao}")]
+    [Authorize(Roles = VaiTroMacDinh.NhomCoQuyenGhi)]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> ThemMoi(BoMon boMon)
     {
@@ -117,7 +117,7 @@ public class BoMonController : Controller
     /// Hiển thị biểu mẫu chỉnh sửa thông tin bộ môn.
     /// </summary>
     [HttpGet]
-    [Authorize(Roles = $"{VaiTroMacDinh.SuperAdmin},{VaiTroMacDinh.GiaoVien},{VaiTroMacDinh.QuanTriVien},{VaiTroMacDinh.QuanLyDaoTao}")]
+    [Authorize(Roles = VaiTroMacDinh.NhomCoQuyenGhi)]
     public async Task<IActionResult> ChinhSua(int id)
     {
         var boMon = await _boMonDichVu.LayTheoIdAsync(id, HttpContext.RequestAborted);
@@ -135,7 +135,7 @@ public class BoMonController : Controller
     /// Xử lý cập nhật thông tin bộ môn.
     /// </summary>
     [HttpPost]
-    [Authorize(Roles = $"{VaiTroMacDinh.SuperAdmin},{VaiTroMacDinh.GiaoVien},{VaiTroMacDinh.QuanTriVien},{VaiTroMacDinh.QuanLyDaoTao}")]
+    [Authorize(Roles = VaiTroMacDinh.NhomCoQuyenGhi)]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> ChinhSua(int id, BoMon boMon)
     {
@@ -186,7 +186,7 @@ public class BoMonController : Controller
     /// Xóa một bộ môn khỏi hệ thống nếu không còn ràng buộc.
     /// </summary>
     [HttpPost]
-    [Authorize(Roles = $"{VaiTroMacDinh.SuperAdmin},{VaiTroMacDinh.GiaoVien},{VaiTroMacDinh.QuanTriVien},{VaiTroMacDinh.QuanLyDaoTao}")]
+    [Authorize(Roles = VaiTroMacDinh.NhomCoQuyenGhi)]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> Xoa(int id)
     {
