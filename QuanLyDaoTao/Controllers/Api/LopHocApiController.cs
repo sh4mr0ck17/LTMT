@@ -61,7 +61,7 @@ public class LopHocApiController : ControllerBase
     /// Tạo mới một lớp học.
     /// </summary>
     [HttpPost]
-    [Authorize(Roles = $"{VaiTroMacDinh.SuperAdmin},{VaiTroMacDinh.QuanTriVien},{VaiTroMacDinh.QuanLyDaoTao}")]
+    [Authorize(Roles = VaiTroMacDinh.NhomCoQuyenGhi)]
     [ProducesResponseType(typeof(ApiResponse<LopHoc>), StatusCodes.Status201Created)]
     public async Task<IActionResult> ThemLop([FromBody] LopHoc lopHoc)
     {
@@ -85,7 +85,7 @@ public class LopHocApiController : ControllerBase
     /// Cập nhật thông tin lớp học.
     /// </summary>
     [HttpPut("{id:int}")]
-    [Authorize(Roles = $"{VaiTroMacDinh.SuperAdmin},{VaiTroMacDinh.QuanTriVien},{VaiTroMacDinh.QuanLyDaoTao}")]
+    [Authorize(Roles = VaiTroMacDinh.NhomCoQuyenGhi)]
     public async Task<IActionResult> CapNhatLop(int id, [FromBody] LopHoc lopHoc)
     {
         if (lopHoc == null || id != lopHoc.LopHocId || !ModelState.IsValid)
@@ -112,7 +112,7 @@ public class LopHocApiController : ControllerBase
     /// Xóa một lớp học nếu không còn học viên hoặc phân công.
     /// </summary>
     [HttpDelete("{id:int}")]
-    [Authorize(Roles = $"{VaiTroMacDinh.SuperAdmin},{VaiTroMacDinh.QuanTriVien},{VaiTroMacDinh.QuanLyDaoTao}")]
+    [Authorize(Roles = VaiTroMacDinh.NhomCoQuyenGhi)]
     public async Task<IActionResult> XoaLop(int id)
     {
         try

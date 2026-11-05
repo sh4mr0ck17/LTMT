@@ -25,8 +25,10 @@ public class BoCucCayToChucTests
         var goc = TaoCay();
         var tatCa = LayTatCa(goc).Select(n => n.KhoaNut).ToHashSet();
         var boCuc = BoCucCayToChuc.Tao(goc, tatCa, tatCa);
-        Assert.Equal(tatCa.Count, boCuc.CacNut.Count);
-        Assert.Equal(tatCa.Count - 1, boCuc.CacDuongNoi.Count);
+        // Nhân sự không vẽ thành thẻ (giai đoạn 2), các nút còn lại đều có mặt.
+        var soVeDuoc = LayTatCa(goc).Count(n => !BoCucCayToChuc.LaLoaiKhongVe(n.Loai));
+        Assert.Equal(soVeDuoc, boCuc.CacNut.Count);
+        Assert.Equal(soVeDuoc - 1, boCuc.CacDuongNoi.Count);
         foreach (var nut in boCuc.CacNut)
         {
             Assert.InRange(nut.X, 0, boCuc.ChieuRong - BoCucCayToChuc.ChieuRongNut);
@@ -54,8 +56,10 @@ public class BoCucCayToChucTests
         var goc = TaoCay();
         var ketQua = BoLocCayToChuc.Loc(goc, "Nguyễn");
         var boCuc = BoCucCayToChuc.Tao(goc, ketQua.HienThi, ketQua.HienThi);
-        Assert.True(boCuc.CacNut.Select(n => n.Nut.KhoaNut).ToHashSet().SetEquals(new[] { "goc", "k1", "bm1", "ns1" }));
-        Assert.Equal(3, boCuc.CacDuongNoi.Count);
+        // Nhân sự khớp không thành thẻ; canvas dừng ở bộ môn chứa họ, nhân sự xem ở bảng panel chi tiết.
+        Assert.Contains("ns1", ketQua.Khop);
+        Assert.True(boCuc.CacNut.Select(n => n.Nut.KhoaNut).ToHashSet().SetEquals(new[] { "goc", "k1", "bm1" }));
+        Assert.Equal(2, boCuc.CacDuongNoi.Count);
     }
 
     /// <summary>Không có kết quả tạo vùng vẽ trống, không lỗi tính toán kích thước.</summary>
@@ -82,6 +86,75 @@ public class BoCucCayToChucTests
         Assert.True(thuGon.ChieuRong < dayDu.ChieuRong);
         Assert.True(thuGon.ChieuCao < dayDu.ChieuCao);
     }
+
+    /// <summary>Nhánh có 20 con: chỉ vẽ 8 thẻ đầu và một thẻ "+12 mục nữa".</summary>
+    [Fact]
+    public void Tao_NhanhNhieuCon_GioiHanVaThemTheConLai()
+    {
+        var goc = TaoCayNhieuLop(20);
+        var tatCa = LayTatCa(goc).Select(n => n.KhoaNut).ToHashSet();
+
+        var boCuc = BoCucCayToChuc.Tao(goc, tatCa, tatCa);
+
+        var conCuaKhoa = boCuc.CacDuongNoi.Where(d => d.Cha == "k1").Select(d => d.Con).ToList();
+        Assert.Equal(BoCucCayToChuc.SoConToiDaMoiNhanh + 1, conCuaKhoa.Count);
+        var nutThem = Assert.Single(boCuc.CacNut, n => n.Nut.Loai == BoCucCayToChuc.LoaiNutThemMuc);
+        Assert.Equal("+ 12 mục nữa", nutThem.Nut.Ten);
+        Assert.Equal("k1", BoCucCayToChuc.LayKhoaChaCuaNutThemMuc(nutThem.Nut.KhoaNut));
+    }
+
+    /// <summary>Tăng số con hiển thị của nhánh làm thẻ "+N" giảm tương ứng.</summary>
+    [Fact]
+    public void Tao_TangSoConHienThi_GiamThePhanConLai()
+    {
+        var goc = TaoCayNhieuLop(20);
+        var tatCa = LayTatCa(goc).Select(n => n.KhoaNut).ToHashSet();
+
+        var boCuc = BoCucCayToChuc.Tao(goc, tatCa, tatCa, new Dictionary<string, int> { ["k1"] = 16 });
+
+        Assert.Equal("+ 4 mục nữa", Assert.Single(boCuc.CacNut, n => n.Nut.Loai == BoCucCayToChuc.LoaiNutThemMuc).Nut.Ten);
+    }
+
+    /// <summary>Nút bắt buộc hiện (đang chọn / khớp tìm kiếm) vẫn được vẽ dù nằm ngoài ngưỡng.</summary>
+    [Fact]
+    public void Tao_NutLuonHienNgoaiNguong_VanDuocVe()
+    {
+        var goc = TaoCayNhieuLop(20);
+        var tatCa = LayTatCa(goc).Select(n => n.KhoaNut).ToHashSet();
+
+        var boCuc = BoCucCayToChuc.Tao(goc, tatCa, tatCa, nutLuonHien: new HashSet<string> { "lop19" });
+
+        Assert.Contains(boCuc.CacNut, n => n.Nut.KhoaNut == "lop19");
+        Assert.Equal("+ 11 mục nữa", Assert.Single(boCuc.CacNut, n => n.Nut.Loai == BoCucCayToChuc.LoaiNutThemMuc).Nut.Ten);
+    }
+
+    /// <summary>Số thẻ không phụ thuộc số nhân sự: thêm 500 nhân sự không làm tăng số thẻ.</summary>
+    [Fact]
+    public void Tao_NhieuNhanSu_SoTheKhongDoi()
+    {
+        var khongNhanSu = TaoCay();
+        var coNhanSu = TaoCay();
+        var boMon = coNhanSu.Con[0].Con[0];
+        boMon.Con.AddRange(Enumerable.Range(1, 500).Select(i => new NutToChuc { KhoaNut = $"them{i}", Loai = "Nhân sự", Ten = $"Cán bộ {i}" }));
+
+        var tatCa1 = LayTatCa(khongNhanSu).Select(n => n.KhoaNut).ToHashSet();
+        var tatCa2 = LayTatCa(coNhanSu).Select(n => n.KhoaNut).ToHashSet();
+
+        Assert.Equal(BoCucCayToChuc.Tao(khongNhanSu, tatCa1, tatCa1).CacNut.Count, BoCucCayToChuc.Tao(coNhanSu, tatCa2, tatCa2).CacNut.Count);
+        Assert.Equal(502, coNhanSu.SoNhanSu);
+    }
+
+    private static NutToChuc TaoCayNhieuLop(int soLop) => new()
+    {
+        KhoaNut = "goc", Loai = "Học viện", Ten = "Học viện", Con = new()
+        {
+            new()
+            {
+                KhoaNut = "k1", Loai = "Khoa", Ten = "Khoa một",
+                Con = Enumerable.Range(0, soLop).Select(i => new NutToChuc { KhoaNut = $"lop{i}", Loai = "Lớp học", Ten = $"Lớp {i}" }).ToList()
+            }
+        }
+    };
 
     private static IEnumerable<NutToChuc> LayTatCa(NutToChuc nut)
     {

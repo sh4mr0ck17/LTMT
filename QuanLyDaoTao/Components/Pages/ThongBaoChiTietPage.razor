@@ -1,0 +1,288 @@
+﻿@page "/ThongBao/{Id:int}"
+@attribute [Authorize]
+@inherits TrangNghiepVuCoSo
+@inject IThongBaoDichVu DichVuThongBao
+@inject ILopHocDichVu LopHocDichVu
+@inject NavigationManager DieuHuong
+@inject IJSRuntime Js
+
+<PageTitle>@(_thongBao?.TieuDe ?? "Thông báo") | Quản lý đào tạo C500</PageTitle>
+
+<div class="trang-nghiep-vu cong-thong-bao" id="pnlChiTietThongBao">
+    <nav class="cong-breadcrumb khong-in" aria-label="Vị trí">
+        <a href="">Trang chủ</a> <span>›</span> <a href="ThongBao">Thông báo – Văn bản</a>
+        @if (_thongBao is not null) { <span>›</span> <a href="@($"ThongBao?loai={Uri.EscapeDataString(_thongBao.LoaiVanBan)}")">@_thongBao.LoaiVanBan</a> }
+    </nav>
+
+    @if (_thongBao is null)
+    {
+        <div class="tin-trong">@(DangTai ? "Đang tải..." : "Văn bản không tồn tại hoặc đã bị xóa.")</div>
+    }
+    else
+    {
+        var tb = _thongBao;
+        <div class="cong-bo-cuc-chi-tiet">
+            <article class="cong-van-ban">
+                <div class="cong-dai-chuyen-muc">
+                    <i class="bi @ThongBaoPage.BieuTuongLoai(tb.LoaiVanBan)"></i> @tb.LoaiVanBan
+                    @if (tb.MucDo != MucDoThongBao.Thuong) { <span class="chip-muc-do muc-do-@ThongBaoPage.MaMucDo(tb.MucDo)">@tb.MucDo</span> }
+                    @if (tb.DaGhim) { <span class="chip-pham-vi"><i class="bi bi-pin-angle-fill text-danger"></i> Tiêu điểm</span> }
+                </div>
+
+                <h1 class="cong-tieu-de-chi-tiet" id="lblTieuDeThongBao">@tb.TieuDe</h1>
+                @if (!string.IsNullOrWhiteSpace(tb.TrichYeu))
+                {
+                    <p class="cong-sapo-chi-tiet">@tb.TrichYeu</p>
+                }
+                <div class="cong-dong-meta">
+                    <span><i class="bi bi-clock"></i> @tb.NgayDang.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</span>
+                    @if (tb.NgaySua is not null) { <span>Cập nhật @tb.NgaySua.Value.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</span> }
+                    <span><i class="bi bi-person"></i> @tb.NguoiDang</span>
+                    <span class="cong-chia-se khong-in" aria-label="Chia sẻ">
+                        <button type="button" @onclick="SaoChepLienKetAsync" id="btnSaoChepLienKet" title="Sao chép liên kết"><i class="bi @(_daSaoChep ? "bi-check2" : "bi-link-45deg")"></i> @(_daSaoChep ? "Đã sao chép" : "Sao chép liên kết")</button>
+                        <a href="@LienKetEmail(tb)" id="lnkGuiEmail" title="Gửi qua email"><i class="bi bi-envelope"></i> Email</a>
+                        <button type="button" @onclick="InAsync" title="In văn bản"><i class="bi bi-printer"></i> In</button>
+                    </span>
+                </div>
+
+                <table class="cong-thuoc-tinh" id="tblThuocTinhVanBan">
+                    <tbody>
+                        <tr><th>Số / Ký hiệu</th><td>@(tb.SoKyHieu ?? "—")</td><th>Ngày ban hành</th><td>@((tb.NgayBanHanh ?? tb.NgayDang).ToLocalTime().ToString("dd/MM/yyyy"))</td></tr>
+                        <tr><th>Cơ quan ban hành</th><td>@(tb.CoQuanBanHanh ?? ThongBaoDichVu.CoQuanMacDinh)</td><th>Người ký</th><td>@(tb.NguoiKy ?? "—")</td></tr>
+                        <tr><th>Hiệu lực hiển thị</th><td>@(tb.HetHanLuc is null ? "Không thời hạn" : $"Đến {tb.HetHanLuc.Value.ToLocalTime():dd/MM/yyyy}")</td>
+                            <th>Nơi nhận</th><td>@string.Join(", ", tb.DanhSachPhamVi.Select(TenPhamVi))</td></tr>
+                    </tbody>
+                </table>
+
+                @if (tb.AnhDinhKem is not null)
+                {
+                    <img class="anh-thong-bao" src="@tb.AnhDinhKem" alt="Ảnh minh họa: @tb.TieuDe" id="imgAnhThongBao" />
+                }
+
+                <div class="van-ban-tin" id="lblNoiDungThongBao">@tb.NoiDung</div>
+                <p class="cong-ky-ten">
+                    <span>@(tb.CoQuanBanHanh ?? ThongBaoDichVu.CoQuanMacDinh)</span>
+                    @if (!string.IsNullOrEmpty(tb.NguoiKy)) { <strong>@tb.NguoiKy</strong> }
+                </p>
+
+                @if (_tep.Count > 0)
+                {
+                    <section class="cong-tep" id="pnlTepDinhKem">
+                        <h2><i class="bi bi-paperclip"></i> Tệp đính kèm (@_tep.Count)</h2>
+                        <ul>
+                            @foreach (var tep in _tep)
+                            {
+                                <li>
+                                    <i class="bi @BieuTuongTep(tep.KieuNoiDung)"></i>
+                                    <a href="@($"ThongBao/tep/{tep.Id}")" target="_blank" rel="noopener" id="@($"lnkTep_{tep.Id}")">@tep.TenTep</a>
+                                    <small>@KichThuocDoc(tep.KichThuoc)</small>
+                                    @if (LaNguoiQuanLyTin)
+                                    {
+                                        <button type="button" class="btn btn-link btn-sm text-danger p-0 ms-2 khong-in" @onclick="() => XoaTepAsync(tep)" title="Xóa tệp"><i class="bi bi-x-circle"></i></button>
+                                    }
+                                </li>
+                            }
+                        </ul>
+                    </section>
+                }
+
+                <div class="hanh-dong-tin khong-in">
+                    <RadzenButton Text="Quay lại" Icon="arrow_back" ButtonStyle="ButtonStyle.Light" Size="ButtonSize.Small" Click="@(() => DieuHuong.NavigateTo("ThongBao"))" id="btnQuayLai" />
+                    <RadzenButton Text="In văn bản" Icon="print" ButtonStyle="ButtonStyle.Light" Size="ButtonSize.Small" Click="InAsync" id="btnInVanBan" />
+                    @if (LaNguoiQuanLyTin)
+                    {
+                        <RadzenButton Text="@($"Đã xem: {_soNguoiDoc} người")" Icon="visibility" ButtonStyle="ButtonStyle.Light" Size="ButtonSize.Small" Click="XemNguoiDocAsync" id="btnXemNguoiDoc" />
+                        <RadzenButton Text="Sửa" Icon="edit" ButtonStyle="ButtonStyle.Light" Size="ButtonSize.Small" Click="SuaAsync" id="btnSuaThongBao" />
+                        <RadzenButton Text="Xóa" Icon="delete" ButtonStyle="ButtonStyle.Danger" Variant="Variant.Text" Size="ButtonSize.Small" Click="XoaAsync" id="btnXoaThongBao" />
+                    }
+                </div>
+                @if (_tinKhac.Count > 0)
+                {
+                    <section class="cong-tin-khac khong-in" aria-label="Các tin khác">
+                        <h2>Các tin khác</h2>
+                        <ul>
+                            @foreach (var d in _tinKhac)
+                            {
+                                <li class="@(d.DaDoc ? null : "chua-doc")">
+                                    <span class="cong-loai">@d.ThongBao.LoaiVanBan</span>
+                                    <a href="@($"ThongBao/{d.ThongBao.ThongBaoId}")">@d.ThongBao.TieuDe</a>
+                                    <time>@d.ThongBao.NgayDang.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</time>
+                                </li>
+                            }
+                        </ul>
+                        <a href="ThongBao" class="cong-xem-them">Xem thêm <i class="bi bi-chevron-right"></i></a>
+                    </section>
+                }
+            </article>
+
+            <aside class="cong-lien-quan khong-in" aria-label="Văn bản cùng chuyên mục">
+                <h2>Cùng chuyên mục “@tb.LoaiVanBan”</h2>
+                @if (_lienQuan.Count == 0)
+                {
+                    <p class="small text-muted">Chưa có văn bản khác cùng chuyên mục.</p>
+                }
+                <ul>
+                    @foreach (var d in _lienQuan)
+                    {
+                        <li class="@(d.DaDoc ? null : "chua-doc")">
+                            <a href="@($"ThongBao/{d.ThongBao.ThongBaoId}")">@d.ThongBao.TieuDe</a>
+                            <small>@((d.ThongBao.NgayBanHanh ?? d.ThongBao.NgayDang).ToLocalTime().ToString("dd/MM/yyyy"))</small>
+                        </li>
+                    }
+                </ul>
+                <a href="@($"ThongBao?loai={Uri.EscapeDataString(tb.LoaiVanBan)}")" class="small">Xem tất cả @tb.LoaiVanBan.ToLowerInvariant() →</a>
+            </aside>
+        </div>
+    }
+</div>
+
+@code {
+    private const int SoVanBanLienQuan = 6;
+    private ThongBao? _thongBao;
+    private List<ThongTinTep> _tep = [];
+    private List<DongThongBao> _lienQuan = [];
+    private List<DongThongBao> _tinKhac = [];
+    private bool _daSaoChep;
+    private List<PhamViThongBao> _danhMucPhamVi = [];
+    private int _soNguoiDoc;
+    private int _idDaNap;
+
+    /// <summary>Mã thông báo.</summary>
+    [Parameter] public int Id { get; set; }
+
+    /// <inheritdoc />
+    protected override IReadOnlyCollection<string> BangTheoDoi { get; } = [ThongBaoDichVu.TenBang];
+
+    private bool LaNguoiQuanLyTin => _thongBao is not null && (NguoiDung.LaQuanTri || _thongBao.NguoiDang == NguoiDung.TenDangNhap);
+
+    /// <inheritdoc />
+    protected override async Task OnParametersSetAsync()
+    {
+        // Điều hướng giữa các văn bản trong cùng trang (mục "văn bản khác") cần nạp lại.
+        if (_idDaNap != 0 && _idDaNap != Id)
+        {
+            await NapLaiAsync();
+        }
+    }
+
+    /// <inheritdoc />
+    protected override async Task TaiDuLieuAsync()
+    {
+        _idDaNap = Id;
+        if (_danhMucPhamVi.Count == 0)
+        {
+            _danhMucPhamVi = await DichVuThongBao.LayDanhMucPhamViAsync();
+        }
+
+        _thongBao = await DichVuThongBao.LayChiTietAsync(Id);
+        if (_thongBao is null)
+        {
+            return;
+        }
+
+        await DichVuThongBao.DanhDauDaDocAsync(Id);
+        _tep = await DichVuThongBao.LayDanhSachTepAsync(Id);
+        var cungLoai = await DichVuThongBao.LayDanhSachAsync(new LocThongBao { LoaiVanBan = _thongBao.LoaiVanBan, SoLuong = 50 });
+        _soNguoiDoc = cungLoai.FirstOrDefault(d => d.ThongBao.ThongBaoId == Id)?.SoNguoiDoc ?? 0;
+        _lienQuan = cungLoai.Where(d => d.ThongBao.ThongBaoId != Id).Take(SoVanBanLienQuan).ToList();
+        var loaiHienTai = _thongBao.LoaiVanBan;
+        _tinKhac = (await DichVuThongBao.LayDanhSachAsync(new LocThongBao { SoLuong = 30 }))
+            .Where(d => d.ThongBao.ThongBaoId != Id && d.ThongBao.LoaiVanBan != loaiHienTai)
+            .OrderByDescending(d => d.ThongBao.NgayDang).Take(5).ToList();
+    }
+
+    private string TenPhamVi(string ma) => _danhMucPhamVi.FirstOrDefault(p => p.Ma == ma)?.Ten ?? "Phạm vi đã xóa";
+
+    private static string BieuTuongTep(string kieu) => kieu switch
+    {
+        "application/pdf" => "bi-file-earmark-pdf text-danger",
+        _ when kieu.Contains("word", StringComparison.Ordinal) => "bi-file-earmark-word text-primary",
+        _ when kieu.Contains("sheet", StringComparison.Ordinal) || kieu.Contains("excel", StringComparison.Ordinal) => "bi-file-earmark-excel text-success",
+        _ when kieu.Contains("presentation", StringComparison.Ordinal) => "bi-file-earmark-ppt text-warning",
+        _ when kieu.StartsWith("image/", StringComparison.Ordinal) => "bi-file-earmark-image",
+        _ => "bi-file-earmark"
+    };
+
+    private static string KichThuocDoc(long byteSo)
+    {
+        const double MotKb = 1024;
+        return byteSo >= MotKb * MotKb ? $"{byteSo / (MotKb * MotKb):0.0} MB" : $"{Math.Max(1, byteSo / MotKb):0} KB";
+    }
+
+    private async Task InAsync() => await Js.InvokeVoidAsync("print");
+
+    private async Task SaoChepLienKetAsync()
+    {
+        try
+        {
+            await Js.InvokeVoidAsync("navigator.clipboard.writeText", DieuHuong.Uri);
+            _daSaoChep = true;
+        }
+        catch (JSException)
+        {
+            BaoLoi("Trình duyệt không cho phép sao chép tự động. Hãy sao chép địa chỉ trên thanh trình duyệt.");
+        }
+    }
+
+    private string LienKetEmail(ThongBao tb) =>
+        $"mailto:?subject={Uri.EscapeDataString(tb.TieuDe)}&body={Uri.EscapeDataString($"{tb.TrichYeu ?? tb.TieuDe}\n{DieuHuong.Uri}")}";
+
+    private async Task SuaAsync()
+    {
+        var lop = await LopHocDichVu.LayDanhSachAsync();
+        var ketQua = await HopThoai.OpenAsync<BieuMauThongBao>("Sửa văn bản",
+            new Dictionary<string, object?>
+            {
+                [nameof(BieuMauThongBao.ThongBaoGoc)] = _thongBao,
+                [nameof(BieuMauThongBao.TepHienCo)] = _tep,
+                [nameof(BieuMauThongBao.DanhMucPhamVi)] = _danhMucPhamVi,
+                [nameof(BieuMauThongBao.DanhSachLop)] = lop,
+                [nameof(BieuMauThongBao.LaQuanTri)] = NguoiDung.LaQuanTri
+            },
+            new DialogOptions { Width = "860px", CloseDialogOnOverlayClick = false });
+        if (ketQua is KetQuaBieuMau daLuu)
+        {
+            BaoThanhCong(daLuu.ThongDiep);
+            await NapLaiAsync();
+        }
+    }
+
+    private async Task XoaAsync()
+    {
+        if (_thongBao is not null && await XacNhanXoaAsync($"văn bản \"{_thongBao.TieuDe}\""))
+        {
+            if (await ThucHienAsync(() => DichVuThongBao.XoaAsync(Id), "Đã xóa văn bản."))
+            {
+                DieuHuong.NavigateTo("ThongBao");
+            }
+        }
+    }
+
+    private async Task XoaTepAsync(ThongTinTep tep)
+    {
+        if (await XacNhanXoaAsync($"tệp {tep.TenTep}"))
+        {
+            await ThucHienAsync(() => DichVuThongBao.XoaTepAsync(tep.Id), "Đã xóa tệp đính kèm.");
+        }
+    }
+
+    private async Task XemNguoiDocAsync()
+    {
+        List<ThongBaoDaDoc> nguoiDoc = [];
+        var loi = await ChayVaBatLoiAsync(async () => nguoiDoc = await DichVuThongBao.LayNguoiDaDocAsync(Id));
+        if (loi is not null)
+        {
+            BaoLoi(loi);
+            return;
+        }
+
+        await HopThoai.OpenAsync<ChiTietHoSo>($"Đã xem ({nguoiDoc.Count})",
+            new Dictionary<string, object?>
+            {
+                [nameof(ChiTietHoSo.CacTruong)] = nguoiDoc.Count == 0
+                    ? new List<(string, string?)> { ("Chưa có ai đọc", null) }
+                    : nguoiDoc.Select(d => (d.TenDangNhap, (string?)d.DocLuc.ToLocalTime().ToString("HH:mm dd/MM/yyyy"))).ToList()
+            },
+            new DialogOptions { Width = "520px", CloseDialogOnOverlayClick = true });
+    }
+}

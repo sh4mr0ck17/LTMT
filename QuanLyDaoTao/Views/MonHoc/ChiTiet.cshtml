@@ -3,7 +3,7 @@
 @{
     ViewData["Title"] = $"Chi tiết Môn học: {Model.TenMonHoc}";
     Layout = "_Layout";
-    bool laQuanTri = User.IsInRole(VaiTroMacDinh.QuanTriVien) || User.IsInRole(VaiTroMacDinh.QuanLyDaoTao);
+    bool laQuanTri = User.IsInRole(VaiTroMacDinh.SuperAdmin) || User.IsInRole(VaiTroMacDinh.QuanTriVien) || User.IsInRole(VaiTroMacDinh.QuanLy);
 }
 
 <div class="container-fluid px-4 py-3" id="pnlChiTietMonHoc">

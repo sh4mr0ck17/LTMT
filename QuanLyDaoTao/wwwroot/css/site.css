@@ -1,9 +1,11 @@
-/* ==========================================================================
+﻿/* ==========================================================================
    CHỦ ĐỀ GIAO DIỆN HIỆN ĐẠI: DARK FOREST GREEN & PURE WHITE (XANH LÁ ĐẬM & TRẮNG)
    Bố cục: SMOOTH MINI SIDEBAR + SPOTLIGHT ONBOARDING TOUR + MULTI-BRANCH ORG TREE
    ========================================================================== */
 
 :root {
+  --font-giao-dien: "Segoe UI Variable Text", "Segoe UI", system-ui, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", "Noto Sans", Arial, sans-serif;
+  --font-so: "Segoe UI Variable Text", "Segoe UI", system-ui, sans-serif;
   /* Bảng màu Xanh Lá Đậm (Dark Forest Green) & Trắng Tinh Khiết */
   --cand-green: #0b4627;
   --cand-green-dark: #08351d;
@@ -42,7 +44,12 @@ html {
 body {
   background-color: #f8faf9 !important;
   color: #0f1f17;
-  font-family: "Inter", "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  /* Font hệ thống: Segoe UI (Windows – máy làm việc của Học viện), San Francisco (macOS/iOS), Roboto (Android).
+     Không tải webfont: hiển thị tức thì, chạy offline, dấu tiếng Việt chuẩn. Số trong bảng dùng chữ số đều cột. */
+  font-family: var(--font-giao-dien);
+  font-feature-settings: "kern" 1;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
   margin: 0;
   padding: 0;
   height: 100%;
@@ -972,3 +979,7 @@ h1:focus, h2:focus, h3:focus, h4:focus, h5:focus, h6:focus {
   color: #64748b !important;
   border: 1px dashed #cbd5e1 !important;
 }
+
+/* Chữ số đều cột cho bảng, thẻ chỉ số, thời gian: dễ so sánh hàng dọc */
+table, .rz-datatable, .the-chi-so-so, .studio-luoi, time, .badge, .dt-chip { font-variant-numeric: tabular-nums; }
+h1, h2, h3, h4, h5, h6, .rz-dialog-titlebar { letter-spacing: -0.01em; }

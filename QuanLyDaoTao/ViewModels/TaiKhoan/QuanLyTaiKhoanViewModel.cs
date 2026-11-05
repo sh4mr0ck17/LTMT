@@ -39,6 +39,31 @@ public class ThongTinTaiKhoanItemViewModel
     /// Thời điểm khởi tạo tài khoản.
     /// </summary>
     public DateTime NgayTao { get; set; }
+
+    /// <summary>
+    /// Vùng quản lý của Manager.
+    /// </summary>
+    public string? VungQuanLy { get; set; }
+
+    /// <summary>
+    /// Khoa phụ trách của Manager.
+    /// </summary>
+    public int? KhoaPhuTrachId { get; set; }
+
+    /// <summary>
+    /// Tên khoa phụ trách để hiển thị.
+    /// </summary>
+    public string? TenKhoaPhuTrach { get; set; }
+
+    /// <summary>
+    /// Lần đăng nhập gần nhất.
+    /// </summary>
+    public DateTime? LanDangNhapCuoi { get; set; }
+
+    /// <summary>
+    /// Tài khoản đang bị khóa tạm do đăng nhập sai nhiều lần.
+    /// </summary>
+    public bool DangBiKhoaTam { get; set; }
 }
 
 /// <summary>
@@ -60,4 +85,9 @@ public class QuanLyTaiKhoanViewModel
     /// Vai trò lọc theo.
     /// </summary>
     public string? LocTheoVaiTro { get; set; }
+
+    /// <summary>
+    /// Danh sách khoa để chọn khoa phụ trách.
+    /// </summary>
+    public List<QuanLyDaoTao.Models.Khoa> DanhSachKhoa { get; set; } = new();
 }

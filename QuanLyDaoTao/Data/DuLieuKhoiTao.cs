@@ -1,4 +1,4 @@
-using Microsoft.AspNetCore.Identity;
+﻿using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using QuanLyDaoTao.Models;
 
@@ -26,18 +26,8 @@ public static class DuLieuKhoiTao
         // Tự động kiểm tra và áp dụng migration
         await context.Database.MigrateAsync();
 
-        // 1. Khởi tạo danh sách các vai trò
-        string[] danhSachVaiTro =
-        {
-            VaiTroMacDinh.SuperAdmin,
-            VaiTroMacDinh.QuanTriVien,
-            VaiTroMacDinh.QuanLyDaoTao,
-            VaiTroMacDinh.GiaoVien,
-            VaiTroMacDinh.CanBo,
-            VaiTroMacDinh.NguoiDung,
-            VaiTroMacDinh.NguoiXem
-        };
-        foreach (var tenVaiTro in danhSachVaiTro)
+        // 1. Khởi tạo 4 vai trò chuẩn (v4)
+        foreach (var tenVaiTro in VaiTroMacDinh.TatCa)
         {
             try
             {
@@ -47,13 +37,10 @@ public static class DuLieuKhoiTao
                     {
                         MoTa = tenVaiTro switch
                         {
-                            VaiTroMacDinh.SuperAdmin => "Siêu quản trị viên - độc quyền Live CRUD Database Studio",
-                            VaiTroMacDinh.QuanTriVien => "Quản trị viên đào tạo & cấp phát tài khoản",
-                            VaiTroMacDinh.QuanLyDaoTao => "Quản lý đào tạo và hồ sơ dữ liệu",
-                            VaiTroMacDinh.GiaoVien => "Giáo viên / Giảng viên giảng dạy",
-                            VaiTroMacDinh.CanBo => "Cán bộ nghiệp vụ khoa / phòng",
-                            VaiTroMacDinh.NguoiDung => "Người dùng tra cứu (Chỉ xem)",
-                            _ => "Người xem thông tin được cấp phép"
+                            VaiTroMacDinh.SuperAdmin => "Siêu quản trị viên - toàn quyền, Live CRUD Database Studio",
+                            VaiTroMacDinh.QuanTriVien => "Quản trị viên - toàn quyền nghiệp vụ, cấp phát và phân quyền tài khoản",
+                            VaiTroMacDinh.QuanLy => "Quản lý - ghi dữ liệu trong vùng và khoa được giao",
+                            _ => "Người xem - chỉ tra cứu, thông tin cá nhân bị che"
                         },
                         NgayTao = DateTime.UtcNow
                     };
@@ -62,18 +49,21 @@ public static class DuLieuKhoiTao
             }
             catch (DbUpdateException)
             {
-                // Bỏ qua nếu luồng song song khác đã khởi tạo vai trò này
+                // Luồng song song khác đã khởi tạo vai trò này.
             }
         }
 
-        // 2. Khởi tạo các tài khoản mẫu theo từng Workspace (Superadmin, Admin, GiaoVien, CanBo, User)
-        var danhSachTaiKhoanMau = new (string Email, string HoTen, string RoleChinh, string? MaNS)[]
+        // 2. Chuyển tài khoản đang giữ vai trò cũ sang 4 vai trò mới, rồi xóa vai trò cũ
+        await ChuyenDoiVaiTroCuAsync(quanLyNguoiDung, quanLyVaiTro);
+
+        // 3. Tài khoản mẫu (chỉ tạo khi chưa có; mật khẩu mẫu phải đổi khi triển khai thật)
+        var danhSachTaiKhoanMau = new (string Email, string HoTen, string VaiTro, string? Vung)[]
         {
             ("superadmin@quanlydaotao.local", "Super Administrator C500", VaiTroMacDinh.SuperAdmin, null),
             ("admin@quanlydaotao.local", "Quản trị viên Hệ thống", VaiTroMacDinh.QuanTriVien, null),
-            ("giaovien@quanlydaotao.local", "TS. Nguyễn Minh Đức (Giảng viên)", VaiTroMacDinh.GiaoVien, "NS0001"),
-            ("canbo@quanlydaotao.local", "ThS. Trần Thị Lan (Cán bộ)", VaiTroMacDinh.CanBo, "NS0002"),
-            ("user@quanlydaotao.local", "Học viên / Người dùng Tra cứu", VaiTroMacDinh.NguoiDung, null)
+            ("quanly.tochuc@quanlydaotao.local", "Quản lý Tổ chức - Cán bộ", VaiTroMacDinh.QuanLy, VungQuanLy.ToChuc),
+            ("quanly.daotao@quanlydaotao.local", "Quản lý Đào tạo", VaiTroMacDinh.QuanLy, VungQuanLy.DaoTao),
+            ("nguoixem@quanlydaotao.local", "Người xem tra cứu", VaiTroMacDinh.NguoiXem, null)
         };
 
         foreach (var tkMau in danhSachTaiKhoanMau)
@@ -89,27 +79,32 @@ public static class DuLieuKhoiTao
                         Email = tkMau.Email,
                         EmailConfirmed = true,
                         HoVaTen = tkMau.HoTen,
-                        MaNhanSuLienKet = tkMau.MaNS,
+                        VungQuanLy = tkMau.Vung,
                         CoHoatDong = true,
+                        LockoutEnabled = true,
                         NgayTao = DateTime.UtcNow
                     };
 
-                    var ketQuaTao = await quanLyNguoiDung.CreateAsync(taiKhoan, "Admin@123456");
+                    var ketQuaTao = await quanLyNguoiDung.CreateAsync(taiKhoan, MatKhauMau);
                     if (ketQuaTao.Succeeded)
                     {
-                        await quanLyNguoiDung.AddToRoleAsync(taiKhoan, tkMau.RoleChinh);
+                        await quanLyNguoiDung.AddToRoleAsync(taiKhoan, tkMau.VaiTro);
                     }
                 }
-                else if (!await quanLyNguoiDung.IsInRoleAsync(taiKhoan, tkMau.RoleChinh))
+                else if (!await quanLyNguoiDung.IsInRoleAsync(taiKhoan, tkMau.VaiTro) &&
+                         (await quanLyNguoiDung.GetRolesAsync(taiKhoan)).Count == 0)
                 {
-                    await quanLyNguoiDung.AddToRoleAsync(taiKhoan, tkMau.RoleChinh);
+                    await quanLyNguoiDung.AddToRoleAsync(taiKhoan, tkMau.VaiTro);
                 }
             }
             catch (DbUpdateException)
             {
-                // Bỏ qua nếu luồng song song khác đã tạo tài khoản này
+                // Luồng song song khác đã tạo tài khoản này.
             }
         }
+
+        // 4. Chuyển đổi dữ liệu nghiệp vụ lên mô hình v4 (idempotent)
+        await ChuyenDoiDuLieuV4Async(context);
 
         // 3. Khởi tạo chức vụ mẫu
         if (!await context.ChucVus.AnyAsync())
@@ -255,20 +250,16 @@ public static class DuLieuKhoiTao
                     HoVaTen = "Đại tá, TS. Nguyễn Minh Đức",
                     NgaySinh = new DateTime(1978, 5, 19),
                     GioiTinh = "Nam",
-                    EmailCongViec = "duc.nm@c500.edu.vn",
+                    Email = "duc.nm@c500.edu.vn",
                     SoDienThoai = "0912345678",
-                    SoGiayTo = "001078001234",
+                    SoCCCD = "001078001234",
                     KhoaId = khoaDau.KhoaId,
                     BoMonId = boMonDau?.BoMonId,
                     ChucVuId = chucVuGv?.ChucVuId,
                     TrinhDoChuyenMonId = trinhDoTs?.TrinhDoChuyenMonId,
-                    ChucDanhNgheNghiep = "Giảng viên cao cấp",
-                    HocVi = "Tiến sĩ",
                     HocHam = "Phó Giáo sư",
-                    ChuyenNganh = "An ninh mạng & Công nghệ thông tin",
-                    TruongDaoTao = "Học viện An ninh Nhân dân",
-                    TrangThaiCongTac = "Đang làm việc",
-                    CoHoatDong = true,
+                    ChuyenMonDaoTao = "An ninh mạng & Công nghệ thông tin — Học viện An ninh Nhân dân",
+                    TrangThai = "Đang làm việc",
                     NgayTao = DateTime.UtcNow
                 };
                 var ns2 = new NhanSu
@@ -277,19 +268,15 @@ public static class DuLieuKhoiTao
                     HoVaTen = "Thượng tá, ThS. Trần Thu Hà",
                     NgaySinh = new DateTime(1984, 10, 20),
                     GioiTinh = "Nữ",
-                    EmailCongViec = "ha.tt@c500.edu.vn",
+                    Email = "ha.tt@c500.edu.vn",
                     SoDienThoai = "0987654321",
-                    SoGiayTo = "001184005678",
+                    SoCCCD = "001184005678",
                     KhoaId = khoaDau.KhoaId,
                     BoMonId = boMonDau?.BoMonId,
                     ChucVuId = chucVuGv?.ChucVuId,
                     TrinhDoChuyenMonId = trinhDoTs?.TrinhDoChuyenMonId,
-                    ChucDanhNgheNghiep = "Giảng viên chính",
-                    HocVi = "Thạc sĩ",
-                    ChuyenNganh = "Hệ thống thông tin nghiệp vụ",
-                    TruongDaoTao = "Học viện An ninh Nhân dân",
-                    TrangThaiCongTac = "Đang làm việc",
-                    CoHoatDong = true,
+                    ChuyenMonDaoTao = "Hệ thống thông tin nghiệp vụ — Học viện An ninh Nhân dân",
+                    TrangThai = "Đang làm việc",
                     NgayTao = DateTime.UtcNow
                 };
                 await context.NhanSus.AddRangeAsync(ns1, ns2);
@@ -358,5 +345,120 @@ public static class DuLieuKhoiTao
                 await context.SaveChangesAsync();
             }
         }
+    }
+
+    /// <summary>
+    /// Mật khẩu của tài khoản mẫu (chỉ dùng cho môi trường phát triển và demo).
+    /// </summary>
+    public const string MatKhauMau = "Admin@123456";
+
+    private const string MaTruongChucVuHocVienCu = "ChucVu";
+
+    /// <summary>
+    /// Chuyển tài khoản đang giữ vai trò cũ (DataManager, CanBo, GiaoVien, User) sang vai trò v4,
+    /// gán vùng quản lý tương ứng, đổi SecurityStamp để phiên cũ hết hiệu lực, rồi xóa vai trò cũ.
+    /// </summary>
+    public static async Task ChuyenDoiVaiTroCuAsync(UserManager<TaiKhoan> quanLyNguoiDung, RoleManager<VaiTro> quanLyVaiTro)
+    {
+        ArgumentNullException.ThrowIfNull(quanLyNguoiDung);
+        ArgumentNullException.ThrowIfNull(quanLyVaiTro);
+
+        foreach (var (vaiTroCu, anhXa) in VaiTroMacDinh.AnhXaVaiTroCu)
+        {
+            var vaiTro = await quanLyVaiTro.FindByNameAsync(vaiTroCu);
+            if (vaiTro is null)
+            {
+                continue;
+            }
+
+            foreach (var taiKhoan in await quanLyNguoiDung.GetUsersInRoleAsync(vaiTroCu))
+            {
+                await quanLyNguoiDung.RemoveFromRoleAsync(taiKhoan, vaiTroCu);
+                var vaiTroHienCo = await quanLyNguoiDung.GetRolesAsync(taiKhoan);
+                if (!vaiTroHienCo.Any(VaiTroMacDinh.TatCa.Contains))
+                {
+                    await quanLyNguoiDung.AddToRoleAsync(taiKhoan, anhXa.VaiTroMoi);
+                    taiKhoan.VungQuanLy = anhXa.Vung;
+                }
+
+                await quanLyNguoiDung.UpdateSecurityStampAsync(taiKhoan);
+            }
+
+            await quanLyVaiTro.DeleteAsync(vaiTro);
+        }
+    }
+
+    /// <summary>
+    /// Chuyển dữ liệu lên mô hình v4: điền Hệ/Khóa/Chuyên ngành cho lớp, chuyển chức vụ học viên
+    /// từ trường tùy chỉnh sang cột ChucVuLop, bổ sung chức vụ Phó trưởng bộ môn. Chạy lặp lại không gây trùng.
+    /// </summary>
+    public static async Task ChuyenDoiDuLieuV4Async(QuanLyDaoTaoDbContext context)
+    {
+        ArgumentNullException.ThrowIfNull(context);
+
+        // Lớp: suy khóa học từ mã B{số}D{khóa} và điền chuyên ngành theo số lớp hệ Chính quy.
+        var lopCanDien = await context.LopHocs.Where(l => l.KhoaHoc == null).ToListAsync();
+        foreach (var lop in lopCanDien)
+        {
+            lop.KhoaHoc = Services.QuyTacNghiepVu.SuyRaKhoaHoc(lop.MaLop);
+            if (lop.KhoaHoc is not null && lop.ChuyenNganh is null &&
+                int.TryParse(lop.MaLop[1..^lop.KhoaHoc.Length], out var soLop))
+            {
+                lop.ChuyenNganh = soLop switch
+                {
+                    <= 3 => "Trinh sát an ninh",
+                    <= 7 => "Điều tra hình sự",
+                    8 => "Quản lý xuất nhập cảnh",
+                    <= 12 => "An ninh mạng & PCTP sử dụng CNC",
+                    _ => "Công nghệ thông tin"
+                };
+            }
+        }
+
+        // Học viên: chuyển chức vụ từ trường tùy chỉnh "ChucVu" sang cột thật để áp chỉ tiêu.
+        var truongChucVu = await context.TruongTuyChinhs
+            .FirstOrDefaultAsync(t => t.TenBang == "HocVien" && t.MaTruong == MaTruongChucVuHocVienCu);
+        if (truongChucVu is not null)
+        {
+            var giaTris = await context.GiaTriTruongTuyChinhs
+                .Where(g => g.TruongTuyChinhId == truongChucVu.TruongTuyChinhId)
+                .ToListAsync();
+            var theoMa = giaTris
+                .Where(g => !string.IsNullOrWhiteSpace(g.GiaTri))
+                .GroupBy(g => g.KhoaBanGhi)
+                .ToDictionary(g => g.Key, g => g.First().GiaTri);
+            var hocViens = await context.HocViens.Where(hv => hv.ChucVuLop == null).ToListAsync();
+            foreach (var hocVien in hocViens)
+            {
+                if (theoMa.TryGetValue(hocVien.MaHocVien, out var chucVu) ||
+                    theoMa.TryGetValue(hocVien.HocVienId.ToString(System.Globalization.CultureInfo.InvariantCulture), out chucVu))
+                {
+                    hocVien.ChucVuLop = Services.QuyTacNghiepVu.GhepChucVuLop(Services.QuyTacNghiepVu.TachChucVuLop(chucVu));
+                }
+            }
+
+            context.GiaTriTruongTuyChinhs.RemoveRange(giaTris);
+            context.TruongTuyChinhs.Remove(truongChucVu);
+        }
+
+        // Chuẩn hóa trạng thái: dữ liệu cũ dùng "Hoạt động" cho học viên và giá trị tự do cho cán bộ.
+        await context.HocViens.Where(hv => hv.TrangThai == "Hoạt động" || hv.TrangThai == "")
+            .ExecuteUpdateAsync(cn => cn.SetProperty(hv => hv.TrangThai, "Đang học"));
+        string[] trangThaiCanBoChuan = ["Đang làm việc", "Tạm nghỉ", "Đi học", "Đã nghỉ việc", "Đã khóa"];
+        await context.NhanSus.Where(ns => !trangThaiCanBoChuan.Contains(ns.TrangThai))
+            .ExecuteUpdateAsync(cn => cn.SetProperty(ns => ns.TrangThai, "Đang làm việc"));
+
+        if (!await context.ChucVus.AnyAsync(cv => cv.MaChucVu == "CV_PBM"))
+        {
+            context.ChucVus.Add(new ChucVu
+            {
+                MaChucVu = "CV_PBM",
+                TenChucVu = "Phó trưởng bộ môn",
+                MoTa = "Hỗ trợ trưởng bộ môn",
+                CoHoatDong = true
+            });
+        }
+
+        await context.SaveChangesAsync();
     }
 }

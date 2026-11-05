@@ -1,42 +1,120 @@
 namespace QuanLyDaoTao.Models;
 
 /// <summary>
-/// Các hằng số định nghĩa vai trò người dùng trong hệ thống.
+/// Bốn vai trò của hệ thống (hợp nhất v4). Quyền ghi của <see cref="QuanLy"/> còn bị giới hạn
+/// bởi vùng quản lý (<see cref="VungQuanLy"/>) và khoa phụ trách gắn trên tài khoản.
 /// </summary>
 public static class VaiTroMacDinh
 {
     /// <summary>
-    /// Vai trò Siêu quản trị viên (Superadmin) - độc quyền Live CRUD Database Studio và cấu hình hệ thống.
+    /// Siêu quản trị viên: toàn quyền, độc quyền Live CRUD Database Studio.
     /// </summary>
     public const string SuperAdmin = "Superadmin";
 
     /// <summary>
-    /// Vai trò Quản trị viên hệ thống - toàn quyền cấu hình và quản trị.
+    /// Quản trị viên: toàn quyền nghiệp vụ, cấp phát và phân quyền tài khoản.
     /// </summary>
     public const string QuanTriVien = "Admin";
 
     /// <summary>
-    /// Vai trò Quản lý đào tạo / Dữ liệu - quyền thêm, sửa, xóa, import, export nghiệp vụ.
+    /// Quản lý nghiệp vụ: chỉ được ghi trong vùng (Tổ chức - Cán bộ hoặc Đào tạo) và khoa được giao.
     /// </summary>
-    public const string QuanLyDaoTao = "DataManager";
+    public const string QuanLy = "Manager";
 
     /// <summary>
-    /// Vai trò Người xem - chỉ có quyền xem danh sách và chi tiết báo cáo.
+    /// Người xem: chỉ tra cứu, thông tin cá nhân (CCCD, SĐT, email, địa chỉ) bị che.
     /// </summary>
     public const string NguoiXem = "Viewer";
 
     /// <summary>
-    /// Vai trò Người dùng thông thường - có quyền xem, sửa, nhập/xuất dữ liệu nghiệp vụ, không có quyền Live CRUD.
+    /// Chuỗi vai trò được phép ghi dữ liệu nghiệp vụ (dùng cho thuộc tính [Authorize]).
+    /// Phạm vi cụ thể của Manager được kiểm tra lại tại tầng dịch vụ.
     /// </summary>
-    public const string NguoiDung = "User";
+    public const string NhomCoQuyenGhi = SuperAdmin + "," + QuanTriVien + "," + QuanLy;
 
     /// <summary>
-    /// Vai trò Giáo viên / Giảng viên - quản lý lớp giảng dạy, xem lịch phân công và hồ sơ cá nhân.
+    /// Chuỗi vai trò quản trị hệ thống (dùng cho thuộc tính [Authorize]).
     /// </summary>
-    public const string GiaoVien = "GiaoVien";
+    public const string NhomQuanTri = SuperAdmin + "," + QuanTriVien;
 
     /// <summary>
-    /// Vai trò Cán bộ quản lý khoa/phòng - quản lý nghiệp vụ đơn vị, nhập/xuất Excel.
+    /// Danh sách đầy đủ các vai trò hợp lệ.
     /// </summary>
-    public const string CanBo = "CanBo";
+    public static readonly IReadOnlyList<string> TatCa = [SuperAdmin, QuanTriVien, QuanLy, NguoiXem];
+
+    /// <summary>
+    /// Ánh xạ vai trò cũ (trước v4) sang vai trò mới và vùng quản lý tương ứng.
+    /// </summary>
+    public static readonly IReadOnlyDictionary<string, (string VaiTroMoi, string? Vung)> AnhXaVaiTroCu =
+        new Dictionary<string, (string, string?)>(StringComparer.OrdinalIgnoreCase)
+        {
+            ["DataManager"] = (QuanLy, VungQuanLy.DaoTao),
+            ["CanBo"] = (QuanLy, VungQuanLy.ToChuc),
+            ["GiaoVien"] = (NguoiXem, null),
+            ["User"] = (NguoiXem, null)
+        };
+
+    /// <summary>
+    /// Nhãn tiếng Việt của vai trò để hiển thị.
+    /// </summary>
+    public static string LayNhan(string? vaiTro) => vaiTro switch
+    {
+        SuperAdmin => "Siêu quản trị",
+        QuanTriVien => "Quản trị viên",
+        QuanLy => "Quản lý",
+        NguoiXem => "Người xem",
+        _ => "Chưa xác định"
+    };
+}
+
+/// <summary>
+/// Hai vùng dữ liệu tách biệt: tổ chức - cán bộ (Khoa, Bộ môn, Cán bộ) và đào tạo (Lớp, Học viên, Môn học, Phân công).
+/// </summary>
+public static class VungQuanLy
+{
+    /// <summary>
+    /// Vùng Tổ chức - Cán bộ: Khoa, Bộ môn (tổ chuyên môn), Cán bộ giảng viên, Chức vụ, Trình độ.
+    /// </summary>
+    public const string ToChuc = "ToChuc";
+
+    /// <summary>
+    /// Vùng Đào tạo: Lớp, Học viên, Môn học, Phân công giảng dạy.
+    /// </summary>
+    public const string DaoTao = "DaoTao";
+
+    /// <summary>
+    /// Kiểm tra mã vùng có hợp lệ hay không.
+    /// </summary>
+    public static bool LaHopLe(string? vung) => vung is ToChuc or DaoTao;
+
+    /// <summary>
+    /// Nhãn tiếng Việt của vùng.
+    /// </summary>
+    public static string LayNhan(string? vung) => vung switch
+    {
+        ToChuc => "Tổ chức - Cán bộ",
+        DaoTao => "Đào tạo",
+        _ => "Toàn hệ thống"
+    };
+}
+
+/// <summary>
+/// Tên các claim tùy chỉnh gắn trên phiên đăng nhập.
+/// </summary>
+public static class LoaiClaimTuyChinh
+{
+    /// <summary>
+    /// Claim vùng quản lý của tài khoản Manager.
+    /// </summary>
+    public const string VungQuanLy = "qldt:vung";
+
+    /// <summary>
+    /// Claim mã khoa phụ trách (KhoaId) của tài khoản Manager.
+    /// </summary>
+    public const string KhoaPhuTrach = "qldt:khoa";
+
+    /// <summary>
+    /// Claim họ tên hiển thị.
+    /// </summary>
+    public const string HoVaTen = "qldt:hoten";
 }

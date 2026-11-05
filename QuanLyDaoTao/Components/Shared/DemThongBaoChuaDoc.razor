@@ -1,0 +1,71 @@
+@implements IDisposable
+@inject IServiceScopeFactory NhaMayScope
+@inject IBusThayDoiDuLieu Bus
+@* Badge số thông báo chưa đọc trên menu. Dùng scope DI riêng để không tranh DbContext với trang đang mở. *@
+@if (_soChuaDoc > 0)
+{
+    <span class="badge-chua-doc" id="lblSoThongBaoChuaDoc" title="@_soChuaDoc thông báo chưa đọc">@(_soChuaDoc > SoHienThiToiDa ? $"{SoHienThiToiDa}+" : _soChuaDoc.ToString())</span>
+}
+
+@code {
+    private const int SoHienThiToiDa = 99;
+    private int _soChuaDoc;
+    private string? _tenDangNhap;
+    private bool _daHuy;
+    private readonly SemaphoreSlim _khoa = new(1, 1);
+
+    /// <summary>Trạng thái xác thực hiện tại.</summary>
+    [CascadingParameter] private Task<AuthenticationState>? TrangThaiXacThuc { get; set; }
+
+    /// <inheritdoc />
+    protected override async Task OnInitializedAsync()
+    {
+        if (TrangThaiXacThuc is not null)
+        {
+            _tenDangNhap = (await TrangThaiXacThuc).User.Identity?.Name;
+        }
+
+        await DemAsync();
+        Bus.DaThayDoi += KhiThayDoi;
+    }
+
+    private async Task DemAsync()
+    {
+        if (string.IsNullOrEmpty(_tenDangNhap) || _daHuy)
+        {
+            return;
+        }
+
+        await _khoa.WaitAsync();
+        try
+        {
+            using var scope = NhaMayScope.CreateScope();
+            _soChuaDoc = await scope.ServiceProvider.GetRequiredService<IThongBaoDichVu>().DemChuaDocAsync(_tenDangNhap);
+        }
+        finally
+        {
+            _khoa.Release();
+        }
+    }
+
+    private void KhiThayDoi(string tenBang)
+    {
+        if (tenBang is not (ThongBaoDichVu.TenBang or ThongBaoDichVu.TenBangDaDoc))
+        {
+            return;
+        }
+
+        _ = InvokeAsync(async () =>
+        {
+            await DemAsync();
+            StateHasChanged();
+        });
+    }
+
+    /// <inheritdoc />
+    public void Dispose()
+    {
+        _daHuy = true;
+        Bus.DaThayDoi -= KhiThayDoi;
+    }
+}

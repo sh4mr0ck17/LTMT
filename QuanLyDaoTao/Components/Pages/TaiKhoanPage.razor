@@ -1,0 +1,163 @@
+@page "/QuanTri/TaiKhoan"
+@attribute [Authorize(Roles = VaiTroMacDinh.NhomQuanTri)]
+@inherits TrangNghiepVuCoSo
+@inject ITaiKhoanDichVu TaiKhoanDichVu
+@inject IKhoaDichVu KhoaDichVu
+@inject INhanSuDichVu NhanSuDichVu
+
+<PageTitle>Tài khoản & phân quyền | Quản lý đào tạo C500</PageTitle>
+
+<div class="trang-nghiep-vu" id="pnlDanhSachTaiKhoan">
+    <TieuDeTrang PhanHe="Quản trị" TieuDe="Tài khoản & phân quyền" BieuTuong="bi-people-fill"
+                 MoTa="4 vai trò: Superadmin, Quản trị viên, Quản lý (theo vùng và khoa), Người xem. Đổi quyền / khóa làm phiên đang mở hết hiệu lực trong vòng 1 phút.">
+        <RadzenButton Icon="person_add" Text="Tạo tài khoản" ButtonStyle="ButtonStyle.Primary" Size="ButtonSize.Small" Click="@(() => MoBieuMauAsync(null))" id="btnThemTaiKhoan" />
+    </TieuDeTrang>
+
+    <div class="khung-danh-sach">
+        <div class="thanh-cong-cu" id="pnlBoLoc">
+            <div class="o-tim-kiem">
+                <i class="bi bi-search"></i>
+                <input class="form-control" id="txtTimKiem" placeholder="Tìm email, họ tên, mã cán bộ..." value="@_tuKhoa" @oninput="@(e => _tuKhoa = e.Value?.ToString() ?? string.Empty)" />
+            </div>
+            <RadzenDropDown TValue="string" Data="@VaiTroMacDinh.TatCa.Select(v => new LuaChon(v, VaiTroMacDinh.LayNhan(v)))" TextProperty="Ten" ValueProperty="Ma"
+                            @bind-Value="_vaiTroLoc" AllowClear="true" Placeholder="Mọi vai trò" class="bo-loc bo-loc-hep" id="cboLocVaiTro" />
+            <RadzenCheckBox @bind-Value="_chiCanXuLy" Name="chkCanXuLy" id="chkCanXuLy" />
+            <label for="chkCanXuLy" class="small mb-0">Bị khóa / chưa đăng nhập</label>
+            <RadzenButton Text="Bỏ lọc" Icon="filter_alt_off" ButtonStyle="ButtonStyle.Light" Size="ButtonSize.Small" Click="@(() => { _tuKhoa = string.Empty; _vaiTroLoc = null; _chiCanXuLy = false; })" id="btnBoLoc" />
+        </div>
+
+        <div class="the-thong-ke-nho">
+            @foreach (var vt in VaiTroMacDinh.TatCa)
+            {
+                <div><span>@VaiTroMacDinh.LayNhan(vt)</span><strong>@_tatCa.Count(t => t.VaiTro == vt)</strong></div>
+            }
+            <div><span>đang khóa</span><strong class="text-danger">@_tatCa.Count(t => !t.CoHoatDong || t.DangKhoaTam)</strong></div>
+            <div><span>chưa từng đăng nhập</span><strong class="text-warning">@_tatCa.Count(t => t.LanDangNhapCuoi is null)</strong></div>
+        </div>
+
+        <RadzenDataGrid TItem="DongTaiKhoan" Data="@DanhSachHienThi" IsLoading="@DangTai" AllowPaging="true" PageSize="20" AllowSorting="true" AllowColumnResize="true"
+                        EmptyText="Không có tài khoản phù hợp." class="bang-du-lieu" id="dgvDanhSachTaiKhoan">
+            <Columns>
+                <RadzenDataGridColumn TItem="DongTaiKhoan" Property="HoVaTen" Title="Tài khoản" Width="260px">
+                    <Template Context="t"><strong>@t.HoVaTen</strong><div class="small text-muted">@t.Email</div></Template>
+                </RadzenDataGridColumn>
+                <RadzenDataGridColumn TItem="DongTaiKhoan" Property="VaiTro" Title="Vai trò" Width="130px">
+                    <Template Context="t"><span class="chip-trang-thai @(t.VaiTro is VaiTroMacDinh.SuperAdmin or VaiTroMacDinh.QuanTriVien ? "canh-bao" : t.VaiTro == VaiTroMacDinh.QuanLy ? "tot" : "tat")">@VaiTroMacDinh.LayNhan(t.VaiTro)</span></Template>
+                </RadzenDataGridColumn>
+                <RadzenDataGridColumn TItem="DongTaiKhoan" Title="Phạm vi" Width="230px" Sortable="false">
+                    <Template Context="t">
+                        @if (t.VaiTro == VaiTroMacDinh.QuanLy)
+                        {
+                            <span class="nhan-vung">@VungQuanLy.LayNhan(t.VungQuanLy)</span>
+                            <span class="small ms-1">@(TenKhoa(t.KhoaPhuTrachId) ?? "mọi khoa")</span>
+                        }
+                        else
+                        {
+                            <span class="small text-muted">@(t.VaiTro == VaiTroMacDinh.NguoiXem ? "Chỉ xem" : "Toàn hệ thống")</span>
+                        }
+                    </Template>
+                </RadzenDataGridColumn>
+                <RadzenDataGridColumn TItem="DongTaiKhoan" Property="MaNhanSuLienKet" Title="Hồ sơ" Width="100px" />
+                <RadzenDataGridColumn TItem="DongTaiKhoan" Title="Trạng thái" Width="150px" SortProperty="CoHoatDong">
+                    <Template Context="t">
+                        @if (!t.CoHoatDong)
+                        {
+                            <span class="chip-trang-thai tat"><i class="bi bi-lock me-1"></i>Đã khóa</span>
+                        }
+                        else if (t.DangKhoaTam)
+                        {
+                            <span class="chip-trang-thai canh-bao" title="Đăng nhập sai @t.SoLanSai lần"><i class="bi bi-hourglass-split me-1"></i>Khóa tạm</span>
+                        }
+                        else
+                        {
+                            <span class="chip-trang-thai tot">Hoạt động</span>
+                        }
+                    </Template>
+                </RadzenDataGridColumn>
+                <RadzenDataGridColumn TItem="DongTaiKhoan" Property="LanDangNhapCuoi" Title="Đăng nhập cuối" Width="140px">
+                    <Template Context="t">@(t.LanDangNhapCuoi?.ToLocalTime().ToString("dd/MM/yyyy HH:mm") ?? "Chưa đăng nhập")</Template>
+                </RadzenDataGridColumn>
+                <RadzenDataGridColumn TItem="DongTaiKhoan" Title="Thao tác" Width="150px" Sortable="false" TextAlign="TextAlign.Center" Frozen="true" FrozenPosition="FrozenColumnPosition.Right">
+                    <Template Context="t">
+                        @if (t.VaiTro != VaiTroMacDinh.SuperAdmin || NguoiDung.LaSuperAdmin)
+                        {
+                            <div class="o-thao-tac">
+                                <RadzenButton Icon="edit" ButtonStyle="ButtonStyle.Light" Size="ButtonSize.ExtraSmall" Click="@(() => MoBieuMauAsync(t))" title="Sửa / đổi quyền / đặt lại mật khẩu" id="@($"btnSua_{t.Id}")" />
+                                @if (t.DangKhoaTam)
+                                {
+                                    <RadzenButton Icon="lock_open" ButtonStyle="ButtonStyle.Warning" Variant="Variant.Text" Size="ButtonSize.ExtraSmall" Click="@(() => ThucHienAsync(() => TaiKhoanDichVu.MoKhoaTamAsync(t.Id), $"Đã mở khóa tạm {t.Email}."))" title="Mở khóa tạm" />
+                                }
+                                <RadzenButton Icon="@(t.CoHoatDong ? "lock" : "lock_open")" ButtonStyle="ButtonStyle.Light" Size="ButtonSize.ExtraSmall" Click="@(() => DoiTrangThaiAsync(t))" title="@(t.CoHoatDong ? "Khóa tài khoản" : "Mở tài khoản")" id="@($"btnKhoa_{t.Id}")" />
+                                <RadzenButton Icon="delete" ButtonStyle="ButtonStyle.Danger" Variant="Variant.Text" Size="ButtonSize.ExtraSmall" Click="@(() => XoaAsync(t))" title="Xóa" id="@($"btnXoa_{t.Id}")" />
+                            </div>
+                        }
+                    </Template>
+                </RadzenDataGridColumn>
+            </Columns>
+        </RadzenDataGrid>
+    </div>
+</div>
+
+@code {
+    private List<DongTaiKhoan> _tatCa = [];
+    private List<Khoa> _danhSachKhoa = [];
+    private List<LuaChon> _danhSachCanBo = [];
+    private string _tuKhoa = string.Empty;
+    private string? _vaiTroLoc;
+    private bool _chiCanXuLy;
+
+    /// <inheritdoc />
+    protected override IReadOnlyCollection<string> BangTheoDoi { get; } = ["TaiKhoan"];
+
+    private IEnumerable<DongTaiKhoan> DanhSachHienThi => _tatCa.Where(t =>
+        (_vaiTroLoc is null || t.VaiTro == _vaiTroLoc) &&
+        (!_chiCanXuLy || !t.CoHoatDong || t.DangKhoaTam || t.LanDangNhapCuoi is null) &&
+        (QuyTacNghiepVu.ChuaTuKhoa(t.Email, _tuKhoa) || QuyTacNghiepVu.ChuaTuKhoa(t.HoVaTen, _tuKhoa) || QuyTacNghiepVu.ChuaTuKhoa(t.MaNhanSuLienKet, _tuKhoa)));
+
+    /// <inheritdoc />
+    protected override async Task TaiDuLieuAsync()
+    {
+        _danhSachKhoa = await KhoaDichVu.LayDanhSachAsync();
+        _danhSachCanBo = (await NhanSuDichVu.LayDanhSachAsync()).Select(n => new LuaChon(n.MaNhanSu, $"{n.HoVaTen} ({n.MaNhanSu})")).ToList();
+        _tatCa = await TaiKhoanDichVu.LayDanhSachAsync();
+    }
+
+    private string? TenKhoa(int? khoaId) => _danhSachKhoa.FirstOrDefault(k => k.KhoaId == khoaId)?.TenKhoa;
+
+    private async Task MoBieuMauAsync(DongTaiKhoan? goc)
+    {
+        var ketQua = await HopThoai.OpenAsync<BieuMauTaiKhoan>(goc is null ? "Tạo tài khoản" : $"Tài khoản {goc.Email}",
+            new Dictionary<string, object?>
+            {
+                [nameof(BieuMauTaiKhoan.TaiKhoanGoc)] = goc,
+                [nameof(BieuMauTaiKhoan.DanhSachKhoa)] = _danhSachKhoa,
+                [nameof(BieuMauTaiKhoan.DanhSachCanBo)] = _danhSachCanBo,
+                [nameof(BieuMauTaiKhoan.LaSuperAdmin)] = NguoiDung.LaSuperAdmin
+            },
+            new DialogOptions { Width = "720px", CloseDialogOnOverlayClick = false });
+        if (ketQua is KetQuaBieuMau daLuu)
+        {
+            BaoThanhCong(daLuu.ThongDiep);
+            await NapLaiAsync();
+        }
+    }
+
+    private async Task DoiTrangThaiAsync(DongTaiKhoan t)
+    {
+        if (t.CoHoatDong && await HopThoai.Confirm($"Khóa tài khoản {t.Email}? Phiên đang mở sẽ hết hiệu lực.", "Khóa tài khoản",
+                new ConfirmOptions { OkButtonText = "Khóa", CancelButtonText = "Hủy" }) != true)
+        {
+            return;
+        }
+
+        await ThucHienAsync(() => TaiKhoanDichVu.DoiTrangThaiAsync(t.Id), t.CoHoatDong ? $"Đã khóa {t.Email}." : $"Đã mở {t.Email}.");
+    }
+
+    private async Task XoaAsync(DongTaiKhoan t)
+    {
+        if (await XacNhanXoaAsync($"tài khoản {t.Email}"))
+        {
+            await ThucHienAsync(() => TaiKhoanDichVu.XoaAsync(t.Id), $"Đã xóa {t.Email}.");
+        }
+    }
+}

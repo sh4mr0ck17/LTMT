@@ -1,0 +1,26 @@
+@inject DialogService HopThoai
+@* Hộp thoại chỉ đọc hiển thị chi tiết hồ sơ dạng cặp nhãn - giá trị (dữ liệu đã được che theo quyền tại dịch vụ). *@
+<div class="chi-tiet-ho-so" id="pnlChiTietHoSo">
+    @foreach (var (nhan, giaTri) in CacTruong)
+    {
+        <div class="chi-tiet-dong">
+            <span class="chi-tiet-nhan">@nhan</span>
+            <span class="chi-tiet-gia-tri">@(string.IsNullOrWhiteSpace(giaTri) ? "—" : giaTri)</span>
+        </div>
+    }
+</div>
+@if (!string.IsNullOrEmpty(GhiChuQuyen))
+{
+    <p class="small text-muted mt-3 mb-0"><i class="bi bi-shield-lock me-1"></i>@GhiChuQuyen</p>
+}
+<div class="d-flex justify-content-end mt-3">
+    <RadzenButton Text="Đóng" ButtonStyle="ButtonStyle.Light" Click="@(() => HopThoai.Close())" id="btnDongChiTiet" />
+</div>
+
+@code {
+    /// <summary>Các trường hiển thị theo thứ tự.</summary>
+    [Parameter] public IReadOnlyList<(string Nhan, string? GiaTri)> CacTruong { get; set; } = [];
+
+    /// <summary>Ghi chú về việc che thông tin cá nhân.</summary>
+    [Parameter] public string? GhiChuQuyen { get; set; }
+}

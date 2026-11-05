@@ -1,0 +1,39 @@
+@* Tiêu đề gọn một dòng cho mọi trang nghiệp vụ: tên trang, chip vùng, mô tả dạng tooltip, nút thao tác bên phải. *@
+<div class="tieu-de-trang" id="pnlTieuDeTrang">
+    <h1 id="lblTieuDe">
+        @if (!string.IsNullOrEmpty(BieuTuong))
+        {
+            <i class="bi @BieuTuong" aria-hidden="true"></i>
+        }
+        <span>@TieuDe</span>
+    </h1>
+    @if (!string.IsNullOrEmpty(PhanHe))
+    {
+        <span class="nhan-vung">@PhanHe</span>
+    }
+    @if (!string.IsNullOrEmpty(MoTa))
+    {
+        <i class="bi bi-info-circle goi-y-trang" title="@MoTa" aria-label="@MoTa" tabindex="0"></i>
+    }
+    @if (ChildContent is not null)
+    {
+        <div class="tieu-de-trang-thao-tac" id="pnlThaoTac">@ChildContent</div>
+    }
+</div>
+
+@code {
+    /// <summary>Tên vùng (ví dụ: "Đào tạo").</summary>
+    [Parameter] public string PhanHe { get; set; } = string.Empty;
+
+    /// <summary>Tên trang.</summary>
+    [Parameter, EditorRequired] public string TieuDe { get; set; } = string.Empty;
+
+    /// <summary>Mô tả ngắn, hiển thị khi rê chuột vào biểu tượng thông tin.</summary>
+    [Parameter] public string? MoTa { get; set; }
+
+    /// <summary>Lớp biểu tượng Bootstrap Icons.</summary>
+    [Parameter] public string? BieuTuong { get; set; }
+
+    /// <summary>Các nút thao tác bên phải.</summary>
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+}

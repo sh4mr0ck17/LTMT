@@ -1,4 +1,4 @@
-using ClosedXML.Excel;
+﻿using ClosedXML.Excel;
 using Microsoft.EntityFrameworkCore;
 using QuanLyDaoTao.Data;
 using QuanLyDaoTao.Models;
@@ -17,6 +17,18 @@ public class ExcelDichVu : IExcelDichVu
 {
     private readonly QuanLyDaoTaoDbContext _coSoDuLieu;
     private readonly INhatKyDichVu _nhatKyDichVu;
+    private readonly IPhanQuyenDichVu? _phanQuyen;
+    private readonly IBusThayDoiDuLieu? _bus;
+
+    /// <summary>
+    /// Vùng quản lý tương ứng của từng module nhập/xuất Excel.
+    /// </summary>
+    public static string? LayVungCuaModule(string? tenModule) => (tenModule ?? string.Empty).ToLowerInvariant() switch
+    {
+        "khoa" or "bomon" or "nhansu" => VungQuanLy.ToChuc,
+        "lophoc" or "hocvien" or "monhoc" or "phancong" or "phanconggiangday" => VungQuanLy.DaoTao,
+        _ => null
+    };
 
     /// <summary>
     /// Giới hạn kích thước tệp Excel tối đa cho phép tải lên (5 MiB).
@@ -38,13 +50,33 @@ public class ExcelDichVu : IExcelDichVu
     /// </summary>
     /// <param name="coSoDuLieu">Ngữ cảnh cơ sở dữ liệu.</param>
     /// <param name="nhatKyDichVu">Dịch vụ nhật ký kiểm toán.</param>
-    public ExcelDichVu(QuanLyDaoTaoDbContext coSoDuLieu, INhatKyDichVu nhatKyDichVu)
+    /// <param name="phanQuyen">Dịch vụ phân quyền (tùy chọn; vắng mặt khi kiểm thử đơn vị).</param>
+    /// <param name="bus">Kênh thông báo thay đổi dữ liệu (tùy chọn).</param>
+    // Dịch vụ nghiệp vụ: khi có, mỗi dòng Excel được ghi qua CÙNG quy tắc với biểu mẫu (sĩ số, chỉ tiêu chức vụ,
+    // trùng CCCD/SĐT, niên khóa, chỉ tiêu lãnh đạo…). Chỉ để trống trong kiểm thử đơn vị cũ.
+    private readonly IHocVienDichVu? _hocVienDichVu;
+    private readonly INhanSuDichVu? _nhanSuDichVu;
+    private readonly ILopHocDichVu? _lopHocDichVu;
+
+    public ExcelDichVu(
+        QuanLyDaoTaoDbContext coSoDuLieu,
+        INhatKyDichVu nhatKyDichVu,
+        IPhanQuyenDichVu? phanQuyen = null,
+        IBusThayDoiDuLieu? bus = null,
+        IHocVienDichVu? hocVienDichVu = null,
+        INhanSuDichVu? nhanSuDichVu = null,
+        ILopHocDichVu? lopHocDichVu = null)
     {
+        _hocVienDichVu = hocVienDichVu;
+        _nhanSuDichVu = nhanSuDichVu;
+        _lopHocDichVu = lopHocDichVu;
         ArgumentNullException.ThrowIfNull(coSoDuLieu);
         ArgumentNullException.ThrowIfNull(nhatKyDichVu);
 
         _coSoDuLieu = coSoDuLieu;
         _nhatKyDichVu = nhatKyDichVu;
+        _phanQuyen = phanQuyen;
+        _bus = bus;
     }
 
     /// <summary>
@@ -440,7 +472,7 @@ public class ExcelDichVu : IExcelDichVu
             var tapMaLopTrongDb = await _coSoDuLieu.LopHocs.AsNoTracking().Select(l => l.MaLop).ToListAsync(cancellationToken);
             var tapMaHocVienTrongDb = await _coSoDuLieu.HocViens.AsNoTracking().Select(hv => hv.MaHocVien).ToListAsync(cancellationToken);
             var tapMaNhanSuTrongDb = await _coSoDuLieu.NhanSus.AsNoTracking().Select(ns => ns.MaNhanSu).ToListAsync(cancellationToken);
-            var tapEmailNhanSuTrongDb = await _coSoDuLieu.NhanSus.AsNoTracking().Select(ns => ns.EmailCongViec).ToListAsync(cancellationToken);
+            var tapEmailNhanSuTrongDb = await _coSoDuLieu.NhanSus.AsNoTracking().Select(ns => ns.Email).ToListAsync(cancellationToken);
             var tapMaChucVuTrongDb = await _coSoDuLieu.ChucVus.AsNoTracking().Select(cv => cv.MaChucVu).ToListAsync(cancellationToken);
             var tapMaTrinhDoTrongDb = await _coSoDuLieu.TrinhDoChuyenMons.AsNoTracking().Select(td => td.MaTrinhDo).ToListAsync(cancellationToken);
             var tapMaMonHocTrongDb = await _coSoDuLieu.MonHocs.AsNoTracking().Select(mh => mh.MaMonHoc).ToListAsync(cancellationToken);
@@ -504,19 +536,11 @@ public class ExcelDichVu : IExcelDichVu
                     {
                         if (colDef.LaBatBuoc)
                         {
-                            if (choPhepThieuTruong)
+                            if (choPhepThieuTruong && DuocTuBuDap(colDef.TenCot))
                             {
                                 // Tự động bù đắp thông minh khi thiếu trường trong 1 hàng để tiếp tục nhập
                                 string giaTriBuDap;
-                                if (string.Equals(colDef.TenCot, "Giới tính", StringComparison.OrdinalIgnoreCase))
-                                {
-                                    giaTriBuDap = SuyLuanGioiTinh(dongPreview.DuLieuCot.TryGetValue("Họ và tên", out var hvt) ? hvt : "");
-                                }
-                                else if (string.Equals(colDef.TenCot, "Ngày sinh", StringComparison.OrdinalIgnoreCase))
-                                {
-                                    giaTriBuDap = "01/01/2007";
-                                }
-                                else if (string.Equals(colDef.TenCot, "Mã học viên", StringComparison.OrdinalIgnoreCase))
+                                if (string.Equals(colDef.TenCot, "Mã học viên", StringComparison.OrdinalIgnoreCase))
                                 {
                                     giaTriBuDap = $"HV_{DateTime.Now:yyyyMMdd}_{row:D4}";
                                     while (tapMaChinhTrongFile.Contains(giaTriBuDap) || tapMaHocVienTrongDb.Contains(giaTriBuDap))
@@ -532,41 +556,13 @@ public class ExcelDichVu : IExcelDichVu
                                         giaTriBuDap = $"CB_AUTOGEN_{Guid.NewGuid().ToString("N")[..4].ToUpper()}";
                                     }
                                 }
-                                else if (string.Equals(colDef.TenCot, "Mã lớp", StringComparison.OrdinalIgnoreCase))
-                                {
-                                    giaTriBuDap = tapMaLopTrongDb.FirstOrDefault() ?? "B1D57";
-                                }
-                                else if (string.Equals(colDef.TenCot, "Mã khoa", StringComparison.OrdinalIgnoreCase))
-                                {
-                                    giaTriBuDap = tapMaKhoaTrongDb.FirstOrDefault() ?? "KHOA_CNTT";
-                                }
-                                else if (string.Equals(colDef.TenCot, "Mã bộ môn", StringComparison.OrdinalIgnoreCase))
-                                {
-                                    giaTriBuDap = tapMaBoMonTrongDb.FirstOrDefault() ?? "BM_CNTT";
-                                }
-                                else if (string.Equals(colDef.TenCot, "Mã môn học", StringComparison.OrdinalIgnoreCase))
-                                {
-                                    giaTriBuDap = tapMaMonHocTrongDb.FirstOrDefault() ?? "CSHARP_NET";
-                                }
                                 else if (string.Equals(colDef.TenCot, "Mã phân công", StringComparison.OrdinalIgnoreCase))
                                 {
                                     giaTriBuDap = $"PC_{DateTime.Now:yyyyMMdd}_{row:D4}";
                                 }
-                                else if (string.Equals(colDef.TenCot, "Trạng thái", StringComparison.OrdinalIgnoreCase))
-                                {
-                                    giaTriBuDap = "Hoạt động";
-                                }
-                                else if (string.Equals(colDef.TenCot, "Họ và tên", StringComparison.OrdinalIgnoreCase) ||
-                                         string.Equals(colDef.TenCot, "Tên khoa", StringComparison.OrdinalIgnoreCase) ||
-                                         string.Equals(colDef.TenCot, "Tên lớp", StringComparison.OrdinalIgnoreCase) ||
-                                         string.Equals(colDef.TenCot, "Tên bộ môn", StringComparison.OrdinalIgnoreCase) ||
-                                         string.Equals(colDef.TenCot, "Tên môn học", StringComparison.OrdinalIgnoreCase))
-                                {
-                                    giaTriBuDap = $"{colDef.TenCot} tự điền (Dòng {row})";
-                                }
                                 else
                                 {
-                                    giaTriBuDap = !string.IsNullOrWhiteSpace(colDef.ViDu) ? colDef.ViDu : "(Chưa xác định)";
+                                    giaTriBuDap = "Hoạt động";
                                 }
 
                                 giaTriO = giaTriBuDap;
@@ -991,6 +987,22 @@ public class ExcelDichVu : IExcelDichVu
             return ketQua;
         }
 
+        // Kiểm tra quyền tại dịch vụ: nhập Khoa cần quản trị viên; module khác cần quyền ghi toàn vùng
+        // (Manager bị giới hạn một khoa không nhập hàng loạt vì không kiểm soát được khoa của từng dòng).
+        if (_phanQuyen is not null)
+        {
+            if (string.Equals(tenModule, "khoa", StringComparison.OrdinalIgnoreCase))
+            {
+                await _phanQuyen.DamBaoQuanTriAsync();
+            }
+            else
+            {
+                var vung = LayVungCuaModule(tenModule)
+                    ?? throw new InvalidOperationException($"Module '{tenModule}' không được hỗ trợ nhập dữ liệu.");
+                await _phanQuyen.DamBaoQuyenGhiAsync(vung, null);
+            }
+        }
+
         // Bắt đầu Transaction nếu cơ sở dữ liệu hỗ trợ giao dịch quan hệ
         var coHoTroGiaoDich = _coSoDuLieu.Database.IsRelational();
         using var giaoDich = coHoTroGiaoDich ? await _coSoDuLieu.Database.BeginTransactionAsync(cancellationToken) : null;
@@ -1048,6 +1060,7 @@ public class ExcelDichVu : IExcelDichVu
                 "Thành công",
                 null,
                 cancellationToken);
+            _bus?.PhatThayDoi(ChuanHoaTenBangModule(tenModule));
         }
         catch (Exception ex)
         {
@@ -1136,6 +1149,7 @@ public class ExcelDichVu : IExcelDichVu
     {
         var bangChuan = ChuanHoaTenBangModule(tenModule);
         var schema = DinhNghiaSchemaExcel.LaySchema(tenModule);
+        var soCotChuan = schema.Count;
         var truongTuyChinhs = await LayDanhSachTruongTuyChinhAsync(tenModule, cancellationToken);
         foreach (var c in truongTuyChinhs)
         {
@@ -1144,6 +1158,9 @@ public class ExcelDichVu : IExcelDichVu
                 schema.Add(ChuyenDoiSangDinhNghiaCot(c));
             }
         }
+
+        // Người xuất không quản lý vùng tương ứng sẽ nhận tệp đã che thông tin cá nhân.
+        var nguoiXuat = _phanQuyen is null ? null : await _phanQuyen.LayNguoiDungAsync();
 
         using var workbook = new XLWorkbook();
         var worksheet = workbook.Worksheets.Add($"DanhSach_{tenModule}");
@@ -1178,6 +1195,18 @@ public class ExcelDichVu : IExcelDichVu
                 var giaTri = mapGiaTriCustom.TryGetValue(key, out var val) ? val : "";
                 GhiOAnToan(worksheet.Cell(row, startCol + i), giaTri);
             }
+        }
+
+        // Ghi theo tên cột của lược đồ để không lệch cột khi lược đồ thay đổi.
+        void GhiTheoTenCot(int row, string khoaBanGhi, IReadOnlyDictionary<string, string?> giaTriTheoCot)
+        {
+            for (int col = 0; col < soCotChuan; col++)
+            {
+                var giaTri = giaTriTheoCot.TryGetValue(schema[col].TenCot, out var val) ? val : null;
+                GhiOAnToan(worksheet.Cell(row, col + 1), giaTri ?? "");
+            }
+
+            GhiCacCotTuyChinh(row, khoaBanGhi, soCotChuan + 1);
         }
 
         // Lấy dữ liệu và ghi từng dòng
@@ -1218,13 +1247,18 @@ public class ExcelDichVu : IExcelDichVu
                 var danhSachLop = await _coSoDuLieu.LopHocs.Include(l => l.Khoa).AsNoTracking().OrderBy(l => l.MaLop).ToListAsync(cancellationToken);
                 foreach (var l in danhSachLop)
                 {
-                    GhiOAnToan(worksheet.Cell(rowIdx, 1), l.MaLop);
-                    GhiOAnToan(worksheet.Cell(rowIdx, 2), l.TenLop);
-                    GhiOAnToan(worksheet.Cell(rowIdx, 3), l.NienKhoa);
-                    GhiOAnToan(worksheet.Cell(rowIdx, 4), l.Khoa?.MaKhoa ?? "");
-                    GhiOAnToan(worksheet.Cell(rowIdx, 5), l.SoLuongToiDa.ToString());
-                    GhiOAnToan(worksheet.Cell(rowIdx, 6), l.CoHoatDong ? "Hoạt động" : "Đã khóa");
-                    GhiCacCotTuyChinh(rowIdx, l.LopHocId.ToString(), 7);
+                    GhiTheoTenCot(rowIdx, l.LopHocId.ToString(), new Dictionary<string, string?>
+                    {
+                        ["Mã lớp"] = l.MaLop,
+                        ["Tên lớp"] = l.TenLop,
+                        ["Niên khóa"] = l.NienKhoa,
+                        ["Mã khoa"] = l.Khoa?.MaKhoa,
+                        ["Hệ đào tạo"] = l.HeDaoTao,
+                        ["Khóa"] = l.KhoaHoc,
+                        ["Chuyên ngành"] = l.ChuyenNganh,
+                        ["Số lượng tối đa"] = l.SoLuongToiDa.ToString(CultureInfo.InvariantCulture),
+                        ["Trạng thái"] = l.CoHoatDong ? "Hoạt động" : "Đã khóa"
+                    });
                     rowIdx++;
                 }
                 break;
@@ -1233,16 +1267,25 @@ public class ExcelDichVu : IExcelDichVu
                 var danhSachHocVien = await _coSoDuLieu.HocViens.Include(h => h.LopHoc).AsNoTracking().OrderBy(h => h.MaHocVien).ToListAsync(cancellationToken);
                 foreach (var hv in danhSachHocVien)
                 {
-                    GhiOAnToan(worksheet.Cell(rowIdx, 1), hv.MaHocVien);
-                    GhiOAnToan(worksheet.Cell(rowIdx, 2), hv.HoVaTen);
-                    GhiOAnToan(worksheet.Cell(rowIdx, 3), hv.NgaySinh.ToString("dd/MM/yyyy"));
-                    GhiOAnToan(worksheet.Cell(rowIdx, 4), hv.GioiTinh);
-                    GhiOAnToan(worksheet.Cell(rowIdx, 5), hv.Email ?? "");
-                    GhiOAnToan(worksheet.Cell(rowIdx, 6), hv.SoDienThoai ?? "");
-                    GhiOAnToan(worksheet.Cell(rowIdx, 7), hv.DiaChi ?? "");
-                    GhiOAnToan(worksheet.Cell(rowIdx, 8), hv.LopHoc?.MaLop ?? "");
-                    GhiOAnToan(worksheet.Cell(rowIdx, 9), hv.CoHoatDong ? "Hoạt động" : "Đã khóa");
-                    GhiCacCotTuyChinh(rowIdx, hv.HocVienId.ToString(), 10);
+                    if (!(nguoiXuat?.CoTheXemThongTinCaNhan(VungQuanLy.DaoTao, hv.LopHoc?.KhoaId) ?? true))
+                    {
+                        HocVienDichVu.CheThongTinCaNhan(hv);
+                    }
+
+                    GhiTheoTenCot(rowIdx, hv.HocVienId.ToString(), new Dictionary<string, string?>
+                    {
+                        ["Mã học viên"] = hv.MaHocVien,
+                        ["Họ và tên"] = hv.HoVaTen,
+                        ["Ngày sinh"] = hv.NgaySinh.ToString("dd/MM/yyyy", CultureInfo.InvariantCulture),
+                        ["Giới tính"] = hv.GioiTinh,
+                        ["Email"] = hv.Email,
+                        ["Số điện thoại"] = hv.SoDienThoai,
+                        ["Số CCCD"] = hv.SoCCCD,
+                        ["Địa chỉ"] = hv.DiaChi,
+                        ["Mã lớp"] = hv.LopHoc?.MaLop,
+                        ["Chức vụ"] = hv.ChucVuLop,
+                        ["Trạng thái"] = hv.CoHoatDong ? "Hoạt động" : "Đã khóa"
+                    });
                     rowIdx++;
                 }
                 break;
@@ -1258,22 +1301,32 @@ public class ExcelDichVu : IExcelDichVu
                     .ToListAsync(cancellationToken);
                 foreach (var ns in danhSachNhanSu)
                 {
-                    GhiOAnToan(worksheet.Cell(rowIdx, 1), ns.MaNhanSu);
-                    GhiOAnToan(worksheet.Cell(rowIdx, 2), ns.HoVaTen);
-                    GhiOAnToan(worksheet.Cell(rowIdx, 3), ns.NgaySinh.ToString("dd/MM/yyyy"));
-                    GhiOAnToan(worksheet.Cell(rowIdx, 4), ns.GioiTinh);
-                    GhiOAnToan(worksheet.Cell(rowIdx, 5), ns.SoCCCD ?? "");
-                    GhiOAnToan(worksheet.Cell(rowIdx, 6), ns.SoDienThoai ?? "");
-                    GhiOAnToan(worksheet.Cell(rowIdx, 7), ns.Email);
-                    GhiOAnToan(worksheet.Cell(rowIdx, 8), ns.DiaChi ?? "");
-                    GhiOAnToan(worksheet.Cell(rowIdx, 9), ns.Khoa?.MaKhoa ?? "");
-                    GhiOAnToan(worksheet.Cell(rowIdx, 10), ns.BoMon?.MaBoMon ?? "");
-                    GhiOAnToan(worksheet.Cell(rowIdx, 11), ns.ChucVu?.MaChucVu ?? "");
-                    GhiOAnToan(worksheet.Cell(rowIdx, 12), ns.TrinhDoChuyenMon?.MaTrinhDo ?? "");
-                    GhiOAnToan(worksheet.Cell(rowIdx, 13), ns.ChuyenMonDaoTao ?? "");
-                    GhiOAnToan(worksheet.Cell(rowIdx, 14), ns.TrangThai);
-                    GhiOAnToan(worksheet.Cell(rowIdx, 15), ns.GhiChu ?? "");
-                    GhiCacCotTuyChinh(rowIdx, ns.NhanSuId.ToString(), 16);
+                    if (!(nguoiXuat?.CoTheXemThongTinCaNhan(VungQuanLy.ToChuc, ns.KhoaId) ?? true))
+                    {
+                        NhanSuDichVu.CheThongTinCaNhan(ns);
+                    }
+
+                    GhiTheoTenCot(rowIdx, ns.NhanSuId.ToString(), new Dictionary<string, string?>
+                    {
+                        ["Mã nhân sự"] = ns.MaNhanSu,
+                        ["Họ và tên"] = ns.HoVaTen,
+                        ["Ngày sinh"] = ns.NgaySinh.ToString("dd/MM/yyyy", CultureInfo.InvariantCulture),
+                        ["Giới tính"] = ns.GioiTinh,
+                        ["Số CCCD"] = ns.SoCCCD,
+                        ["Số điện thoại"] = ns.SoDienThoai,
+                        ["Email"] = ns.Email,
+                        ["Địa chỉ"] = ns.DiaChi,
+                        ["Mã khoa"] = ns.Khoa?.MaKhoa,
+                        ["Mã bộ môn"] = ns.BoMon?.MaBoMon,
+                        ["Mã chức vụ"] = ns.ChucVu?.MaChucVu,
+                        ["Mã trình độ"] = ns.TrinhDoChuyenMon?.MaTrinhDo,
+                        ["Chuyên môn đào tạo"] = ns.ChuyenMonDaoTao,
+                        ["Cấp bậc hàm"] = ns.CapBacHam,
+                        ["Học hàm"] = ns.HocHam,
+                        ["Quê quán"] = ns.QueQuan,
+                        ["Trạng thái"] = ns.TrangThai,
+                        ["Ghi chú"] = ns.GhiChu
+                    });
                     rowIdx++;
                 }
                 break;
@@ -1508,6 +1561,41 @@ public class ExcelDichVu : IExcelDichVu
         return femaleLastWords.Contains(lastWord) ? "Nữ" : "Nam";
     }
 
+    /// <summary>Chỉ mã hệ thống và trạng thái mặc định mới được tự bù khi để trống; dữ liệu định danh và tham chiếu thì không.</summary>
+    /// <summary>Ghi một dòng qua dịch vụ nghiệp vụ; lỗi quy tắc được gắn số dòng để người dùng sửa đúng chỗ trong tệp.</summary>
+    private static async Task GhiTungDongAsync<T>(int soDong, Func<Task<T>> ghi)
+    {
+        try
+        {
+            await ghi();
+        }
+        catch (Exception ex) when (ex is InvalidOperationException or UnauthorizedAccessException)
+        {
+            throw new InvalidOperationException($"Dòng {soDong}: {ex.Message}", ex);
+        }
+    }
+
+    /// <summary>Đưa trạng thái học viên trong tệp về danh sách chuẩn ("Hoạt động" = Đang học, "Đã khóa" = Thôi học).</summary>
+    private static string ChuanHoaTrangThaiHocVien(string giaTri)
+    {
+        var tt = (giaTri ?? string.Empty).Trim();
+        if (QuyTacNghiepVu.DanhSachTrangThaiHocVien.Contains(tt)) { return tt; }
+        return tt.Equals("Đã khóa", StringComparison.OrdinalIgnoreCase) ? "Thôi học" : "Đang học";
+    }
+
+    private static bool DuocTuBuDap(string tenCot) =>
+        tenCot is "Mã học viên" or "Mã nhân sự" or "Mã phân công" or "Trạng thái";
+
+    /// <summary>Tham chiếu bắt buộc của từng phân hệ: thiếu hoặc sai là lỗi, không được đoán.</summary>
+    private static bool LaThamChieuBatBuoc(string tenModule, string tenCot) => (tenModule.ToLowerInvariant(), tenCot) switch
+    {
+        ("bomon", "Mã khoa") => true,
+        ("lophoc", "Mã khoa") => true,
+        ("hocvien", "Mã lớp") => true,
+        ("phanconggiangday" or "phancong", "Mã lớp" or "Mã nhân sự" or "Mã môn học") => true,
+        _ => false
+    };
+
     private static void KiemTraKhoaNgoaiTonTai(
         string tenModule,
         string tenCot,
@@ -1566,28 +1654,19 @@ public class ExcelDichVu : IExcelDichVu
 
         if (!tonTai)
         {
-            if (choPhepThieuTruong)
+            if (choPhepThieuTruong && !LaThamChieuBatBuoc(tenModule, tenCot))
             {
-                string maThayThe = "";
-                if (string.Equals(tenCot, "Mã khoa", StringComparison.OrdinalIgnoreCase)) maThayThe = dsKhoa.FirstOrDefault() ?? "KHOA_CNTT";
-                else if (string.Equals(tenCot, "Mã bộ môn", StringComparison.OrdinalIgnoreCase)) maThayThe = dsBoMon.FirstOrDefault() ?? "BM_CNTT";
-                else if (string.Equals(tenCot, "Mã lớp", StringComparison.OrdinalIgnoreCase)) maThayThe = dsLop.FirstOrDefault() ?? "B1D57";
-                else if (string.Equals(tenCot, "Mã nhân sự", StringComparison.OrdinalIgnoreCase)) maThayThe = dsNhanSu.FirstOrDefault() ?? "CB_C500_01";
-                else if (string.Equals(tenCot, "Mã chức vụ", StringComparison.OrdinalIgnoreCase)) maThayThe = dsChucVu.FirstOrDefault() ?? "CV_GV";
-                else if (string.Equals(tenCot, "Mã trình độ", StringComparison.OrdinalIgnoreCase)) maThayThe = dsTrinhDo.FirstOrDefault() ?? "TD_TS";
-                else if (string.Equals(tenCot, "Mã môn học", StringComparison.OrdinalIgnoreCase)) maThayThe = dsMonHoc.FirstOrDefault() ?? "CSHARP_NET";
-
-                dongPreview.DuLieuCot[tenCot] = maThayThe;
-                dongPreview.GhiNhanCanhBaoCot(tenCot, $"{doiTuong} '{giaTri}' chưa có, tự động gán '{maThayThe}' để tiếp tục nhập");
+                dongPreview.DuLieuCot[tenCot] = string.Empty;
+                dongPreview.GhiNhanCanhBaoCot(tenCot, $"{doiTuong} '{giaTri}' chưa có trong hệ thống, trường này sẽ để trống");
                 ketQua.DanhSachLoi.Add(new LoiChiTietExcel
                 {
                     SoDong = row,
                     TenTruong = tenCot,
                     DiaChiO = diaChiO,
                     GiaTriDauVao = giaTri,
-                    MaLoi = "WARN_FOREIGN_KEY_FALLBACK",
-                    MoTaLoi = $"Giá trị khóa ngoại '{giaTri}' chưa tồn tại trong hệ thống, đã tự động liên kết tới '{maThayThe}' để tiếp tục nhập.",
-                    HuongXuLy = "Hệ thống tự động liên kết tới bản ghi khả dụng.",
+                    MaLoi = "WARN_FOREIGN_KEY_EMPTY",
+                    MoTaLoi = $"{doiTuong} '{giaTri}' chưa tồn tại; trường tùy chọn này sẽ để trống (không tự gán sang bản ghi khác).",
+                    HuongXuLy = $"Bổ sung {doiTuong} vào danh mục rồi cập nhật lại nếu cần.",
                     MucDoLoi = "Cảnh báo"
                 });
             }
@@ -1662,9 +1741,10 @@ public class ExcelDichVu : IExcelDichVu
         {
             var d = dong.DuLieuCot;
             var maKhoa = LayGiaTri(d, "Mã khoa", "");
-            int khoaId = (!string.IsNullOrEmpty(maKhoa) && mapKhoa.TryGetValue(maKhoa, out int foundKid))
-                ? foundKid
-                : (mapKhoa.Values.FirstOrDefault() > 0 ? mapKhoa.Values.FirstOrDefault() : 1);
+            if (string.IsNullOrEmpty(maKhoa) || !mapKhoa.TryGetValue(maKhoa, out int khoaId))
+            {
+                throw new InvalidOperationException($"Dòng {dong.SoDong}: không tìm thấy khoa '{maKhoa}'.");
+            }
             var boMon = new BoMon
             {
                 MaBoMon = LayGiaTri(d, "Mã bộ môn", ""),
@@ -1683,44 +1763,58 @@ public class ExcelDichVu : IExcelDichVu
     {
         var mapKhoa = await _coSoDuLieu.Khoas.ToDictionaryAsync(k => k.MaKhoa, k => k.KhoaId, StringComparer.OrdinalIgnoreCase, ct);
         var entities = new List<LopHoc>();
+        var soDongCua = new Dictionary<LopHoc, int>(ReferenceEqualityComparer.Instance);
         foreach (var dong in danhSach)
         {
             var d = dong.DuLieuCot;
             var maKhoa = LayGiaTri(d, "Mã khoa", "");
             int.TryParse(LayGiaTri(d, "Số lượng tối đa", "50"), out int soLuong);
-            int khoaId = (!string.IsNullOrEmpty(maKhoa) && mapKhoa.TryGetValue(maKhoa, out int foundKid))
-                ? foundKid
-                : (mapKhoa.Values.FirstOrDefault() > 0 ? mapKhoa.Values.FirstOrDefault() : 1);
+            if (string.IsNullOrEmpty(maKhoa) || !mapKhoa.TryGetValue(maKhoa, out int khoaId))
+            {
+                throw new InvalidOperationException($"Dòng {dong.SoDong}: không tìm thấy khoa '{maKhoa}'.");
+            }
+            var maLop = QuyTacNghiepVu.ChuanHoaMa(LayGiaTri(d, "Mã lớp", ""));
+            var heDaoTao = LayGiaTri(d, "Hệ đào tạo", "Chính quy");
             var lop = new LopHoc
             {
-                MaLop = LayGiaTri(d, "Mã lớp", ""),
+                MaLop = maLop,
                 TenLop = LayGiaTri(d, "Tên lớp", ""),
                 NienKhoa = LayGiaTri(d, "Niên khóa", ""),
                 KhoaId = khoaId,
+                HeDaoTao = heDaoTao,
+                KhoaHoc = LayGiaTriHoacNull(d, "Khóa") ?? (heDaoTao == "Chính quy" ? QuyTacNghiepVu.SuyRaKhoaHoc(maLop) : null),
+                ChuyenNganh = LayGiaTriHoacNull(d, "Chuyên ngành"),
                 SoLuongToiDa = soLuong > 0 ? soLuong : 50,
                 CoHoatDong = !string.Equals(LayGiaTri(d, "Trạng thái", "Hoạt động"), "Đã khóa", StringComparison.OrdinalIgnoreCase),
                 NgayTao = DateTime.UtcNow
             };
             entities.Add(lop);
+            soDongCua[lop] = dong.SoDong;
         }
-        await _coSoDuLieu.LopHocs.AddRangeAsync(entities, ct);
+        if (_lopHocDichVu is null) { await _coSoDuLieu.LopHocs.AddRangeAsync(entities, ct); return; }
+        foreach (var lop in entities)
+        {
+            await GhiTungDongAsync(soDongCua[lop], () => _lopHocDichVu.ThemLopHocAsync(lop, ct));
+        }
     }
 
     private async Task CommitHocVienAsync(List<DongDuLieuPreviewExcel> danhSach, CancellationToken ct)
     {
         var mapLop = await _coSoDuLieu.LopHocs.ToDictionaryAsync(l => l.MaLop, l => l.LopHocId, StringComparer.OrdinalIgnoreCase, ct);
         var entities = new List<HocVien>();
+        var soDongCua = new Dictionary<HocVien, int>(ReferenceEqualityComparer.Instance);
         foreach (var dong in danhSach)
         {
             var d = dong.DuLieuCot;
             var maLop = LayGiaTri(d, "Mã lớp", "");
-            int lopHocId = (!string.IsNullOrEmpty(maLop) && mapLop.TryGetValue(maLop, out int foundLid))
-                ? foundLid
-                : (mapLop.Values.FirstOrDefault() > 0 ? mapLop.Values.FirstOrDefault() : 1);
+            if (string.IsNullOrEmpty(maLop) || !mapLop.TryGetValue(maLop, out int lopHocId))
+            {
+                throw new InvalidOperationException($"Dòng {dong.SoDong}: không tìm thấy lớp '{maLop}'.");
+            }
 
             if (!DateTime.TryParseExact(LayGiaTri(d, "Ngày sinh", ""), "dd/MM/yyyy", CultureInfo.InvariantCulture, DateTimeStyles.None, out var ngaySinh) || ngaySinh == default)
             {
-                ngaySinh = new DateTime(2007, 1, 1);
+                throw new InvalidOperationException($"Dòng {dong.SoDong}: ngày sinh không hợp lệ.");
             }
 
             var maHocVien = LayGiaTri(d, "Mã học viên", "");
@@ -1730,10 +1824,6 @@ public class ExcelDichVu : IExcelDichVu
             }
 
             var hoVaTen = LayGiaTri(d, "Họ và tên", "");
-            if (string.IsNullOrWhiteSpace(hoVaTen))
-            {
-                hoVaTen = "Học viên (Hồ sơ cập nhật)";
-            }
 
             var hv = new HocVien
             {
@@ -1743,14 +1833,21 @@ public class ExcelDichVu : IExcelDichVu
                 GioiTinh = LayGiaTri(d, "Giới tính", "Nam"),
                 Email = LayGiaTriHoacNull(d, "Email"),
                 SoDienThoai = LayGiaTriHoacNull(d, "Số điện thoại"),
+                SoCCCD = LayGiaTriHoacNull(d, "Số CCCD"),
+                ChucVuLop = QuyTacNghiepVu.GhepChucVuLop(QuyTacNghiepVu.TachChucVuLop(LayGiaTriHoacNull(d, "Chức vụ"))),
                 DiaChi = LayGiaTriHoacNull(d, "Địa chỉ"),
                 LopHocId = lopHocId,
-                CoHoatDong = !string.Equals(LayGiaTri(d, "Trạng thái", "Hoạt động"), "Đã khóa", StringComparison.OrdinalIgnoreCase),
+                TrangThai = ChuanHoaTrangThaiHocVien(LayGiaTri(d, "Trạng thái", "Đang học")),
                 NgayTao = DateTime.UtcNow
             };
             entities.Add(hv);
+            soDongCua[hv] = dong.SoDong;
         }
-        await _coSoDuLieu.HocViens.AddRangeAsync(entities, ct);
+        if (_hocVienDichVu is null) { await _coSoDuLieu.HocViens.AddRangeAsync(entities, ct); return; }
+        foreach (var hv in entities)
+        {
+            await GhiTungDongAsync(soDongCua[hv], () => _hocVienDichVu.ThemHocVienAsync(hv, ct));
+        }
     }
 
     private async Task CommitNhanSuAsync(List<DongDuLieuPreviewExcel> danhSach, string? nguoiThucHien, CancellationToken ct)
@@ -1761,6 +1858,7 @@ public class ExcelDichVu : IExcelDichVu
         var mapTrinhDo = await _coSoDuLieu.TrinhDoChuyenMons.ToDictionaryAsync(t => t.MaTrinhDo, t => t.TrinhDoChuyenMonId, StringComparer.OrdinalIgnoreCase, ct);
 
         var entities = new List<NhanSu>();
+        var soDongCua = new Dictionary<NhanSu, int>(ReferenceEqualityComparer.Instance);
         foreach (var dong in danhSach)
         {
             var d = dong.DuLieuCot;
@@ -1786,14 +1884,22 @@ public class ExcelDichVu : IExcelDichVu
                 ChucVuId = !string.IsNullOrEmpty(maChucVu) && mapChucVu.ContainsKey(maChucVu) ? mapChucVu[maChucVu] : null,
                 TrinhDoChuyenMonId = !string.IsNullOrEmpty(maTrinhDo) && mapTrinhDo.ContainsKey(maTrinhDo) ? mapTrinhDo[maTrinhDo] : null,
                 ChuyenMonDaoTao = LayGiaTriHoacNull(d, "Chuyên môn đào tạo"),
+                CapBacHam = LayGiaTriHoacNull(d, "Cấp bậc hàm"),
+                HocHam = LayGiaTriHoacNull(d, "Học hàm"),
+                QueQuan = LayGiaTriHoacNull(d, "Quê quán"),
                 TrangThai = LayGiaTri(d, "Trạng thái", LayGiaTri(d, "Trạng thái công tác", "Đang làm việc")),
                 GhiChu = LayGiaTriHoacNull(d, "Ghi chú"),
                 NgayTao = DateTime.UtcNow,
                 NguoiTao = nguoiThucHien
             };
             entities.Add(ns);
+            soDongCua[ns] = dong.SoDong;
         }
-        await _coSoDuLieu.NhanSus.AddRangeAsync(entities, ct);
+        if (_nhanSuDichVu is null) { await _coSoDuLieu.NhanSus.AddRangeAsync(entities, ct); return; }
+        foreach (var ns in entities)
+        {
+            await GhiTungDongAsync(soDongCua[ns], () => _nhanSuDichVu.ThemNhanSuAsync(ns, nguoiThucHien, ct));
+        }
     }
 
     private async Task CommitMonHocAsync(List<DongDuLieuPreviewExcel> danhSach, CancellationToken ct)

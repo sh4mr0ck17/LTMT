@@ -61,7 +61,7 @@ public class KhoaApiController : ControllerBase
     /// Thêm mới một khoa đào tạo.
     /// </summary>
     [HttpPost]
-    [Authorize(Roles = $"{VaiTroMacDinh.SuperAdmin},{VaiTroMacDinh.QuanTriVien},{VaiTroMacDinh.QuanLyDaoTao}")]
+    [Authorize(Roles = VaiTroMacDinh.NhomCoQuyenGhi)]
     [ProducesResponseType(typeof(ApiResponse<Khoa>), StatusCodes.Status201Created)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> ThemKhoa([FromBody] Khoa khoa)
@@ -98,7 +98,7 @@ public class KhoaApiController : ControllerBase
     /// Cập nhật thông tin một khoa đào tạo.
     /// </summary>
     [HttpPut("{id:int}")]
-    [Authorize(Roles = $"{VaiTroMacDinh.SuperAdmin},{VaiTroMacDinh.QuanTriVien},{VaiTroMacDinh.QuanLyDaoTao}")]
+    [Authorize(Roles = VaiTroMacDinh.NhomCoQuyenGhi)]
     [ProducesResponseType(typeof(ApiResponse<Khoa>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
@@ -140,7 +140,7 @@ public class KhoaApiController : ControllerBase
     /// Xóa một khoa đào tạo nếu không còn dữ liệu phụ thuộc.
     /// </summary>
     [HttpDelete("{id:int}")]
-    [Authorize(Roles = $"{VaiTroMacDinh.SuperAdmin},{VaiTroMacDinh.QuanTriVien},{VaiTroMacDinh.QuanLyDaoTao}")]
+    [Authorize(Roles = VaiTroMacDinh.NhomCoQuyenGhi)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]

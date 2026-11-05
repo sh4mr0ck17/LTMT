@@ -1,4 +1,4 @@
-using System.ComponentModel.DataAnnotations;
+﻿using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
 namespace QuanLyDaoTao.Models;
@@ -113,6 +113,24 @@ public class NhanSu
     public string? ChuyenMonDaoTao { get; set; }
 
     /// <summary>
+    /// Cấp bậc hàm (Đại tá, Thượng tá, Trung tá...).
+    /// </summary>
+    [StringLength(50, ErrorMessage = "Cấp bậc hàm không được vượt quá 50 ký tự.")]
+    public string? CapBacHam { get; set; }
+
+    /// <summary>
+    /// Học hàm (Giáo sư, Phó giáo sư). Tách khỏi cột chuyên môn để không ghi đè lẫn nhau.
+    /// </summary>
+    [StringLength(50, ErrorMessage = "Học hàm không được vượt quá 50 ký tự.")]
+    public string? HocHam { get; set; }
+
+    /// <summary>
+    /// Quê quán (tỉnh/thành).
+    /// </summary>
+    [StringLength(100, ErrorMessage = "Quê quán không được vượt quá 100 ký tự.")]
+    public string? QueQuan { get; set; }
+
+    /// <summary>
     /// Ngày bắt đầu vào làm việc chính thức tại đơn vị.
     /// </summary>
     public DateTime? NgayVaoLam { get; set; }
@@ -163,7 +181,7 @@ public class NhanSu
     public virtual ICollection<PhanCongGiangDay> PhanCongGiangDays { get; set; } = new List<PhanCongGiangDay>();
 
     // =========================================================================
-    // CÁC THUỘC TÍNH ÁNH XẠ CHUYỂN TIẾP (TƯƠNG THÍCH HOÀN TOÀN KHÔNG BỊ BREAK)
+    // THUỘC TÍNH SUY DIỄN (không lưu riêng, tính từ TrangThai)
     // =========================================================================
 
     /// <summary>
@@ -176,220 +194,4 @@ public class NhanSu
                !string.Equals(TrangThai, "Đã nghỉ việc", StringComparison.OrdinalIgnoreCase);
         set => TrangThai = value ? (TrangThai == "Đã khóa" ? "Đang làm việc" : TrangThai) : "Đã khóa";
     }
-
-    /// <summary>
-    /// Ánh xạ tương thích với Email công việc.
-    /// </summary>
-    [NotMapped]
-    public string EmailCongViec
-    {
-        get => Email;
-        set => Email = value;
-    }
-
-    /// <summary>
-    /// Ánh xạ tương thích với Trạng thái công tác.
-    /// </summary>
-    [NotMapped]
-    public string TrangThaiCongTac
-    {
-        get => TrangThai;
-        set => TrangThai = value;
-    }
-
-    /// <summary>
-    /// Ánh xạ tương thích với Trạng thái hồ sơ.
-    /// </summary>
-    [NotMapped]
-    public string TrangThaiHoSo
-    {
-        get => TrangThai;
-        set => TrangThai = value;
-    }
-
-    /// <summary>
-    /// Ánh xạ tương thích với Số giấy tờ định danh.
-    /// </summary>
-    [NotMapped]
-    public string? SoGiayTo
-    {
-        get => SoCCCD;
-        set => SoCCCD = value;
-    }
-
-    /// <summary>
-    /// Ánh xạ tương thích với Địa chỉ thường trú.
-    /// </summary>
-    [NotMapped]
-    public string? DiaChiThuongTru
-    {
-        get => DiaChi;
-        set => DiaChi = value;
-    }
-
-    /// <summary>
-    /// Ánh xạ tương thích với Địa chỉ liên hệ.
-    /// </summary>
-    [NotMapped]
-    public string? DiaChiLienHe
-    {
-        get => DiaChi;
-        set => DiaChi = value;
-    }
-
-    /// <summary>
-    /// Ánh xạ tương thích với Chuyên ngành.
-    /// </summary>
-    [NotMapped]
-    public string? ChuyenNganh
-    {
-        get => ChuyenMonDaoTao;
-        set => ChuyenMonDaoTao = value;
-    }
-
-    /// <summary>
-    /// Ánh xạ tương thích với Trường đào tạo.
-    /// </summary>
-    [NotMapped]
-    public string? TruongDaoTao
-    {
-        get => ChuyenMonDaoTao;
-        set => ChuyenMonDaoTao = value;
-    }
-
-    /// <summary>
-    /// Thuộc tính tương thích Chức danh nghề nghiệp.
-    /// </summary>
-    [NotMapped]
-    public string? ChucDanhNgheNghiep { get; set; }
-
-    /// <summary>
-    /// Thuộc tính tương thích Người quản lý trực tiếp.
-    /// </summary>
-    [NotMapped]
-    public string? NguoiQuanLyTrucTiep { get; set; }
-
-    /// <summary>
-    /// Thuộc tính tương thích Tình trạng hôn nhân.
-    /// </summary>
-    [NotMapped]
-    public string? TinhTrangHonNhan { get; set; }
-
-    /// <summary>
-    /// Thuộc tính tương thích Loại giấy tờ.
-    /// </summary>
-    [NotMapped]
-    public string? LoaiGiayTo { get; set; } = "CCCD";
-
-    /// <summary>
-    /// Thuộc tính tương thích Ngày cấp giấy tờ.
-    /// </summary>
-    [NotMapped]
-    public DateTime? NgayCap { get; set; }
-
-    /// <summary>
-    /// Thuộc tính tương thích Nơi cấp giấy tờ.
-    /// </summary>
-    [NotMapped]
-    public string? NoiCap { get; set; }
-
-    /// <summary>
-    /// Thuộc tính tương thích Email cá nhân.
-    /// </summary>
-    [NotMapped]
-    public string? EmailCaNhan { get; set; }
-
-    /// <summary>
-    /// Thuộc tính tương thích Người liên hệ khẩn cấp.
-    /// </summary>
-    [NotMapped]
-    public string? NguoiLienHeKhanCap { get; set; }
-
-    /// <summary>
-    /// Thuộc tính tương thích SĐT khẩn cấp.
-    /// </summary>
-    [NotMapped]
-    public string? SoDienThoaiKhanCap { get; set; }
-
-    /// <summary>
-    /// Thuộc tính tương thích Ngày bắt đầu hợp đồng.
-    /// </summary>
-    [NotMapped]
-    public DateTime? NgayBatDauHopDong { get; set; }
-
-    /// <summary>
-    /// Thuộc tính tương thích Ngày kết thúc hợp đồng.
-    /// </summary>
-    [NotMapped]
-    public DateTime? NgayKetThucHopDong { get; set; }
-
-    /// <summary>
-    /// Thuộc tính tương thích Trình độ học vấn.
-    /// </summary>
-    [NotMapped]
-    public string? TrinhDoHocVan { get; set; }
-
-    /// <summary>
-    /// Thuộc tính tương thích Lĩnh vực chuyên môn.
-    /// </summary>
-    [NotMapped]
-    public string? LinhVucChuyenMon { get; set; }
-
-    /// <summary>
-    /// Ánh xạ tương thích với Học vị.
-    /// </summary>
-    [NotMapped]
-    public string? HocVi
-    {
-        get => ChuyenMonDaoTao;
-        set => ChuyenMonDaoTao = value;
-    }
-
-    /// <summary>
-    /// Ánh xạ tương thích với Học hàm.
-    /// </summary>
-    [NotMapped]
-    public string? HocHam
-    {
-        get => ChuyenMonDaoTao;
-        set => ChuyenMonDaoTao = value;
-    }
-
-    /// <summary>
-    /// Ánh xạ tương thích với Kinh nghiệm công tác.
-    /// </summary>
-    [NotMapped]
-    public string? KinhNghiemCongTac
-    {
-        get => GhiChu;
-        set => GhiChu = value;
-    }
-
-    /// <summary>
-    /// Ánh xạ tương thích với Ghi chú chuyên môn.
-    /// </summary>
-    [NotMapped]
-    public string? GhiChuChuyenMon
-    {
-        get => GhiChu;
-        set => GhiChu = value;
-    }
-
-    /// <summary>
-    /// Ánh xạ tương thích với Quốc tịch.
-    /// </summary>
-    [NotMapped]
-    public string QuocTich { get; set; } = "Việt Nam";
-
-    /// <summary>
-    /// Ánh xạ tương thích với Dân tộc.
-    /// </summary>
-    [NotMapped]
-    public string? DanToc { get; set; } = "Kinh";
-
-    /// <summary>
-    /// Ánh xạ tương thích với Loại hợp đồng.
-    /// </summary>
-    [NotMapped]
-    public string? LoaiHopDong { get; set; } = "Chính thức";
 }

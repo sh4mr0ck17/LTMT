@@ -1,0 +1,80 @@
+/* =====================================================================
+   HỆ MÀU THEO ĐỐI TƯỢNG
+   Mỗi loại đối tượng nghiệp vụ có MỘT màu cố định trên mọi trang
+   (thẻ thống kê, cây tổ chức, chip, biểu đồ, danh sách bảng dữ liệu),
+   để người dùng nhận ra "đây là Lớp / Học viên / Khoa" chỉ bằng màu.
+   Màu trạng thái (tốt / cảnh báo / nguy hiểm) là nhóm riêng, không dùng
+   lại màu đối tượng để tránh nhầm "màu cam = lớp" với "màu cam = cảnh báo".
+   Dùng sắc độ 700 cho chữ để đạt tương phản ≥ 4.5:1 trên nền nhạt.
+   ===================================================================== */
+:root {
+  /* Đối tượng — vùng Tổ chức – Cán bộ (họ xanh dương → tím → ngọc) */
+  --mau-hoc-vien-goc: #0b4627; --mau-hoc-vien-goc-nen: #ecf5ef;
+  --mau-khoa: #1d4ed8;         --mau-khoa-nen: #eff6ff;
+  --mau-bo-mon: #6d28d9;       --mau-bo-mon-nen: #f5f3ff;
+  --mau-can-bo: #0f766e;       --mau-can-bo-nen: #f0fdfa;
+
+  /* Đối tượng — vùng Đào tạo (họ ấm: chàm → hổ phách → cam → hồng) */
+  --mau-he: #4338ca;           --mau-he-nen: #eef2ff;
+  --mau-nien-khoa: #a16207;    --mau-nien-khoa-nen: #fefce8;
+  --mau-lop: #c2410c;          --mau-lop-nen: #fff7ed;
+  --mau-hoc-vien: #be185d;     --mau-hoc-vien-nen: #fdf2f8;
+  --mau-mon-hoc: #0e7490;      --mau-mon-hoc-nen: #ecfeff;
+  --mau-phan-cong: #4d7c0f;    --mau-phan-cong-nen: #f7fee7;
+
+  /* Đối tượng — dùng chung / hệ thống */
+  --mau-danh-muc: #a21caf;     --mau-danh-muc-nen: #fdf4ff;
+  --mau-thong-bao: #b91c1c;    --mau-thong-bao-nen: #fef2f2;
+  --mau-tai-khoan: #334155;    --mau-tai-khoan-nen: #f1f5f9;
+  --mau-nhat-ky: #57534e;      --mau-nhat-ky-nen: #f5f5f4;
+
+  /* Trạng thái */
+  --tt-tot: #15803d;           --tt-tot-nen: #f0fdf4;
+  --tt-canh-bao: #b45309;      --tt-canh-bao-nen: #fffbeb;
+  --tt-nguy: #b91c1c;          --tt-nguy-nen: #fef2f2;
+  --tt-thong-tin: #1d4ed8;     --tt-thong-tin-nen: #eff6ff;
+  --tt-trung-tinh: #64748b;    --tt-trung-tinh-nen: #f8fafc;
+}
+
+/* Gán biến --dt / --dt-nen cho một phần tử theo loại đối tượng. */
+.dt-hoc-vien-goc { --dt: var(--mau-hoc-vien-goc); --dt-nen: var(--mau-hoc-vien-goc-nen); }
+.dt-khoa      { --dt: var(--mau-khoa);       --dt-nen: var(--mau-khoa-nen); }
+.dt-bo-mon    { --dt: var(--mau-bo-mon);     --dt-nen: var(--mau-bo-mon-nen); }
+.dt-can-bo    { --dt: var(--mau-can-bo);     --dt-nen: var(--mau-can-bo-nen); }
+.dt-he        { --dt: var(--mau-he);         --dt-nen: var(--mau-he-nen); }
+.dt-nien-khoa { --dt: var(--mau-nien-khoa);  --dt-nen: var(--mau-nien-khoa-nen); }
+.dt-lop       { --dt: var(--mau-lop);        --dt-nen: var(--mau-lop-nen); }
+.dt-hoc-vien  { --dt: var(--mau-hoc-vien);   --dt-nen: var(--mau-hoc-vien-nen); }
+.dt-mon-hoc   { --dt: var(--mau-mon-hoc);    --dt-nen: var(--mau-mon-hoc-nen); }
+.dt-phan-cong { --dt: var(--mau-phan-cong);  --dt-nen: var(--mau-phan-cong-nen); }
+.dt-danh-muc  { --dt: var(--mau-danh-muc);   --dt-nen: var(--mau-danh-muc-nen); }
+.dt-thong-bao { --dt: var(--mau-thong-bao);  --dt-nen: var(--mau-thong-bao-nen); }
+.dt-tai-khoan { --dt: var(--mau-tai-khoan);  --dt-nen: var(--mau-tai-khoan-nen); }
+.dt-nhat-ky   { --dt: var(--mau-nhat-ky);    --dt-nen: var(--mau-nhat-ky-nen); }
+.dt-trung-tinh { --dt: var(--tt-trung-tinh); --dt-nen: var(--tt-trung-tinh-nen); }
+
+.tt-tot       { --dt: var(--tt-tot);       --dt-nen: var(--tt-tot-nen); }
+.tt-canh-bao  { --dt: var(--tt-canh-bao);  --dt-nen: var(--tt-canh-bao-nen); }
+.tt-nguy      { --dt: var(--tt-nguy);      --dt-nen: var(--tt-nguy-nen); }
+.tt-thong-tin { --dt: var(--tt-thong-tin); --dt-nen: var(--tt-thong-tin-nen); }
+
+/* Tiện ích dùng biến --dt */
+.dt-chu { color: var(--dt) !important; }
+.dt-chip {
+  display: inline-flex; align-items: center; gap: 4px;
+  padding: 1px 8px; border-radius: 999px; font-size: 0.72rem; font-weight: 600; line-height: 1.5;
+  color: var(--dt); background: var(--dt-nen);
+  border: 1px solid color-mix(in srgb, var(--dt) 28%, transparent);
+  white-space: nowrap;
+}
+.dt-cham { display: inline-block; width: 9px; height: 9px; border-radius: 50%; background: var(--dt); flex-shrink: 0; }
+.dt-o-bieu-tuong {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 34px; height: 34px; border-radius: 9px; flex-shrink: 0;
+  color: var(--dt); background: var(--dt-nen); font-size: 1.05rem;
+}
+.dt-vien-trai { border-left: 4px solid var(--dt) !important; }
+
+/* Chú giải màu (legend) dùng ở cây tổ chức và trang chủ */
+.chu-giai-mau { display: flex; flex-wrap: wrap; gap: 4px 12px; font-size: 0.74rem; color: #475569; }
+.chu-giai-mau > span { display: inline-flex; align-items: center; gap: 5px; }

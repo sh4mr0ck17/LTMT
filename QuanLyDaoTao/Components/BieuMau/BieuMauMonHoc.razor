@@ -1,0 +1,95 @@
+@inject DialogService HopThoai
+@inject IMonHocDichVu MonHocDichVu
+@* Biểu mẫu thêm/sửa môn học do bộ môn phụ trách. *@
+
+<RadzenTemplateForm TItem="MonHoc" Data="@_banNhap" Submit="LuuAsync">
+    <div class="luoi-bieu-mau">
+        <RadzenFormField Text="Mã môn học *" Variant="Variant.Outlined">
+            <RadzenTextBox Name="txtMaMonHoc" id="txtMaMonHoc" @bind-Value="_banNhap.MaMonHoc" MaxLength="50" />
+        </RadzenFormField>
+        <RadzenFormField Text="Tên môn học *" Variant="Variant.Outlined">
+            <RadzenTextBox Name="txtTenMonHoc" id="txtTenMonHoc" @bind-Value="_banNhap.TenMonHoc" MaxLength="200" />
+        </RadzenFormField>
+        <RadzenFormField Text="Bộ môn phụ trách" Variant="Variant.Outlined" class="o-rong">
+            <RadzenDropDown TValue="int?" Name="cboChonBoMon" id="cboChonBoMon" Data="@DanhSachBoMon" TextProperty="TenBoMon" ValueProperty="BoMonId" @bind-Value="_banNhap.BoMonId"
+                            AllowClear="true" AllowFiltering="true" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" FilterOperator="StringFilterOperator.Contains" />
+        </RadzenFormField>
+        <RadzenFormField Text="Số tín chỉ" Variant="Variant.Outlined">
+            <RadzenNumeric TValue="int" Name="numSoTinChi" id="numSoTinChi" @bind-Value="_banNhap.SoTinChi" Min="1" Max="20" />
+        </RadzenFormField>
+        <RadzenFormField Text="Tiết lý thuyết" Variant="Variant.Outlined">
+            <RadzenNumeric TValue="int" Name="numLyThuyet" id="numLyThuyet" @bind-Value="_banNhap.SoTietLyThuyet" Min="0" Max="500" />
+        </RadzenFormField>
+        <RadzenFormField Text="Tiết thực hành" Variant="Variant.Outlined">
+            <RadzenNumeric TValue="int" Name="numThucHanh" id="numThucHanh" @bind-Value="_banNhap.SoTietThucHanh" Min="0" Max="500" />
+        </RadzenFormField>
+        <div class="d-flex align-items-center gap-2">
+            <RadzenSwitch @bind-Value="_banNhap.CoHoatDong" Name="swHoatDong" id="swHoatDong" />
+            <label for="swHoatDong" class="mb-0">Đang giảng dạy</label>
+        </div>
+    </div>
+
+    @if (!string.IsNullOrEmpty(_loi))
+    {
+        <RadzenAlert AlertStyle="AlertStyle.Danger" Variant="Variant.Flat" AllowClose="false" class="mt-3 mb-0" id="lblThongBaoLoi">@_loi</RadzenAlert>
+    }
+
+    <RadzenRequiredValidator Component="txtMaMonHoc" Text="Vui lòng nhập mã môn học." Popup="false" />
+    <RadzenRequiredValidator Component="txtTenMonHoc" Text="Vui lòng nhập tên môn học." Popup="false" />
+
+    <div class="d-flex justify-content-end gap-2 mt-3">
+        <RadzenButton Text="Hủy" ButtonStyle="ButtonStyle.Light" Disabled="@_dangLuu" Click="@(() => HopThoai.Close())" id="btnHuy" />
+        <RadzenButton Text="Lưu môn học" Icon="save" ButtonType="ButtonType.Submit" ButtonStyle="ButtonStyle.Primary" IsBusy="@_dangLuu" BusyText="Đang lưu..." id="btnLuuMonHoc" />
+    </div>
+</RadzenTemplateForm>
+
+@code {
+    private MonHoc _banNhap = new();
+    private bool _dangLuu;
+    private string? _loi;
+
+    /// <summary>Môn học gốc khi sửa.</summary>
+    [Parameter] public MonHoc? MonHocGoc { get; set; }
+
+    /// <summary>Danh sách bộ môn.</summary>
+    [Parameter] public IReadOnlyList<BoMon> DanhSachBoMon { get; set; } = [];
+
+    /// <inheritdoc />
+    protected override void OnInitialized()
+    {
+        _banNhap = MonHocGoc is null
+            ? new MonHoc()
+            : new MonHoc
+            {
+                MonHocId = MonHocGoc.MonHocId, MaMonHoc = MonHocGoc.MaMonHoc, TenMonHoc = MonHocGoc.TenMonHoc, SoTinChi = MonHocGoc.SoTinChi,
+                SoTietLyThuyet = MonHocGoc.SoTietLyThuyet, SoTietThucHanh = MonHocGoc.SoTietThucHanh, BoMonId = MonHocGoc.BoMonId, CoHoatDong = MonHocGoc.CoHoatDong
+            };
+    }
+
+    private async Task LuuAsync(MonHoc _)
+    {
+        if (_dangLuu)
+        {
+            return;
+        }
+
+        _dangLuu = true;
+        _loi = await TrangNghiepVuCoSo.ChayVaBatLoiAsync(async () =>
+        {
+            if (MonHocGoc is null)
+            {
+                await MonHocDichVu.ThemMonHocAsync(_banNhap);
+            }
+            else
+            {
+                await MonHocDichVu.CapNhatMonHocAsync(_banNhap);
+            }
+        });
+        _dangLuu = false;
+
+        if (_loi is null)
+        {
+            HopThoai.Close(new KetQuaBieuMau(MonHocGoc is null ? $"Đã thêm môn {_banNhap.TenMonHoc}." : $"Đã cập nhật môn {_banNhap.TenMonHoc}.", _banNhap.MaMonHoc));
+        }
+    }
+}

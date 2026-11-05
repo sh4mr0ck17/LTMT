@@ -7,18 +7,20 @@ namespace QuanLyDaoTao.Services;
 /// <summary>
 /// Lớp triển khai dịch vụ nghiệp vụ quản lý Trình độ chuyên môn.
 /// </summary>
-public class TrinhDoChuyenMonDichVu : ITrinhDoChuyenMonDichVu
+public class TrinhDoChuyenMonDichVu : DichVuNghiepVuCoSo, ITrinhDoChuyenMonDichVu
 {
-    private readonly QuanLyDaoTaoDbContext _coSoDuLieu;
 
     /// <summary>
     /// Khởi tạo dịch vụ trình độ chuyên môn với DbContext.
     /// </summary>
     /// <param name="coSoDuLieu">Ngữ cảnh cơ sở dữ liệu.</param>
-    public TrinhDoChuyenMonDichVu(QuanLyDaoTaoDbContext coSoDuLieu)
+    public TrinhDoChuyenMonDichVu(
+        QuanLyDaoTaoDbContext coSoDuLieu,
+        IPhanQuyenDichVu? phanQuyen = null,
+        INhatKyDichVu? nhatKy = null,
+        IBusThayDoiDuLieu? bus = null)
+        : base(coSoDuLieu, phanQuyen, nhatKy, bus)
     {
-        ArgumentNullException.ThrowIfNull(coSoDuLieu);
-        _coSoDuLieu = coSoDuLieu;
     }
 
     /// <summary>
@@ -60,6 +62,7 @@ public class TrinhDoChuyenMonDichVu : ITrinhDoChuyenMonDichVu
     /// </summary>
     public async Task<TrinhDoChuyenMon> ThemTrinhDoAsync(TrinhDoChuyenMon trinhDo, CancellationToken cancellationToken = default)
     {
+        await DamBaoQuanTriAsync();
         ArgumentNullException.ThrowIfNull(trinhDo);
 
         if (await KiemTraTonTaiMaAsync(trinhDo.MaTrinhDo, null, cancellationToken))
@@ -77,6 +80,7 @@ public class TrinhDoChuyenMonDichVu : ITrinhDoChuyenMonDichVu
     /// </summary>
     public async Task<TrinhDoChuyenMon> CapNhatTrinhDoAsync(TrinhDoChuyenMon trinhDo, CancellationToken cancellationToken = default)
     {
+        await DamBaoQuanTriAsync();
         ArgumentNullException.ThrowIfNull(trinhDo);
 
         var tdTonTai = await _coSoDuLieu.TrinhDoChuyenMons.FirstOrDefaultAsync(td => td.TrinhDoChuyenMonId == trinhDo.TrinhDoChuyenMonId, cancellationToken);
@@ -104,6 +108,7 @@ public class TrinhDoChuyenMonDichVu : ITrinhDoChuyenMonDichVu
     /// </summary>
     public async Task<bool> XoaTrinhDoAsync(int id, CancellationToken cancellationToken = default)
     {
+        await DamBaoQuanTriAsync();
         var td = await _coSoDuLieu.TrinhDoChuyenMons.FirstOrDefaultAsync(t => t.TrinhDoChuyenMonId == id, cancellationToken);
         if (td == null)
         {

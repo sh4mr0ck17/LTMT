@@ -4,9 +4,13 @@ using QuanLyDaoTao.Models.ToChuc;
 
 namespace QuanLyDaoTao.Services;
 
-/// <summary>Dựng cây đọc riêng, không làm thay đổi quan hệ trong cơ sở dữ liệu.</summary>
+/// <summary>
+/// Dựng hai cây đọc riêng (không thay đổi dữ liệu): cây tổ chức theo khoa – bộ môn và cây đào tạo theo hệ – khóa – lớp.
+/// </summary>
 public class CayToChucDichVu : ICayToChucDichVu
 {
+    private const string TrangThaiDangHoc = "Đang học";
+    private const string KhoaHocChuaXacDinh = "Chưa xác định khóa";
     private readonly QuanLyDaoTaoDbContext _coSoDuLieu;
 
     /// <summary>Khởi tạo dịch vụ với cơ sở dữ liệu đào tạo.</summary>
@@ -16,75 +20,64 @@ public class CayToChucDichVu : ICayToChucDichVu
         _coSoDuLieu = coSoDuLieu;
     }
 
-    /// <summary>Lấy dữ liệu tối thiểu và đặt mỗi hồ sơ vào đúng một nhánh quản lý.</summary>
+    /// <inheritdoc />
     public async Task<NutToChuc> LayCayAsync(CancellationToken cancellationToken = default)
     {
-        var goc = new NutToChuc
-        {
-            KhoaNut = "hoc-vien", Loai = "Học viện", Ten = "Học viện An ninh nhân dân", Ma = "C500",
-            MoTa = "Cơ cấu khoa, bộ môn và các lớp do khoa quản lý. Nhân sự được xếp theo bộ môn; hồ sơ chưa có bộ môn nằm trực tiếp dưới khoa."
-        };
+        var goc = TaoGoc("to-chuc", "Cơ cấu tổ chức: khoa → bộ môn → cán bộ. Cán bộ chưa có bộ môn nằm trong nhóm riêng của khoa.");
         var cacKhoa = await _coSoDuLieu.Khoas.AsNoTracking().OrderBy(k => k.MaKhoa)
             .Select(k => new { k.KhoaId, k.MaKhoa, k.TenKhoa, k.DiaDiem, k.CoHoatDong }).ToListAsync(cancellationToken);
         var cacBoMon = await _coSoDuLieu.BoMons.AsNoTracking().OrderBy(b => b.MaBoMon)
             .Select(b => new { b.BoMonId, b.KhoaId, b.MaBoMon, b.TenBoMon, b.CoHoatDong }).ToListAsync(cancellationToken);
-        var cacLop = await _coSoDuLieu.LopHocs.AsNoTracking().OrderBy(l => l.MaLop)
-            .Select(l => new { l.LopHocId, l.KhoaId, l.MaLop, l.TenLop, l.NienKhoa, l.CoHoatDong,
-                l.SoLuongToiDa, SiSo = l.HocViens.Count(h => h.TrangThai == "Đang học") }).ToListAsync(cancellationToken);
         var cacNhanSu = await _coSoDuLieu.NhanSus.AsNoTracking().OrderBy(n => n.HoVaTen).ThenBy(n => n.MaNhanSu)
-            .Select(n => new { n.NhanSuId, n.KhoaId, n.BoMonId, n.MaNhanSu, n.HoVaTen, n.TrangThai,
-                ChucVu = n.ChucVu == null ? "Chưa cập nhật chức vụ" : n.ChucVu.TenChucVu }).ToListAsync(cancellationToken);
+            .Select(n => new
+            {
+                n.NhanSuId, n.KhoaId, n.BoMonId, n.MaNhanSu, n.HoVaTen, n.TrangThai, n.CapBacHam,
+                ChucVu = n.ChucVu == null ? "Chưa cập nhật chức vụ" : n.ChucVu.TenChucVu
+            }).ToListAsync(cancellationToken);
 
         var nutKhoa = new Dictionary<int, NutToChuc>();
         var nutBoMon = new Dictionary<int, NutToChuc>();
-        var nhomBoMon = new Dictionary<int, NutToChuc>();
-        var nhomLop = new Dictionary<int, NutToChuc>();
-        var nhomNhanSu = new Dictionary<int, NutToChuc>();
         foreach (var khoa in cacKhoa)
         {
             var nut = new NutToChuc
             {
                 KhoaNut = $"khoa-{khoa.KhoaId}", Loai = "Khoa", Ten = khoa.TenKhoa, Ma = khoa.MaKhoa,
                 MoTa = khoa.DiaDiem ?? "Chưa cập nhật địa điểm", CoHoatDong = khoa.CoHoatDong,
-                TrangThai = LayTrangThai(khoa.CoHoatDong), DuongDan = $"Khoa/ChiTiet/{khoa.KhoaId}"
+                TrangThai = LayTrangThai(khoa.CoHoatDong), DuongDan = $"NhanSu?khoa={khoa.KhoaId}"
             };
             nutKhoa.Add(khoa.KhoaId, nut);
             goc.Con.Add(nut);
-            nhomBoMon.Add(khoa.KhoaId, ThemNhom(nut, "bo-mon", "Bộ môn", "Các đơn vị chuyên môn thuộc khoa."));
-            nhomLop.Add(khoa.KhoaId, ThemNhom(nut, "lop", "Lớp học", "Các lớp do khoa quản lý, độc lập với nhánh bộ môn."));
-            nhomNhanSu.Add(khoa.KhoaId, ThemNhom(nut, "nhan-su", "Nhân sự trực thuộc khoa", "Nhân sự đã có khoa nhưng chưa được phân vào bộ môn."));
         }
+
         foreach (var boMon in cacBoMon)
         {
+            if (!nutKhoa.TryGetValue(boMon.KhoaId, out var khoa))
+            {
+                continue;
+            }
+
             var nut = new NutToChuc
             {
                 KhoaNut = $"bo-mon-{boMon.BoMonId}", Loai = "Bộ môn", Ten = boMon.TenBoMon, Ma = boMon.MaBoMon,
                 CoHoatDong = boMon.CoHoatDong, TrangThai = LayTrangThai(boMon.CoHoatDong),
-                DuongDan = $"BoMon/ChiTiet/{boMon.BoMonId}"
+                DuongDan = $"NhanSu?bomon={boMon.BoMonId}"
             };
             nutBoMon.Add(boMon.BoMonId, nut);
-            nhomBoMon[boMon.KhoaId].Con.Add(nut);
+            khoa.Con.Add(nut);
         }
-        foreach (var lop in cacLop)
-        {
-            nhomLop[lop.KhoaId].Con.Add(new NutToChuc
-            {
-                KhoaNut = $"lop-{lop.LopHocId}", Loai = "Lớp học", Ten = lop.TenLop, Ma = lop.MaLop,
-                MoTa = $"Niên khóa {lop.NienKhoa}", CoHoatDong = lop.CoHoatDong, TrangThai = LayTrangThai(lop.CoHoatDong),
-                DuongDan = $"LopHoc/ChiTiet/{lop.LopHocId}", SiSo = lop.SiSo, SucChua = lop.SoLuongToiDa,
-                CanhBao = lop.SiSo > lop.SoLuongToiDa ? "Sĩ số vượt sức chứa của lớp." : null
-            });
-        }
+
+        var nhomChuaVaoBoMon = new Dictionary<int, NutToChuc>();
         NutToChuc? chuaPhanDonVi = null;
         var khoaCuaBoMon = cacBoMon.ToDictionary(b => b.BoMonId, b => b.KhoaId);
         foreach (var nhanSu in cacNhanSu)
         {
             var nut = new NutToChuc
             {
-                KhoaNut = $"nhan-su-{nhanSu.NhanSuId}", Loai = "Nhân sự", Ten = nhanSu.HoVaTen,
-                Ma = nhanSu.MaNhanSu, MoTa = nhanSu.ChucVu, TrangThai = nhanSu.TrangThai,
+                KhoaNut = $"nhan-su-{nhanSu.NhanSuId}", Loai = "Nhân sự", Ten = nhanSu.HoVaTen, Ma = nhanSu.MaNhanSu,
+                MoTa = string.IsNullOrEmpty(nhanSu.CapBacHam) ? nhanSu.ChucVu : $"{nhanSu.CapBacHam}, {nhanSu.ChucVu}",
+                TrangThai = nhanSu.TrangThai,
                 CoHoatDong = nhanSu.TrangThai != "Đã khóa" && nhanSu.TrangThai != "Đã nghỉ việc",
-                DuongDan = $"NhanSu/ChiTiet/{nhanSu.NhanSuId}"
+                DuongDan = $"NhanSu?khoa={nhanSu.KhoaId}"
             };
             if (nhanSu.BoMonId is int boMonId && nutBoMon.TryGetValue(boMonId, out var boMon))
             {
@@ -92,11 +85,17 @@ public class CayToChucDichVu : ICayToChucDichVu
                 if (nhanSu.KhoaId.HasValue && nhanSu.KhoaId != khoaCuaBoMon[boMonId])
                 {
                     var tenKhoaHoSo = nutKhoa.GetValueOrDefault(nhanSu.KhoaId.Value)?.Ten ?? "không xác định";
-                    nut.CanhBao = $"Khoa trong hồ sơ ({tenKhoaHoSo}) khác khoa chủ quản bộ môn. Cây hiển thị theo bộ môn; cần kiểm tra hồ sơ gốc.";
+                    nut.CanhBao = $"Khoa trong hồ sơ ({tenKhoaHoSo}) khác khoa chủ quản bộ môn. Cần kiểm tra hồ sơ gốc.";
                 }
             }
-            else if (nhanSu.KhoaId is int khoaId && nhomNhanSu.TryGetValue(khoaId, out var nhom))
+            else if (nhanSu.KhoaId is int khoaId && nutKhoa.TryGetValue(khoaId, out var khoa))
             {
+                if (!nhomChuaVaoBoMon.TryGetValue(khoaId, out var nhom))
+                {
+                    nhom = ThemNhom(khoa, "chua-bo-mon", "Cán bộ chưa vào bộ môn", "Cán bộ đã thuộc khoa nhưng chưa được phân vào bộ môn.");
+                    nhomChuaVaoBoMon.Add(khoaId, nhom);
+                }
+
                 nhom.Con.Add(nut);
                 if (nhanSu.BoMonId.HasValue)
                 {
@@ -105,13 +104,95 @@ public class CayToChucDichVu : ICayToChucDichVu
             }
             else
             {
-                chuaPhanDonVi ??= ThemNhom(goc, "chua-phan", "Nhân sự chưa xác định đơn vị", "Các hồ sơ chưa có khoa hoặc bộ môn hợp lệ, cần được phân đơn vị.");
+                chuaPhanDonVi ??= ThemNhom(goc, "chua-phan", "Cán bộ chưa xác định đơn vị", "Các hồ sơ chưa có khoa hoặc bộ môn hợp lệ, cần được phân đơn vị.");
                 nut.CanhBao = "Chưa xác định được khoa hoặc bộ môn trực thuộc.";
                 chuaPhanDonVi.Con.Add(nut);
             }
         }
+
         return goc;
     }
+
+    /// <inheritdoc />
+    public async Task<NutToChuc> LayCayDaoTaoAsync(CancellationToken cancellationToken = default)
+    {
+        var goc = TaoGoc("dao-tao", "Cơ cấu đào tạo: hệ → khóa → lớp → học viên. Mỗi lớp ghi rõ khoa quản lý.");
+        var cacLop = await _coSoDuLieu.LopHocs.AsNoTracking()
+            .Select(l => new
+            {
+                l.LopHocId, l.MaLop, l.TenLop, l.NienKhoa, l.CoHoatDong, l.HeDaoTao, l.KhoaHoc, l.ChuyenNganh, l.SoLuongToiDa,
+                TenKhoa = l.Khoa != null ? l.Khoa.TenKhoa : null,
+                SiSo = l.HocViens.Count(h => h.TrangThai == TrangThaiDangHoc)
+            }).ToListAsync(cancellationToken);
+        var cacHocVien = await _coSoDuLieu.HocViens.AsNoTracking().OrderBy(h => h.HoVaTen)
+            .Select(h => new { h.HocVienId, h.LopHocId, h.MaHocVien, h.HoVaTen, h.TrangThai, h.ChucVuLop })
+            .ToListAsync(cancellationToken);
+
+        var nutLop = new Dictionary<int, NutToChuc>();
+        foreach (var nhomHe in cacLop.GroupBy(l => l.HeDaoTao).OrderBy(g => g.Key))
+        {
+            var nutHe = new NutToChuc
+            {
+                KhoaNut = $"he-{nhomHe.Key}", Loai = "Hệ đào tạo", Ten = $"Hệ {nhomHe.Key}",
+                MoTa = $"{nhomHe.Select(l => l.KhoaHoc).Distinct().Count()} khóa, {nhomHe.Count()} lớp",
+                DuongDan = "LopHoc"
+            };
+            goc.Con.Add(nutHe);
+
+            foreach (var nhomKhoaHoc in nhomHe.GroupBy(l => l.KhoaHoc ?? KhoaHocChuaXacDinh).OrderByDescending(g => g.Key))
+            {
+                var nutKhoaHoc = new NutToChuc
+                {
+                    KhoaNut = $"khoa-hoc-{nhomHe.Key}-{nhomKhoaHoc.Key}", Loai = "Khóa",
+                    Ten = nhomKhoaHoc.Key == KhoaHocChuaXacDinh ? nhomKhoaHoc.Key : $"Khóa {nhomKhoaHoc.Key}",
+                    Ma = nhomKhoaHoc.Key == KhoaHocChuaXacDinh ? string.Empty : nhomKhoaHoc.Key,
+                    MoTa = nhomKhoaHoc.Key == KhoaHocChuaXacDinh
+                        ? "Các lớp chưa khai báo khóa học — cần bổ sung tại trang Lớp."
+                        : string.Join(", ", nhomKhoaHoc.Select(l => l.NienKhoa).Distinct()),
+                    DuongDan = "LopHoc"
+                };
+                nutHe.Con.Add(nutKhoaHoc);
+
+                // Sắp lớp theo số thứ tự tự nhiên (B2 trước B10).
+                foreach (var lop in nhomKhoaHoc.OrderBy(l => l.MaLop.Length).ThenBy(l => l.MaLop, StringComparer.Ordinal))
+                {
+                    var nut = new NutToChuc
+                    {
+                        KhoaNut = $"lop-{lop.LopHocId}", Loai = "Lớp học", Ten = lop.MaLop, Ma = lop.ChuyenNganh ?? string.Empty,
+                        MoTa = $"{lop.TenKhoa ?? "Chưa có khoa"} · {lop.ChuyenNganh ?? "chưa có chuyên ngành"}",
+                        CoHoatDong = lop.CoHoatDong, TrangThai = LayTrangThai(lop.CoHoatDong),
+                        DuongDan = $"HocVien?lop={lop.LopHocId}", SiSo = lop.SiSo, SucChua = lop.SoLuongToiDa,
+                        CanhBao = lop.SiSo > lop.SoLuongToiDa ? "Sĩ số vượt sức chứa của lớp." : null
+                    };
+                    nutLop.Add(lop.LopHocId, nut);
+                    nutKhoaHoc.Con.Add(nut);
+                }
+            }
+        }
+
+        foreach (var hocVien in cacHocVien)
+        {
+            if (!nutLop.TryGetValue(hocVien.LopHocId, out var lop))
+            {
+                continue;
+            }
+
+            lop.Con.Add(new NutToChuc
+            {
+                KhoaNut = $"hoc-vien-{hocVien.HocVienId}", Loai = "Học viên", Ten = hocVien.HoVaTen, Ma = hocVien.MaHocVien,
+                MoTa = string.IsNullOrEmpty(hocVien.ChucVuLop) ? "Học viên" : hocVien.ChucVuLop,
+                TrangThai = hocVien.TrangThai, CoHoatDong = hocVien.TrangThai == TrangThaiDangHoc,
+                DuongDan = $"HocVien?lop={hocVien.LopHocId}"
+            });
+        }
+
+        return goc;
+    }
+
+    private static NutToChuc TaoGoc(string nhanh, string moTa) => new()
+    {
+        KhoaNut = $"hoc-vien-{nhanh}", Loai = "Học viện", Ten = "Học viện An ninh nhân dân", Ma = "C500", MoTa = moTa
+    };
 
     private static NutToChuc ThemNhom(NutToChuc cha, string ma, string ten, string moTa)
     {

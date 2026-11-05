@@ -40,6 +40,18 @@ public class TaoTaiKhoanViewModel
     public string VaiTro { get; set; } = string.Empty;
 
     /// <summary>
+    /// Vùng quản lý (bắt buộc với vai trò Manager): ToChuc hoặc DaoTao.
+    /// </summary>
+    [Display(Name = "Vùng quản lý")]
+    public string? VungQuanLy { get; set; }
+
+    /// <summary>
+    /// Khoa phụ trách của Manager (để trống = mọi khoa trong vùng).
+    /// </summary>
+    [Display(Name = "Khoa phụ trách")]
+    public int? KhoaPhuTrachId { get; set; }
+
+    /// <summary>
     /// Mã nhân sự liên kết nếu có.
     /// </summary>
     [StringLength(50, ErrorMessage = "Mã nhân sự không được vượt quá 50 ký tự.")]

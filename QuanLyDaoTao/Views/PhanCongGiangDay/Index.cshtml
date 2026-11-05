@@ -3,7 +3,7 @@
 @{
     ViewData["Title"] = "Phân công giảng dạy";
     Layout = "_Layout";
-    bool laQuanTri = User.IsInRole(VaiTroMacDinh.QuanTriVien) || User.IsInRole(VaiTroMacDinh.QuanLyDaoTao);
+    bool laQuanTri = User.IsInRole(VaiTroMacDinh.SuperAdmin) || User.IsInRole(VaiTroMacDinh.QuanTriVien) || User.IsInRole(VaiTroMacDinh.QuanLy);
     var danhSachNhanSu = ViewBag.DanhSachNhanSu as List<NhanSu> ?? new List<NhanSu>();
     var danhSachMonHoc = ViewBag.DanhSachMonHoc as List<MonHoc> ?? new List<MonHoc>();
     var danhSachLop = ViewBag.DanhSachLop as List<LopHoc> ?? new List<LopHoc>();

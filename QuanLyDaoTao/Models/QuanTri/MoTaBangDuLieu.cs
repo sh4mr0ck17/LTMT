@@ -1,4 +1,4 @@
-using QuanLyDaoTao.Models;
+﻿using QuanLyDaoTao.Models;
 
 namespace QuanLyDaoTao.Models.QuanTri;
 
@@ -31,6 +31,12 @@ public class ThongTinBangHeThong
     /// Số lượng trường (cột) tùy chỉnh đã được cấu hình thêm cho bảng.
     /// </summary>
     public int SoTruongTuyChinh { get; set; }
+
+    /// <summary>Nhóm hiển thị (Danh mục dùng chung, Tổ chức - Cán bộ, Đào tạo, Hệ thống).</summary>
+    public string Nhom { get; set; } = string.Empty;
+
+    /// <summary>Bảng chỉ cho xem (ví dụ nhật ký kiểm toán) — không thêm, sửa, xóa.</summary>
+    public bool ChiDoc { get; set; }
 }
 
 /// <summary>

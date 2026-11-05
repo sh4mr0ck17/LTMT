@@ -1,75 +1,128 @@
 @page "/NhatKy"
+@attribute [Authorize(Roles = VaiTroMacDinh.NhomQuanTri)]
+@inherits TrangNghiepVuCoSo
 @inject INhatKyDichVu NhatKyDichVu
 
-<PageTitle>Nhật ký kiểm toán - C500</PageTitle>
+<PageTitle>Nhật ký hệ thống | Quản lý đào tạo C500</PageTitle>
 
-<div class="container-fluid px-4 py-3" id="pnlNhatKy">
-    <div class="d-flex justify-content-between align-items-center mb-3">
-        <div>
-            <h4 class="mb-1 text-primary fw-bold" id="lblTieuDe">
-                <i class="bi bi-clock-history me-2"></i>Nhật Ký Kiểm Toán Hệ Thống (C500)
-            </h4>
-            <span class="text-muted small">Lịch sử ghi nhận thao tác của người dùng, nhập/xuất Excel và bảo mật</span>
-        </div>
-    </div>
+<div class="trang-nghiep-vu" id="pnlNhatKy">
+    <TieuDeTrang PhanHe="Quản trị" TieuDe="Nhật ký hệ thống" BieuTuong="bi-clock-history"
+                 MoTa="Mọi thao tác ghi (thêm, sửa, xóa, nhập Excel, đăng nhập, đổi quyền) kèm giá trị cũ → mới và địa chỉ IP.">
+        <RadzenDropDown TValue="int" Data="@_soLuongLuaChon" TextProperty="Ten" ValueProperty="So" @bind-Value="_soLuong" Change="@(_ => NapLaiAsync())" Style="width:180px" id="cboSoLuong" />
+    </TieuDeTrang>
 
-    <!-- Bảng nhật ký -->
-    <div class="card shadow-sm border-0" id="pnlBangDuLieu">
-        <div class="card-body p-0">
-            <div class="table-responsive">
-                <table class="table table-hover table-striped align-middle mb-0" id="dgvDanhSachNhatKy">
-                    <thead class="table-light">
-                        <tr>
-                            <th class="ps-3" style="width: 50px;">#</th>
-                            <th style="width: 170px;">Thời Điểm</th>
-                            <th>Người Thực Hiện</th>
-                            <th>Hành Động</th>
-                            <th>Bảng Dữ Liệu</th>
-                            <th>Khóa Bản Ghi</th>
-                            <th>Chi Tiết Thay Đổi</th>
-                            <th class="text-center" style="width: 120px;">Kết Quả</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @if (danhSachNhatKy == null || danhSachNhatKy.Count == 0)
-                        {
-                            <tr><td colspan="8" class="text-center py-4 text-muted">Không tìm thấy nhật ký kiểm toán nào</td></tr>
-                        }
-                        else
-                        {
-                            int stt = 1;
-                            foreach (var nk in danhSachNhatKy)
-                            {
-                                <tr>
-                                    <td class="ps-3 fw-bold text-muted">@(stt++)</td>
-                                    <td class="font-monospace small">@nk.ThoiDiem.ToString("dd/MM/yyyy HH:mm:ss")</td>
-                                    <td class="fw-semibold">@nk.NguoiThucHien</td>
-                                    <td>
-                                        <span class="badge bg-primary">@nk.HanhDong</span>
-                                    </td>
-                                    <td><code>@nk.BangDuLieu</code></td>
-                                    <td><span class="badge bg-light text-dark border">@(nk.KhoaBanGhi ?? "-")</span></td>
-                                    <td class="small text-truncate" style="max-width: 320px;">
-                                        @(nk.GiaTriMoi ?? nk.GiaTriCu ?? "-")
-                                    </td>
-                                    <td class="text-center">
-                                        <span class="badge bg-success">@nk.KetQua</span>
-                                    </td>
-                                </tr>
-                            }
-                        }
-                    </tbody>
-                </table>
+    <div class="khung-danh-sach">
+        <div class="thanh-cong-cu" id="pnlBoLoc">
+            <div class="o-tim-kiem">
+                <i class="bi bi-search"></i>
+                <input class="form-control" id="txtTimKiem" placeholder="Tìm người thực hiện, khóa bản ghi, nội dung thay đổi..." value="@_tuKhoa" @oninput="@(e => _tuKhoa = e.Value?.ToString() ?? string.Empty)" />
             </div>
+            <RadzenDropDown TValue="string" Data="@_tatCa.Select(n => n.BangDuLieu).Distinct().Order()" @bind-Value="_bangLoc" AllowClear="true" Placeholder="Mọi bảng" class="bo-loc bo-loc-hep" id="cboBangDuLieu" />
+            <RadzenDropDown TValue="string" Data="@_tatCa.Select(n => n.HanhDong).Distinct().Order()" @bind-Value="_hanhDongLoc" AllowClear="true" AllowFiltering="true" Placeholder="Mọi hành động" class="bo-loc" id="cboHanhDong" />
+            <RadzenDropDown TValue="string" Data="@_tatCa.Select(n => n.NguoiThucHien).Distinct().Order()" @bind-Value="_nguoiLoc" AllowClear="true" AllowFiltering="true" Placeholder="Mọi người dùng" class="bo-loc" id="cboNguoiThucHien" />
+            <RadzenCheckBox @bind-Value="_chiThatBai" Name="chkThatBai" id="chkThatBai" />
+            <label for="chkThatBai" class="small mb-0">Chỉ thất bại</label>
+            <RadzenButton Text="Bỏ lọc" Icon="filter_alt_off" ButtonStyle="ButtonStyle.Light" Size="ButtonSize.Small" Click="BoLoc" id="btnBoLoc" />
         </div>
+
+        <div class="the-thong-ke-nho">
+            <div><span>bản ghi</span><strong>@DanhSachHienThi.Count() / @_tatCa.Count</strong></div>
+            <div><span>người dùng</span><strong>@DanhSachHienThi.Select(n => n.NguoiThucHien).Distinct().Count()</strong></div>
+            <div><span>thất bại</span><strong class="text-danger">@DanhSachHienThi.Count(LaThatBai)</strong></div>
+            <div><span>hôm nay</span><strong>@DanhSachHienThi.Count(n => n.ThoiDiem.ToLocalTime().Date == DateTime.Today)</strong></div>
+        </div>
+
+        <RadzenDataGrid TItem="NhatKyHeThong" Data="@DanhSachHienThi" IsLoading="@DangTai" AllowPaging="true" PageSize="25" AllowSorting="true" AllowColumnResize="true"
+                        EmptyText="Không có nhật ký phù hợp." class="bang-du-lieu" id="dgvDanhSachNhatKy" RowRender="@ToMauDong">
+            <Columns>
+                <RadzenDataGridColumn TItem="NhatKyHeThong" Property="ThoiDiem" Title="Thời điểm" Width="150px">
+                    <Template Context="n"><span style="font-variant-numeric:tabular-nums">@n.ThoiDiem.ToLocalTime().ToString("dd/MM HH:mm:ss")</span></Template>
+                </RadzenDataGridColumn>
+                <RadzenDataGridColumn TItem="NhatKyHeThong" Property="NguoiThucHien" Title="Người thực hiện" Width="210px" />
+                <RadzenDataGridColumn TItem="NhatKyHeThong" Property="HanhDong" Title="Hành động" Width="160px">
+                    <Template Context="n"><span class="chip-trang-thai @(LaThatBai(n) ? "canh-bao" : MauHanhDong(n.HanhDong))">@n.HanhDong</span></Template>
+                </RadzenDataGridColumn>
+                <RadzenDataGridColumn TItem="NhatKyHeThong" Property="BangDuLieu" Title="Bảng" Width="110px" />
+                <RadzenDataGridColumn TItem="NhatKyHeThong" Property="KhoaBanGhi" Title="Bản ghi" Width="140px"><Template Context="n"><span class="ma-ban-ghi">@(n.KhoaBanGhi ?? "—")</span></Template></RadzenDataGridColumn>
+                <RadzenDataGridColumn TItem="NhatKyHeThong" Title="Thay đổi" Sortable="false">
+                    <Template Context="n">
+                        @if (n.GiaTriCu is not null)
+                        {
+                            <span class="text-decoration-line-through text-muted me-1">@n.GiaTriCu</span>
+                        }
+                        <span>@n.GiaTriMoi</span>
+                    </Template>
+                </RadzenDataGridColumn>
+                <RadzenDataGridColumn TItem="NhatKyHeThong" Property="DiaChiIp" Title="IP" Width="110px" />
+                <RadzenDataGridColumn TItem="NhatKyHeThong" Title="" Width="55px" Sortable="false" TextAlign="TextAlign.Center">
+                    <Template Context="n"><RadzenButton Icon="visibility" ButtonStyle="ButtonStyle.Light" Size="ButtonSize.ExtraSmall" Click="@(() => XemChiTietAsync(n))" title="Xem chi tiết" /></Template>
+                </RadzenDataGridColumn>
+            </Columns>
+        </RadzenDataGrid>
     </div>
 </div>
 
 @code {
-    private List<NhatKyHeThong>? danhSachNhatKy;
+    private sealed record LuaChonSoLuong(int So, string Ten);
 
-    protected override async Task OnInitializedAsync()
+    private static readonly LuaChonSoLuong[] _soLuongLuaChon =
+        [new(200, "200 bản ghi gần nhất"), new(500, "500 bản ghi gần nhất"), new(1000, "1.000 bản ghi gần nhất"), new(5000, "5.000 bản ghi gần nhất")];
+    private List<NhatKyHeThong> _tatCa = [];
+    private int _soLuong = 500;
+    private string _tuKhoa = string.Empty;
+    private string? _bangLoc;
+    private string? _hanhDongLoc;
+    private string? _nguoiLoc;
+    private bool _chiThatBai;
+
+    /// <inheritdoc />
+    protected override IReadOnlyCollection<string> BangTheoDoi { get; } =
+        ["Khoa", "BoMon", "LopHoc", "HocVien", "NhanSu", "ThongBao", "TaiKhoan"];
+
+    private IEnumerable<NhatKyHeThong> DanhSachHienThi => _tatCa.Where(n =>
+        (_bangLoc is null || n.BangDuLieu == _bangLoc) && (_hanhDongLoc is null || n.HanhDong == _hanhDongLoc) &&
+        (_nguoiLoc is null || n.NguoiThucHien == _nguoiLoc) && (!_chiThatBai || LaThatBai(n)) &&
+        (QuyTacNghiepVu.ChuaTuKhoa(n.NguoiThucHien, _tuKhoa) || QuyTacNghiepVu.ChuaTuKhoa(n.KhoaBanGhi, _tuKhoa) ||
+         QuyTacNghiepVu.ChuaTuKhoa(n.GiaTriMoi, _tuKhoa) || QuyTacNghiepVu.ChuaTuKhoa(n.GiaTriCu, _tuKhoa) || QuyTacNghiepVu.ChuaTuKhoa(n.HanhDong, _tuKhoa)));
+
+    /// <inheritdoc />
+    protected override async Task TaiDuLieuAsync() => _tatCa = await NhatKyDichVu.LayDanhSachNhatKyAsync(null, null, _soLuong);
+
+    private static bool LaThatBai(NhatKyHeThong n) => n.KetQua != "Thành công";
+
+    private static string MauHanhDong(string hanhDong) => hanhDong switch
     {
-        danhSachNhatKy = await NhatKyDichVu.LayDanhSachNhatKyAsync(null, null, 100);
+        "Xóa" => "tat",
+        "Thêm mới" => "tot",
+        _ => string.Empty
+    };
+
+    private static void ToMauDong(RowRenderEventArgs<NhatKyHeThong> e)
+    {
+        if (e.Data is not null && LaThatBai(e.Data))
+        {
+            e.Attributes.Add("style", "background:#fff7ed");
+        }
     }
+
+    private void BoLoc()
+    {
+        _tuKhoa = string.Empty;
+        _bangLoc = null;
+        _hanhDongLoc = null;
+        _nguoiLoc = null;
+        _chiThatBai = false;
+    }
+
+    private Task XemChiTietAsync(NhatKyHeThong n) => HopThoai.OpenAsync<ChiTietHoSo>("Chi tiết nhật ký",
+        new Dictionary<string, object?>
+        {
+            [nameof(ChiTietHoSo.CacTruong)] = new List<(string, string?)>
+            {
+                ("Thời điểm", n.ThoiDiem.ToLocalTime().ToString("dd/MM/yyyy HH:mm:ss")), ("Người thực hiện", n.NguoiThucHien),
+                ("Hành động", n.HanhDong), ("Bảng dữ liệu", n.BangDuLieu), ("Bản ghi", n.KhoaBanGhi), ("Giá trị cũ", n.GiaTriCu),
+                ("Giá trị mới", n.GiaTriMoi), ("Kết quả", n.KetQua), ("Địa chỉ IP", n.DiaChiIp)
+            }
+        },
+        new DialogOptions { Width = "680px", CloseDialogOnOverlayClick = true });
 }

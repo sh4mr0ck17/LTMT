@@ -7,7 +7,12 @@ using Microsoft.OpenApi.Models;
 using QuanLyDaoTao.Data;
 using QuanLyDaoTao.Models;
 using QuanLyDaoTao.Services;
+using Microsoft.AspNetCore.RateLimiting;
 using Radzen;
+
+// Định dạng ngày, số và so sánh chuỗi tiếng Việt thống nhất toàn hệ thống.
+System.Globalization.CultureInfo.DefaultThreadCurrentCulture = System.Globalization.CultureInfo.GetCultureInfo("vi-VN");
+System.Globalization.CultureInfo.DefaultThreadCurrentUICulture = System.Globalization.CultureInfo.GetCultureInfo("vi-VN");
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -21,15 +26,23 @@ builder.Services.AddDbContext<QuanLyDaoTaoDbContext>(options =>
 builder.Services.AddIdentity<TaiKhoan, VaiTro>(options =>
 {
     options.Password.RequireDigit = true;
-    options.Password.RequiredLength = 6;
+    options.Password.RequiredLength = 8;
     options.Password.RequireNonAlphanumeric = false;
     options.Password.RequireUppercase = false;
-    options.Password.RequireLowercase = false;
+    options.Password.RequireLowercase = true;
     options.SignIn.RequireConfirmedAccount = false;
+    // Khóa tài khoản 15 phút sau 5 lần đăng nhập sai liên tiếp.
+    options.Lockout.MaxFailedAccessAttempts = 5;
+    options.Lockout.DefaultLockoutTimeSpan = TimeSpan.FromMinutes(15);
+    options.Lockout.AllowedForNewUsers = true;
 })
 .AddEntityFrameworkStores<QuanLyDaoTaoDbContext>()
-.AddDefaultTokenProviders();
+.AddDefaultTokenProviders()
+.AddClaimsPrincipalFactory<NhaMayClaimTaiKhoan>();
 builder.Services.AddCascadingAuthenticationState();
+
+// Kiểm tra lại SecurityStamp mỗi phút: đổi quyền / khóa / đặt lại mật khẩu làm phiên cũ hết hiệu lực gần như ngay lập tức.
+builder.Services.Configure<SecurityStampValidatorOptions>(options => options.ValidationInterval = TimeSpan.FromMinutes(1));
 
 // Cấu hình Cookie xác thực cho giao diện Web/Blazor
 builder.Services.ConfigureApplicationCookie(options =>
@@ -38,11 +51,35 @@ builder.Services.ConfigureApplicationCookie(options =>
     options.AccessDeniedPath = "/TaiKhoan/TuChoiTruyCap";
     options.ExpireTimeSpan = TimeSpan.FromHours(8);
     options.SlidingExpiration = true;
+    options.Cookie.HttpOnly = true;
+    options.Cookie.SameSite = SameSiteMode.Lax;
 });
 
-// Cấu hình JWT Bearer Authentication cho RESTful API
+// Giới hạn tần suất các điểm đăng nhập/đăng ký để chống dò mật khẩu.
+builder.Services.AddRateLimiter(options =>
+{
+    options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+    options.AddFixedWindowLimiter(TenChinhSachGioiHanDangNhap, cauHinh =>
+    {
+        cauHinh.PermitLimit = 20;
+        cauHinh.Window = TimeSpan.FromMinutes(1);
+        cauHinh.QueueLimit = 0;
+    });
+});
+
+// Cấu hình JWT Bearer Authentication cho RESTful API. Khóa bí mật bắt buộc cấu hình ở môi trường thật.
 var jwtSection = builder.Configuration.GetSection("Jwt");
-var secretKey = jwtSection["SecretKey"] ?? "HocVienAnNinhNhanDanC500_QuanLyDaoTao_SuperSecretKey_2026_SecureToken";
+var secretKey = jwtSection["SecretKey"];
+if (string.IsNullOrWhiteSpace(secretKey))
+{
+    if (!builder.Environment.IsDevelopment() && !builder.Environment.IsEnvironment("Testing"))
+    {
+        throw new InvalidOperationException("Thiếu cấu hình Jwt:SecretKey. Đặt qua biến môi trường hoặc User Secrets.");
+    }
+
+    secretKey = "ChiDungChoMoiTruongPhatTrien_QuanLyDaoTao_KhongDungKhiTrienKhai_2026";
+}
+
 var keyBytes = Encoding.UTF8.GetBytes(secretKey);
 
 builder.Services.AddAuthentication()
@@ -109,6 +146,14 @@ builder.Services.AddSwaggerGen(c =>
     });
 });
 
+// Phân quyền tại tầng dịch vụ và kênh đồng bộ thay đổi giữa các tab
+builder.Services.AddHttpContextAccessor();
+builder.Services.AddScoped<IPhanQuyenDichVu, PhanQuyenDichVu>();
+builder.Services.AddSingleton<IBusThayDoiDuLieu, BusThayDoiDuLieu>();
+builder.Services.AddScoped<IThongBaoDichVu, ThongBaoDichVu>();
+builder.Services.AddScoped<ITruongTuyChinhDichVu, TruongTuyChinhDichVu>();
+builder.Services.AddScoped<ITaiKhoanDichVu, TaiKhoanDichVu>();
+
 // Đăng ký các dịch vụ nghiệp vụ (3-Tier Services)
 builder.Services.AddScoped<INhatKyDichVu, NhatKyDichVu>();
 builder.Services.AddScoped<IKhoaDichVu, KhoaDichVu>();
@@ -163,11 +208,25 @@ app.UseRouting();
 
 app.UseAuthentication();
 app.UseAuthorization();
+app.UseRateLimiter();
 
 app.UseAntiforgery();
 
 // Endpoint kiểm tra sức khỏe hệ thống (Health Check) phục vụ CI/CD & Monitoring
 app.MapHealthChecks("/healthz").AllowAnonymous();
+
+// Tải tệp đính kèm thông báo: bắt buộc đăng nhập, luôn tải xuống (không hiển thị nội tuyến) để tránh thực thi nội dung.
+app.MapGet("/ThongBao/tep/{id:int}", async (int id, IThongBaoDichVu dichVuThongBao, HttpContext http) =>
+{
+    var tep = await dichVuThongBao.LayTepAsync(id, http.RequestAborted);
+    if (tep is null)
+    {
+        return Results.NotFound();
+    }
+
+    http.Response.Headers["X-Content-Type-Options"] = "nosniff";
+    return Results.File(tep.DuLieu, tep.KieuNoiDung, tep.TenTep);
+}).RequireAuthorization();
 
 // Endpoint Blazor Razor Components
 app.MapRazorComponents<QuanLyDaoTao.Components.App>()
@@ -184,4 +243,13 @@ app.Run();
 /// <summary>
 /// Partial class Program cho WebApplicationFactory trong Integration tests.
 /// </summary>
-public partial class Program { }
+/// <summary>
+/// Điểm vào ứng dụng (khai báo partial để dự án kiểm thử dùng WebApplicationFactory).
+/// </summary>
+public partial class Program
+{
+    /// <summary>
+    /// Tên chính sách giới hạn tần suất cho đăng nhập / đăng ký.
+    /// </summary>
+    public const string TenChinhSachGioiHanDangNhap = "dang-nhap";
+}

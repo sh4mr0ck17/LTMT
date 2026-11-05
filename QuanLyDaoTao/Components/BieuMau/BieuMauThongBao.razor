@@ -1,0 +1,289 @@
+@inject DialogService HopThoai
+@inject IThongBaoDichVu DichVuThongBao
+@* Biểu mẫu đăng/sửa thông báo: mức độ, hạn hiển thị, phạm vi nhận (chọn nhanh Hệ → Khóa → Lớp), ảnh đính kèm. *@
+
+<h6 class="nhom-truong">Thông tin văn bản</h6>
+<div class="luoi-bieu-mau">
+    <RadzenFormField Text="Loại văn bản" Variant="Variant.Outlined">
+        <RadzenDropDown TValue="string" id="cboLoaiVanBan" Data="@LoaiVanBanThongBao.TatCa" @bind-Value="_banNhap.LoaiVanBan" />
+    </RadzenFormField>
+    <RadzenFormField Text="Số / Ký hiệu" Variant="Variant.Outlined">
+        <RadzenTextBox id="txtSoKyHieu" @bind-Value="_banNhap.SoKyHieu" MaxLength="50" Placeholder="@GoiYSoKyHieu" />
+    </RadzenFormField>
+    <RadzenFormField Text="Tiêu đề *" Variant="Variant.Outlined" class="o-rong">
+        <RadzenTextBox id="txtTieuDe" @bind-Value="_banNhap.TieuDe" MaxLength="@ThongBaoDichVu.DoDaiTieuDeToiDa" />
+    </RadzenFormField>
+    <RadzenFormField Text="Trích yếu (một câu tóm tắt hiển thị ở danh sách)" Variant="Variant.Outlined" class="o-rong">
+        <RadzenTextBox id="txtTrichYeu" @bind-Value="_banNhap.TrichYeu" MaxLength="500" />
+    </RadzenFormField>
+    <RadzenFormField Text="Ngày ban hành" Variant="Variant.Outlined">
+        <RadzenDatePicker TValue="DateTime?" id="dtpNgayBanHanh" @bind-Value="_ngayBanHanh" DateFormat="dd/MM/yyyy" AllowClear="true" />
+    </RadzenFormField>
+    <RadzenFormField Text="Cơ quan ban hành" Variant="Variant.Outlined">
+        <RadzenTextBox id="txtCoQuanBanHanh" @bind-Value="_banNhap.CoQuanBanHanh" MaxLength="150" Placeholder="@ThongBaoDichVu.CoQuanMacDinh" />
+    </RadzenFormField>
+    <RadzenFormField Text="Người ký" Variant="Variant.Outlined">
+        <RadzenTextBox id="txtNguoiKy" @bind-Value="_banNhap.NguoiKy" MaxLength="100" />
+    </RadzenFormField>
+    <RadzenFormField Text="Mức độ" Variant="Variant.Outlined">
+        <RadzenDropDown TValue="string" id="cboMucDo" Data="@MucDoThongBao.TatCa" @bind-Value="_banNhap.MucDo" />
+    </RadzenFormField>
+    <RadzenFormField Text="Hiển thị đến (để trống: không hết hạn)" Variant="Variant.Outlined">
+        <RadzenDatePicker TValue="DateTime?" id="dtpHetHan" @bind-Value="_hetHanNgay" DateFormat="dd/MM/yyyy" Min="@DateTime.Today.AddDays(1)" AllowClear="true" />
+    </RadzenFormField>
+</div>
+
+<h6 class="nhom-truong">Gửi tới</h6>
+<div class="d-flex flex-wrap gap-2 align-items-center">
+    <RadzenDropDown TValue="string" Data="@_danhSachHe" @bind-Value="_heChon" Change="@(_ => { _khoaHocChon = null; _lopChon = null; })" AllowClear="true" Placeholder="Hệ" Style="width:150px" id="cboHeNhanh" />
+    <RadzenDropDown TValue="string" Data="@KhoaHocTheoHe" @bind-Value="_khoaHocChon" Change="@(_ => _lopChon = null)" AllowClear="true" Placeholder="Khóa" Style="width:120px" id="cboKhoaHocNhanh" />
+    <RadzenDropDown TValue="string" Data="@LopTheoKhoaHoc" TextProperty="Ten" ValueProperty="Ma" @bind-Value="_lopChon" AllowClear="true" AllowFiltering="true" Placeholder="Lớp" Style="width:140px" id="cboLopNhanh" />
+    <RadzenButton Text="Thêm nhóm này" Icon="add" ButtonStyle="ButtonStyle.Light" Size="ButtonSize.Small" Click="ThemNhomNhanh" Disabled="@(_heChon is null)" id="btnThemNhomNhanh" />
+</div>
+<RadzenDropDown TValue="IEnumerable<string>" id="cboPhamVi" Data="@PhamViDuocChon" TextProperty="Ten" ValueProperty="Ma" @bind-Value="_phamViChon"
+                Multiple="true" Chips="true" AllowFiltering="true" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" FilterOperator="StringFilterOperator.Contains"
+                Placeholder="@(LaQuanTri ? "Không chọn: gửi toàn hệ thống" : "Chọn khoa / hệ / khóa / lớp")" Style="width:100%" class="mt-2" />
+
+<h6 class="nhom-truong">Nội dung</h6>
+<RadzenTextArea id="txtNoiDung" @bind-Value="_banNhap.NoiDung" MaxLength="@ThongBaoDichVu.DoDaiNoiDungToiDa" Rows="8" Style="width:100%"
+                Placeholder="Xuống dòng được giữ nguyên khi hiển thị." />
+<div class="small text-muted text-end">@(_banNhap.NoiDung?.Length ?? 0) / @ThongBaoDichVu.DoDaiNoiDungToiDa.ToString("N0")</div>
+
+<h6 class="nhom-truong">Tệp đính kèm (PDF, Word, Excel, PowerPoint, ảnh · tối đa @ThongBaoDichVu.SoTepToiDa tệp, mỗi tệp 10 MB)</h6>
+@if (TepHienCo.Count > 0)
+{
+    <ul class="small mb-1">
+        @foreach (var tep in TepHienCo)
+        {
+            <li><i class="bi bi-paperclip"></i> @tep.TenTep</li>
+        }
+    </ul>
+}
+<InputFile id="fileTepDinhKem" OnChange="ChonTepAsync" multiple accept=".pdf,.doc,.docx,.xls,.xlsx,.pptx,.png,.jpg,.jpeg,.webp" disabled="@(_dangLuu || _dangTaiAnh)" class="form-control form-control-sm" style="max-width:420px" />
+@if (_tepMoi.Count > 0)
+{
+    <ul class="small mt-1 mb-0">
+        @foreach (var tep in _tepMoi)
+        {
+            <li><i class="bi bi-file-earmark-arrow-up"></i> @tep.TenTep <button type="button" class="btn btn-link btn-sm p-0 text-danger" @onclick="() => _tepMoi.Remove(tep)">bỏ</button></li>
+        }
+    </ul>
+}
+
+<h6 class="nhom-truong">Ảnh minh họa hiển thị trong bài (PNG, JPEG, WebP · tối đa 3 MB)</h6>
+<div class="d-flex flex-wrap align-items-center gap-2">
+    <InputFile id="fileAnhDinhKem" OnChange="ChonAnhAsync" accept="image/png,image/jpeg,image/webp" disabled="@(_dangLuu || _dangTaiAnh)" class="form-control form-control-sm" style="max-width:340px" />
+    @if (_anhXemTruoc is not null)
+    {
+        <RadzenButton Text="Bỏ ảnh" Icon="close" ButtonStyle="ButtonStyle.Light" Size="ButtonSize.Small" Click="BoAnh" id="btnBoAnh" />
+    }
+</div>
+@if (_anhXemTruoc is not null)
+{
+    <img src="@_anhXemTruoc" alt="Ảnh xem trước" class="anh-thong-bao-xem-truoc mt-2" />
+}
+
+@if (LaQuanTri)
+{
+    <div class="d-flex align-items-center gap-2 mt-3">
+        <RadzenSwitch @bind-Value="_banNhap.DaGhim" id="swGhim" />
+        <label for="swGhim" class="mb-0">Ghim lên đầu bảng tin</label>
+    </div>
+}
+
+@if (!string.IsNullOrEmpty(_loi))
+{
+    <RadzenAlert AlertStyle="AlertStyle.Danger" Variant="Variant.Flat" AllowClose="false" class="mt-3 mb-0" id="lblThongBaoLoi">@_loi</RadzenAlert>
+}
+
+<div class="d-flex justify-content-end gap-2 mt-3">
+    <RadzenButton Text="Hủy" ButtonStyle="ButtonStyle.Light" Disabled="@_dangLuu" Click="@(() => HopThoai.Close())" id="btnHuy" />
+    <RadzenButton Text="@(ThongBaoGoc is null ? "Đăng thông báo" : "Lưu thay đổi")" Icon="send" ButtonStyle="ButtonStyle.Primary" IsBusy="@_dangLuu" BusyText="Đang lưu..."
+                  Disabled="@_dangTaiAnh" Click="LuuAsync" id="btnLuuThongBao" />
+</div>
+
+@code {
+    private ThongBao _banNhap = new();
+    private IEnumerable<string> _phamViChon = [];
+    private DateTime? _hetHanNgay;
+    private List<string> _danhSachHe = [];
+    private string? _heChon;
+    private string? _khoaHocChon;
+    private string? _lopChon;
+    private byte[]? _anhMoi;
+    private string? _anhXemTruoc;
+    private bool _xoaAnh;
+    private bool _dangLuu;
+    private bool _dangTaiAnh;
+    private string? _loi;
+
+    private DateTime? _ngayBanHanh;
+    private readonly List<TepTaiLen> _tepMoi = [];
+
+    /// <summary>Thông báo gốc khi sửa (đã gồm ảnh).</summary>
+    [Parameter] public ThongBao? ThongBaoGoc { get; set; }
+
+    /// <summary>Tệp đính kèm đang có (khi sửa).</summary>
+    [Parameter] public IReadOnlyList<ThongTinTep> TepHienCo { get; set; } = [];
+
+    private string GoiYSoKyHieu => $"VD: 125/{LoaiVanBanThongBao.LayKyHieu(_banNhap.LoaiVanBan)}-C500";
+
+    /// <summary>Danh mục phạm vi.</summary>
+    [Parameter] public IReadOnlyList<PhamViThongBao> DanhMucPhamVi { get; set; } = [];
+
+    /// <summary>Danh sách lớp (để chọn nhanh Hệ → Khóa → Lớp).</summary>
+    [Parameter] public IReadOnlyList<LopHoc> DanhSachLop { get; set; } = [];
+
+    /// <summary>Người dùng là quản trị viên.</summary>
+    [Parameter] public bool LaQuanTri { get; set; }
+
+    private IEnumerable<PhamViThongBao> PhamViDuocChon => LaQuanTri ? DanhMucPhamVi : DanhMucPhamVi.Where(p => p.Ma != "*");
+
+    private IEnumerable<string> KhoaHocTheoHe => DanhSachLop.Where(l => l.HeDaoTao == _heChon && l.KhoaHoc != null)
+        .Select(l => l.KhoaHoc!).Distinct().OrderDescending();
+
+    private IEnumerable<LuaChon> LopTheoKhoaHoc => DanhSachLop
+        .Where(l => l.HeDaoTao == _heChon && (_khoaHocChon is null || l.KhoaHoc == _khoaHocChon))
+        .Select(l => new LuaChon($"lop:{l.LopHocId}", l.MaLop));
+
+    /// <inheritdoc />
+    protected override void OnInitialized()
+    {
+        _danhSachHe = DanhSachLop.Select(l => l.HeDaoTao).Distinct().Order().ToList();
+        _banNhap = ThongBaoGoc is null
+            ? new ThongBao()
+            : new ThongBao
+            {
+                ThongBaoId = ThongBaoGoc.ThongBaoId, TieuDe = ThongBaoGoc.TieuDe, NoiDung = ThongBaoGoc.NoiDung, PhamVi = ThongBaoGoc.PhamVi,
+                DaGhim = ThongBaoGoc.DaGhim, MucDo = ThongBaoGoc.MucDo, HetHanLuc = ThongBaoGoc.HetHanLuc,
+                LoaiVanBan = ThongBaoGoc.LoaiVanBan, SoKyHieu = ThongBaoGoc.SoKyHieu, CoQuanBanHanh = ThongBaoGoc.CoQuanBanHanh,
+                NguoiKy = ThongBaoGoc.NguoiKy, TrichYeu = ThongBaoGoc.TrichYeu
+            };
+        _ngayBanHanh = ThongBaoGoc?.NgayBanHanh?.ToLocalTime().Date;
+        _phamViChon = ThongBaoGoc?.DanhSachPhamVi.Where(p => p != "*").ToList() ?? [];
+        _hetHanNgay = ThongBaoGoc?.HetHanLuc?.ToLocalTime().Date;
+        _anhXemTruoc = ThongBaoGoc?.AnhDinhKem;
+    }
+
+    private void ThemNhomNhanh()
+    {
+        var ma = _lopChon ?? (_khoaHocChon is not null ? $"khoahoc:{_khoaHocChon}" : $"he:{_heChon}");
+        _phamViChon = _phamViChon.Append(ma).Distinct().ToList();
+        _heChon = null;
+        _khoaHocChon = null;
+        _lopChon = null;
+    }
+
+    private async Task ChonAnhAsync(InputFileChangeEventArgs e)
+    {
+        _dangTaiAnh = true;
+        _loi = null;
+        try
+        {
+            using var boNho = new MemoryStream();
+            await using (var tep = e.File.OpenReadStream(ThongBaoDichVu.GioiHanAnh))
+            {
+                await tep.CopyToAsync(boNho);
+            }
+
+            var duLieu = boNho.ToArray();
+            _anhXemTruoc = ThongBaoDichVu.TaoAnh(duLieu);
+            _anhMoi = duLieu;
+            _xoaAnh = false;
+        }
+        catch (IOException)
+        {
+            _loi = "Ảnh vượt quá 3 MB hoặc không đọc được.";
+        }
+        catch (InvalidOperationException ex)
+        {
+            _loi = ex.Message;
+        }
+        finally
+        {
+            _dangTaiAnh = false;
+        }
+    }
+
+    private async Task ChonTepAsync(InputFileChangeEventArgs e)
+    {
+        _loi = null;
+        _dangTaiAnh = true;
+        try
+        {
+            foreach (var tep in e.GetMultipleFiles(ThongBaoDichVu.SoTepToiDa))
+            {
+                using var boNho = new MemoryStream();
+                await using (var luong = tep.OpenReadStream(ThongBaoDichVu.GioiHanTep))
+                {
+                    await luong.CopyToAsync(boNho);
+                }
+
+                var duLieu = boNho.ToArray();
+                // Kiểm tra sớm để báo lỗi ngay trong biểu mẫu; dịch vụ kiểm tra lại khi lưu.
+                ThongBaoDichVu.XacDinhKieuTep(tep.Name, duLieu);
+                _tepMoi.Add(new TepTaiLen(tep.Name, duLieu));
+            }
+        }
+        catch (IOException)
+        {
+            _loi = "Tệp vượt quá 10 MB hoặc không đọc được.";
+        }
+        catch (InvalidOperationException ex)
+        {
+            _loi = ex.Message;
+        }
+        finally
+        {
+            _dangTaiAnh = false;
+        }
+    }
+
+    private void BoAnh()
+    {
+        _anhMoi = null;
+        _anhXemTruoc = null;
+        _xoaAnh = true;
+    }
+
+    private async Task LuuAsync()
+    {
+        if (_dangLuu || _dangTaiAnh)
+        {
+            return;
+        }
+
+        if (!_phamViChon.Any() && !LaQuanTri)
+        {
+            _loi = "Vui lòng chọn ít nhất một phạm vi nhận.";
+            return;
+        }
+
+        _dangLuu = true;
+        _banNhap.PhamVi = string.Join(';', _phamViChon);
+        // Hết hạn vào cuối ngày đã chọn (giờ địa phương).
+        _banNhap.HetHanLuc = _hetHanNgay?.Date.AddDays(1).AddTicks(-1).ToUniversalTime();
+        _banNhap.NgayBanHanh = _ngayBanHanh?.Date.ToUniversalTime();
+        ThongBao? daLuu = null;
+        _loi = await TrangNghiepVuCoSo.ChayVaBatLoiAsync(async () =>
+        {
+            daLuu = await DichVuThongBao.LuuAsync(_banNhap, _anhMoi, _xoaAnh);
+            if (_tepMoi.Count > 0)
+            {
+                await DichVuThongBao.ThemTepAsync(daLuu.ThongBaoId, _tepMoi);
+            }
+        });
+        _dangLuu = false;
+        if (_loi is null && daLuu is not null)
+        {
+            HopThoai.Close(new KetQuaBieuMau(ThongBaoGoc is null ? $"Đã đăng {_banNhap.LoaiVanBan.ToLowerInvariant()}." : "Đã cập nhật văn bản.",
+                daLuu.ThongBaoId.ToString(System.Globalization.CultureInfo.InvariantCulture)));
+        }
+        else if (_loi is not null && daLuu is not null && ThongBaoGoc is null)
+        {
+            // Văn bản đã lưu nhưng tệp lỗi: chuyển sang chế độ sửa để không tạo bản trùng khi bấm lưu lại.
+            _banNhap.ThongBaoId = daLuu.ThongBaoId;
+            _loi += " Văn bản đã được lưu; hãy chọn lại tệp hợp lệ rồi bấm Lưu.";
+        }
+    }
+}

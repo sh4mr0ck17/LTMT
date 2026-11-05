@@ -1,17 +1,29 @@
-@page "/CayToChuc"
+﻿@page "/CayToChuc"
+@attribute [Authorize]
 @using QuanLyDaoTao.Models.ToChuc
 
-<PageTitle>Cây tổ chức - C500</PageTitle>
-<HeadContent><link rel="stylesheet" href="css/cay-to-chuc.css?v=3" /></HeadContent>
+<PageTitle>Cây tổ chức | Quản lý đào tạo C500</PageTitle>
+<HeadContent><link rel="stylesheet" href="css/cay-to-chuc.css?v=9" /></HeadContent>
 
-<div class="to-chuc container-fluid px-4 py-3" id="pnlCayToChuc" aria-busy="@_coDangTai.ToString().ToLowerInvariant()">
-    <header class="tc-header">
-        <div><h1 id="lblTieuDe">Cây tổ chức</h1><p>Nắm cơ cấu đơn vị, theo dõi nhân sự và các lớp trong cùng một nơi.</p></div>
-        <div class="tc-cap-nhat">
-            @if (_lanCapNhat.HasValue) { <small>Cập nhật @_lanCapNhat.Value.ToString("HH:mm:ss dd/MM/yyyy") (GMT+7)</small> }
-            <button class="btn btn-outline-primary btn-sm" id="btnTaiLaiToChuc" disabled="@_coDangTai" @onclick="TaiDuLieuAsync"><i class="bi bi-arrow-clockwise" aria-hidden="true"></i> Làm mới</button>
-        </div>
-    </header>
+<div class="to-chuc trang-nghiep-vu" id="pnlCayToChuc" aria-busy="@_coDangTai.ToString().ToLowerInvariant()">
+    <TieuDeTrang PhanHe="Tổng quan" TieuDe="Cây tổ chức" BieuTuong="bi-diagram-3"
+                 MoTa="Sơ đồ chỉ thể hiện cấu trúc (khoa, nhóm, bộ môn, lớp). Nhân sự và danh sách đầy đủ xem ở panel bên phải. Mỗi nhánh vẽ tối đa 8 mục, phần còn lại gom vào thẻ “+ N mục nữa”.">
+        @if (_lanCapNhat.HasValue)
+        {
+            <small class="text-muted">Cập nhật @_lanCapNhat.Value.ToString("HH:mm:ss")</small>
+        }
+        <button class="btn btn-outline-primary btn-sm" id="btnTaiLaiToChuc" disabled="@_coDangTai" @onclick="TaiDuLieuAsync"><i class="bi bi-arrow-clockwise" aria-hidden="true"></i> Làm mới</button>
+    </TieuDeTrang>
+
+    <div class="tab-so-do" role="tablist" aria-label="Chọn sơ đồ">
+        <button type="button" role="tab" aria-selected="@(_nhanh == NhanhToChuc)" class="@(_nhanh == NhanhToChuc ? "dang-chon" : null)" id="btnSoDoToChuc" @onclick="() => DoiNhanhAsync(NhanhToChuc)">
+            <i class="bi bi-building"></i> Tổ chức – Cán bộ <small>Khoa → Bộ môn → Cán bộ</small>
+        </button>
+        <button type="button" role="tab" aria-selected="@(_nhanh == NhanhDaoTao)" class="@(_nhanh == NhanhDaoTao ? "dang-chon" : null)" id="btnSoDoDaoTao" @onclick="() => DoiNhanhAsync(NhanhDaoTao)">
+            <i class="bi bi-mortarboard"></i> Đào tạo <small>Hệ → Khóa → Lớp → Học viên</small>
+        </button>
+    </div>
+
     @if (_loiTaiDuLieu != null) { <div class="alert alert-danger" role="alert">@_loiTaiDuLieu Bấm “Làm mới” để thử lại.</div> }
     @if (_goc == null)
     {
@@ -19,93 +31,193 @@
     }
     else
     {
-        <div class="tc-tong-quan" aria-label="Tổng quan toàn học viện">
-            <div><i class="bi bi-building" aria-hidden="true"></i><strong>@_goc.SoKhoa</strong><span>Khoa</span></div>
-            <div><i class="bi bi-diagram-2" aria-hidden="true"></i><strong>@_goc.SoBoMon</strong><span>Bộ môn</span></div>
-            <div><i class="bi bi-mortarboard" aria-hidden="true"></i><strong>@_goc.SoLop</strong><span>Lớp học</span></div>
-            <div><i class="bi bi-people" aria-hidden="true"></i><strong>@_goc.SoNhanSu</strong><span>Nhân sự</span></div>
-            <div><i class="bi bi-person-badge" aria-hidden="true"></i><strong>@_goc.SoHocVien</strong><span>Học viên đang học</span></div>
+        <div class="the-thong-ke-nho" aria-label="Tổng quan toàn học viện">
+            @if (_nhanh == NhanhToChuc)
+            {
+                <div><span>khoa</span><strong>@_goc.SoKhoa</strong></div>
+                <div><span>bộ môn</span><strong>@_goc.SoBoMon</strong></div>
+                <div><span>cán bộ</span><strong>@_goc.SoNhanSu</strong></div>
+            }
+            else
+            {
+                <div><span>hệ</span><strong>@_goc.Con.Count</strong></div>
+                <div><span>lớp</span><strong>@_goc.SoLop</strong></div>
+                <div><span>học viên đang học</span><strong>@_goc.SoHocVien.ToString("N0")</strong></div>
+            }
+            @if (_goc.SoCanRaSoat > 0)
+            {
+                <button type="button" class="tc-nut-ra-soat" id="btnLocCanRaSoat" @onclick="LocCanRaSoat"><i class="bi bi-exclamation-triangle" aria-hidden="true"></i> @_goc.SoCanRaSoat cần rà soát</button>
+            }
         </div>
-        <section class="tc-bo-loc" aria-label="Tìm kiếm và lọc cây tổ chức">
-            <div class="tc-tim-kiem">
-                <label for="txtTimKiemToChuc">Tìm trong cơ cấu</label>
-                <div class="tc-o-tim"><i class="bi bi-search" aria-hidden="true"></i><input id="txtTimKiemToChuc" type="search" class="form-control" placeholder="Tên hoặc mã khoa, bộ môn, lớp, nhân sự…" @bind="_tuKhoa" @bind:event="oninput" @bind:after="ApDungBoLoc" /></div>
+
+        <div class="thanh-cong-cu" aria-label="Tìm kiếm và lọc cây tổ chức">
+            <div class="o-tim-kiem">
+                <i class="bi bi-search" aria-hidden="true"></i>
+                <input id="txtTimKiemToChuc" type="search" class="form-control" placeholder="@(_nhanh == NhanhToChuc ? "Tìm khoa, bộ môn, cán bộ (tên hoặc mã)…" : "Tìm hệ, khóa, lớp, học viên (tên hoặc mã)…")" @bind="_tuKhoa" @bind:event="oninput" @bind:after="ApDungBoLoc" />
             </div>
-            <div><label for="cboLoaiToChuc">Loại bản ghi</label><select id="cboLoaiToChuc" class="form-select" @bind="_loai" @bind:after="ApDungBoLoc"><option value="">Tất cả loại</option><option>Khoa</option><option>Bộ môn</option><option>Lớp học</option><option>Nhân sự</option></select></div>
-            <div><label for="cboTrangThaiToChuc">Trạng thái</label><select id="cboTrangThaiToChuc" class="form-select" @bind="_trangThai" @bind:after="ApDungBoLoc"><option value="">Tất cả trạng thái</option><option value="hoat-dong">Đang hoạt động / công tác</option><option value="ngung">Ngừng hoạt động / đã nghỉ</option><option value="ra-soat">Cần rà soát phân đơn vị, sĩ số</option></select></div>
-            <button id="btnXoaBoLocToChuc" class="btn btn-outline-secondary" disabled="@(!CoBoLoc)" @onclick="XoaBoLoc">Xóa lọc</button>
-        </section>
-        <div class="tc-ket-qua" role="status" aria-live="polite">
-            @if (CoBoLoc) { <span><strong>@_nutKhop.Count</strong> bản ghi phù hợp. Giữ lại cấp trên để bạn thấy vị trí trong cơ cấu.</span> }
-            else { <span>Kéo và thu phóng canvas để xem cơ cấu. Chọn một thẻ để theo dõi chi tiết.</span> }
-            @if (_goc.SoCanRaSoat > 0) { <button class="tc-nut-ra-soat" id="btnLocCanRaSoat" @onclick="LocCanRaSoat"><i class="bi bi-exclamation-triangle" aria-hidden="true"></i> @_goc.SoCanRaSoat bản ghi cần rà soát</button> }
+            <select id="cboLoaiToChuc" class="form-select bo-loc-hep" style="width:auto" @bind="_loai" @bind:after="ApDungBoLoc" aria-label="Loại bản ghi">
+                <option value="">Tất cả loại</option>
+                @foreach (var loai in CacLoaiLoc) { <option>@loai</option> }
+            </select>
+            <select id="cboTrangThaiToChuc" class="form-select" style="width:auto" @bind="_trangThai" @bind:after="ApDungBoLoc" aria-label="Trạng thái">
+                <option value="">Tất cả trạng thái</option><option value="hoat-dong">Đang hoạt động / công tác</option><option value="ngung">Ngừng / đã nghỉ</option><option value="ra-soat">Cần rà soát</option>
+            </select>
+            <button id="btnXoaBoLocToChuc" class="btn btn-sm btn-light" disabled="@(!CoBoLoc)" @onclick="XoaBoLoc"><i class="bi bi-funnel"></i> Bỏ lọc</button>
+            <div class="tc-che-do" role="group" aria-label="Kiểu hiển thị">
+                <button type="button" id="btnCheDoCot" class="@(_cheDoCot ? "dang-chon" : null)" aria-pressed="@_cheDoCot.ToString().ToLowerInvariant()" @onclick="() => DoiCheDo(true)"
+                        title="Mỗi cấp một cột danh sách — dễ theo dõi nhất"><i class="bi bi-layout-three-columns" aria-hidden="true"></i> Dạng cột</button>
+                <button type="button" id="btnCheDoSoDo" class="@(_cheDoCot ? null : "dang-chon")" aria-pressed="@((!_cheDoCot).ToString().ToLowerInvariant())" @onclick="() => DoiCheDo(false)"
+                        title="Sơ đồ hình cây để xem tổng quan"><i class="bi bi-diagram-3" aria-hidden="true"></i> Sơ đồ</button>
+            </div>
+            @if (!_cheDoCot)
+            {
+            <button id="btnAnHienCayThuMuc" type="button" class="btn btn-sm btn-light" aria-pressed="@(!_anThuMuc).ToString().ToLowerInvariant()" aria-controls="pnlCayThuMuc" @onclick="() => { _anThuMuc = !_anThuMuc; _lanCanKhung++; }" title="@(_anThuMuc ? "Hiện cây thư mục bên trái" : "Ẩn cây thư mục để canvas rộng hơn")"><i class="bi @(_anThuMuc ? "bi-layout-sidebar" : "bi-layout-sidebar-inset")" aria-hidden="true"></i> Thư mục</button>
+            }
+            @if (CoBoLoc)
+            {
+                <span class="small text-muted" role="status"><strong>@_nutKhop.Count</strong> bản ghi phù hợp</span>
+            }
         </div>
-        <div class="tc-khong-gian tc-khong-gian-canvas @(_coHienChiTiet ? "tc-co-chi-tiet" : null)">
-            <CanvasToChuc Goc="_goc" NutHienThi="_nutHienThi" NutMo="_nutMo" NutKhop="_nutKhop" DuongDanChon="_duongDanChon" KhoaNutChon="@_nutChon?.KhoaNut" CoBoLoc="CoBoLoc" LanCanKhung="_lanCanKhung" KhiChon="ChonNut" KhiDoiTrangThai="DoiTrangThaiNhanh" KhiMoTatCa="MoTatCa" KhiThuGon="ThuGon" />
+
+        <div class="tc-vung-lam-viec @(_cheDoCot ? "che-do-cot" : "che-do-so-do") @(_anThuMuc ? "tc-an-thu-muc" : null) @(_coHienChiTiet ? "co-chi-tiet" : null)">
+        @if (_cheDoCot)
+        {
+            <CotDuyetToChuc DuongDan="DuongDanCot" NutHienThi="_nutHienThi" KhoaNutChon="@_nutChon?.KhoaNut" KhiChon="ChonNut" />
+        }
+        else
+        {
+        <aside class="tc-cay-thu-muc" id="pnlCayThuMuc" aria-label="Cây thư mục">
+            <CayThuMuc CacNut="@(new[] { _goc })" NutHienThi="_nutHienThi" NutMo="_nutMo" KhoaNutChon="@KhoaNutTrenCanvas" DuongDanChon="_duongDanChon"
+                       KhiChon="ChonNut" KhiDoiTrangThai="DoiTrangThaiNhanh" />
+        </aside>
+        <div class="tc-khong-gian tc-khong-gian-canvas">
+            <div class="tc-thanh-nhanh">
+                <nav class="tc-duong-nhanh" aria-label="Phạm vi đang xem" id="pnlPhamViXem">
+                    @if (_gocXem is null)
+                    {
+                        <span class="tc-pham-vi-toan-bo"><i class="bi bi-globe2" aria-hidden="true"></i> Toàn bộ sơ đồ</span>
+                        <span class="tc-goi-y-nhanh">Mẹo: bấm đúp một thẻ để xem riêng nhánh đó</span>
+                    }
+                    else
+                    {
+                        <button type="button" class="tc-nut-nhanh" id="btnLenMotCap" @onclick="LenMotCap"><i class="bi bi-arrow-up-left" aria-hidden="true"></i> Lên một cấp</button>
+                        <ol>
+                            @foreach (var cap in LayDuongDan(_gocXem))
+                            {
+                                <li class="@MauDoiTuong.LayLop(cap.Loai)">
+                                    @if (cap.KhoaNut == _gocXem.KhoaNut) { <strong class="dt-chu" aria-current="location">@cap.Ten</strong> }
+                                    else { <button type="button" @onclick="() => XemNhanh(cap)">@cap.Ten</button> }
+                                </li>
+                            }
+                        </ol>
+                        <button type="button" class="tc-nut-nhanh ms-auto" id="btnXemToanBo" @onclick="() => XemNhanh(_goc!)"><i class="bi bi-globe2" aria-hidden="true"></i> Xem toàn bộ</button>
+                    }
+                </nav>
+                <div class="chu-giai-mau" aria-label="Chú giải màu">
+                    @foreach (var (loai, nhan) in ChuGiaiMau)
+                    {
+                        <span class="@MauDoiTuong.LayLop(loai)"><span class="dt-cham"></span>@nhan</span>
+                    }
+                </div>
+            </div>
+            <CanvasToChuc Goc="GocCanvas" NutHienThi="NutHienThiCanvas" NutMo="NutMoCanvas" NutKhop="_nutKhop" DuongDanChon="_duongDanChon" KhoaNutChon="@KhoaNutTrenCanvas"
+                          CoBoLoc="CoBoLoc" LanCanKhung="_lanCanKhung" SoConHienThi="_soConHienThi" NutLuonHien="_nutLuonHien" CoTapTrung="_coTapTrung"
+                          ThongBaoGioiHan="@_thongBaoGioiHan" KhiChon="ChonNut" KhiXemNhanh="XemNhanh" KhiDoiTrangThai="DoiTrangThaiNhanh" KhiMoTatCa="MoTatCa" KhiThuGon="ThuGon" KhiDoiTapTrung="DoiTapTrung" />
+        </div>
+        }
             @if (_coHienChiTiet)
             {
             <section class="tc-chi-tiet" id="pnlChiTietToChuc" aria-labelledby="lblDonViDangChon">
                 <div class="tc-dong-chi-tiet"><span>Thông tin đang chọn</span><button id="btnDongChiTietToChuc" type="button" class="btn btn-sm btn-outline-secondary" @onclick="() => _coHienChiTiet = false" aria-label="Đóng chi tiết, mở rộng canvas"><i class="bi bi-x-lg" aria-hidden="true"></i></button></div>
                 @if (_nutChon is { } nut)
                 {
-                    <nav class="tc-duong-dan" aria-label="Vị trí trong tổ chức"><ol>
+                    <nav class="tc-duong-dan" id="pnlDuongDanNut" aria-label="Vị trí trong tổ chức"><ol>
                         @foreach (var cha in LayDuongDan(nut))
                         {
                             <li>@if (cha.KhoaNut == nut.KhoaNut) { <span aria-current="location">@cha.Ten</span> } else { <button type="button" @onclick="() => ChonNut(cha)">@cha.Ten</button> }</li>
                         }
                     </ol></nav>
                     <div class="tc-tieu-de-chi-tiet">
-                        <div class="tc-bieu-tuong"><i class="bi @nut.BieuTuong" aria-hidden="true"></i></div>
+                        <div class="tc-bieu-tuong @MauDoiTuong.LayLop(nut.Loai)"><i class="bi @nut.BieuTuong" aria-hidden="true"></i></div>
                         <div class="tc-ten-chi-tiet">
                             <span class="tc-loai">@nut.Loai @if (!string.IsNullOrEmpty(nut.Ma)) { <span>/ @nut.Ma</span> }</span><h2 id="lblDonViDangChon">@nut.Ten</h2>
                             @if (!string.IsNullOrEmpty(nut.TrangThai)) { <span class="tc-trang-thai @(nut.CoHoatDong == true ? "tc-hoat-dong" : "tc-ngung")">@nut.TrangThai</span> }
                         </div>
-                        @if (nut.DuongDan != null) { <a href="@nut.DuongDan" id="btnXemHoSoToChuc" class="btn btn-outline-primary btn-sm">Mở hồ sơ <i class="bi bi-box-arrow-up-right" aria-hidden="true"></i></a> }
+                        <div class="tc-nut-chi-tiet">
+                            @if (CoTheXemNhanh(nut)) { <button type="button" id="btnXemRiengNhanh" class="btn btn-primary btn-sm" @onclick="() => XemNhanh(nut)"><i class="bi bi-zoom-in" aria-hidden="true"></i> Xem riêng nhánh</button> }
+                            @if (nut.DuongDan != null) { <a href="@nut.DuongDan" id="btnXemHoSoToChuc" class="btn btn-outline-primary btn-sm">Mở danh sách <i class="bi bi-box-arrow-up-right" aria-hidden="true"></i></a> }
+                        </div>
                     </div>
                     @if (!string.IsNullOrEmpty(nut.MoTa)) { <p class="tc-mo-ta">@nut.MoTa</p> }
                     @if (nut.CanhBao != null) { <div class="tc-canh-bao" role="note"><i class="bi bi-exclamation-triangle" aria-hidden="true"></i> @nut.CanhBao</div> }
-                    @if (nut.Loai != "Nhân sự")
+                    @if (!BoCucCayToChuc.LaLoaiKhongVe(nut.Loai))
                     {
                         <dl class="tc-thong-ke-nhanh">
-                            @if (nut.Loai == "Học viện") { <div><dt>Khoa</dt><dd>@nut.SoKhoa</dd></div> }
-                            @if (nut.Loai == "Học viện" || nut.Loai == "Khoa") { <div><dt>Bộ môn</dt><dd>@nut.SoBoMon</dd></div><div><dt>Lớp học</dt><dd>@nut.SoLop</dd></div> }
-                            @if (nut.Loai == "Nhóm") { <div><dt>Mục trực thuộc</dt><dd>@nut.Con.Count</dd></div> }
-                            @if (nut.Loai == "Học viện" || nut.Loai == "Khoa" || nut.Loai == "Bộ môn" || nut.SoNhanSu > 0) { <div><dt>Nhân sự</dt><dd>@nut.SoNhanSu</dd></div> }
-                            @if (nut.Loai == "Học viện" || nut.Loai == "Khoa" || nut.Loai == "Lớp học" || nut.SoHocVien > 0) { <div><dt>Học viên đang học</dt><dd>@nut.SoHocVien</dd></div> }
+                            @if (_nhanh == NhanhDaoTao)
+                            {
+                                @* Sơ đồ đào tạo: chỉ số theo trục Hệ → Khóa → Lớp → Học viên. *@
+                                @if (nut.Loai == "Học viện") { <div><dt>Hệ</dt><dd>@DemLoai(nut, "Hệ đào tạo")</dd></div> }
+                                @if (nut.Loai is "Học viện" or "Hệ đào tạo") { <div><dt>Khóa</dt><dd>@DemLoai(nut, "Khóa")</dd></div> }
+                                @if (nut.Loai is "Học viện" or "Hệ đào tạo" or "Khóa" or "Nhóm") { <div><dt>Lớp học</dt><dd>@nut.SoLop</dd></div> }
+                                <div><dt>Học viên đang học</dt><dd>@nut.SoHocVien.ToString("N0")</dd></div>
+                            }
+                            else
+                            {
+                                @if (nut.Loai == "Học viện") { <div><dt>Khoa</dt><dd>@nut.SoKhoa</dd></div> }
+                                @if (nut.Loai is "Học viện" or "Khoa") { <div><dt>Bộ môn</dt><dd>@nut.SoBoMon</dd></div> }
+                                @if (nut.Loai == "Nhóm") { <div><dt>Mục trực thuộc</dt><dd>@nut.Con.Count</dd></div> }
+                                <div><dt>Cán bộ</dt><dd>@nut.SoNhanSu</dd></div>
+                            }
                         </dl>
-                        <p class="tc-pham-vi">Số liệu toàn nhánh, không đổi theo bộ lọc. Đơn vị và nhân sự tính mọi trạng thái; học viên chỉ tính đang học.</p>
                     }
                     @if (nut.SucChua.HasValue)
                     {
                         <div class="tc-si-so"><div><strong>Sĩ số lớp</strong><span>@nut.SiSo / @nut.SucChua học viên</span></div><progress max="@Math.Max(nut.SucChua.Value, nut.SiSo)" value="@nut.SiSo" aria-label="Sĩ số lớp"></progress><small>@(nut.SiSo > nut.SucChua ? $"Vượt {nut.SiSo - nut.SucChua} học viên" : $"Còn {nut.SucChua - nut.SiSo} chỗ")</small></div>
                     }
-                    @if (nut.Con.Count > 0)
+                    @if (nut.Con.Count > 0 && !_cheDoCot)
                     {
-                        var cacCon = nut.Con.Where(n => _nutHienThi.Contains(n.KhoaNut)).ToList();
-                        <div class="tc-danh-sach-header"><h3>Trực thuộc nhánh đang chọn</h3><span>@cacCon.Count / @nut.Con.Count mục</span></div>
-                        @if (cacCon.Count == 0) { <p class="tc-trong">Không có mục trực thuộc phù hợp với bộ lọc hiện tại.</p> }
-                        else
-                        {
-                            <div class="tc-bang-cuon"><table class="table tc-bang" id="dgvTrucThuocToChuc">
-                                <thead><tr><th scope="col">Đơn vị / hồ sơ</th><th scope="col">Thông tin</th><th scope="col">Trạng thái</th></tr></thead>
-                                <tbody>@foreach (var con in cacCon)
-                                {
-                                    <tr @key="con.KhoaNut">
-                                        <td><button type="button" class="tc-lien-ket" @onclick="() => ChonNut(con)"><i class="bi @con.BieuTuong" aria-hidden="true"></i> @con.Ten</button><small>@con.Loai @con.Ma</small></td>
-                                        <td>
-                                            @if (con.Loai == "Lớp học") { <span>@con.SiSo / @con.SucChua học viên</span><small>@con.MoTa</small> }
-                                            else if (con.Loai == "Nhân sự") { <span>@con.MoTa</span> }
-                                            else if (con.Loai == "Khoa") { <span>@con.SoBoMon bộ môn, @con.SoLop lớp</span><small>@con.SoNhanSu nhân sự</small> }
-                                            else if (con.Loai == "Bộ môn") { <span>@con.SoNhanSu nhân sự</span> }
-                                            else { <span>@con.Con.Count mục trực thuộc</span> }
-                                        </td>
-                                        <td>@if (con.CanhBao != null) { <span class="tc-can-ra-soat">Cần rà soát</span> } else if (con.CoHoatDong.HasValue) { <span class="tc-trang-thai @(con.CoHoatDong == true ? "tc-hoat-dong" : "tc-ngung")">@con.TrangThai</span> } else { <span class="text-muted">Nhóm điều hướng</span> }</td>
-                                    </tr>
-                                }</tbody>
-                            </table></div>
-                        }
+                        var cacCon = LayBanGhiTrucThuoc(nut);
+                        <div class="tc-danh-sach-header">
+                            <h3>@(nut.Con.All(c => BoCucCayToChuc.LaLoaiKhongVe(c.Loai)) && nut.Con.Count > 0 ? (nut.Con[0].Loai == "Học viên" ? "Danh sách học viên" : "Danh sách cán bộ") : "Trực thuộc")</h3>
+                            <span>@cacCon.Count / @nut.Con.Count mục</span>
+                        </div>
+                        <div class="o-tim-kiem mb-2">
+                            <i class="bi bi-search" aria-hidden="true"></i>
+                            <input id="txtTimTrongNhanh" class="form-control form-control-sm" placeholder="Tìm trong nhánh này…" value="@_tuKhoaTrongNhanh" @oninput="@(e => _tuKhoaTrongNhanh = e.Value?.ToString() ?? string.Empty)" />
+                        </div>
+                        <RadzenDataGrid TItem="NutToChuc" Data="@cacCon" AllowPaging="true" PageSize="@SoDongMoiTrangBang" AllowSorting="true" Density="Density.Compact"
+                                        EmptyText="Không có mục phù hợp." class="bang-du-lieu" id="dgvDanhSachBanGhiTrucThuoc"
+                                        RowRender="@(e => { if (e.Data is not null && CoBoLoc && _nutKhop.Contains(e.Data.KhoaNut)) { e.Attributes.Add("class", "tc-dong-khop"); } })">
+                            <Columns>
+                                <RadzenDataGridColumn TItem="NutToChuc" Property="Ten" Title="Tên">
+                                    <Template Context="con">
+                                        <button type="button" class="tc-lien-ket" @onclick="() => ChonNut(con)"><i class="bi @con.BieuTuong" aria-hidden="true"></i> @con.Ten</button>
+                                        <small class="d-block text-muted">@con.Ma</small>
+                                    </Template>
+                                </RadzenDataGridColumn>
+                                <RadzenDataGridColumn TItem="NutToChuc" Title="Thông tin" Sortable="false">
+                                    <Template Context="con">
+                                        @if (con.Loai == "Lớp học") { <span>@con.SiSo / @con.SucChua HV</span> }
+                                        else if (con.Loai == "Nhân sự") { <span>@con.MoTa</span> }
+                                        else if (con.Loai == "Khoa") { <span>@con.SoBoMon BM · @con.SoLop lớp · @con.SoNhanSu CB</span> }
+                                        else if (con.Loai == "Bộ môn") { <span>@con.SoNhanSu cán bộ</span> }
+                                        else if (con.Loai is "Hệ đào tạo" or "Khóa") { <span>@con.SoLop lớp · @con.SoHocVien HV</span> }
+                                        else { <span>@con.Con.Count mục</span> }
+                                    </Template>
+                                </RadzenDataGridColumn>
+                                <RadzenDataGridColumn TItem="NutToChuc" Property="TrangThai" Title="Trạng thái" Width="96px">
+                                    <Template Context="con">
+                                        @if (con.CanhBao != null) { <span class="tc-can-ra-soat" title="@con.CanhBao">Cần rà soát</span> }
+                                        else if (con.CoHoatDong.HasValue) { <span class="tc-trang-thai @(con.CoHoatDong == true ? "tc-hoat-dong" : "tc-ngung")">@con.TrangThai</span> }
+                                    </Template>
+                                </RadzenDataGridColumn>
+                                <RadzenDataGridColumn TItem="NutToChuc" Title="" Width="44px" Sortable="false">
+                                    <Template Context="con">@if (con.DuongDan != null) { <a href="@con.DuongDan" title="Mở hồ sơ"><i class="bi bi-box-arrow-up-right"></i></a> }</Template>
+                                </RadzenDataGridColumn>
+                            </Columns>
+                        </RadzenDataGrid>
                     }
-                    else if (nut.Loai != "Nhân sự" && nut.Loai != "Lớp học") { <div class="tc-trong"><i class="bi bi-folder2-open" aria-hidden="true"></i><strong>Chưa có dữ liệu trực thuộc</strong><span>Nhánh này hiện chưa có đơn vị hoặc nhân sự.</span></div> }
+                    else if (nut.Con.Count == 0 && !BoCucCayToChuc.LaLoaiKhongVe(nut.Loai) && nut.Loai != "Lớp học") { <div class="tc-trong"><i class="bi bi-folder2-open" aria-hidden="true"></i><strong>Chưa có dữ liệu trực thuộc</strong><span>Nhánh này hiện chưa có đơn vị hoặc nhân sự.</span></div> }
                 }
                 else { <div class="tc-trong"><strong id="lblDonViDangChon">Chọn một đơn vị hoặc hồ sơ</strong><span>Chi tiết và vị trí trong cơ cấu sẽ xuất hiện tại đây.</span></div> }
             </section>

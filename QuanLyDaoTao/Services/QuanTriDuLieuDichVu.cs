@@ -1,4 +1,4 @@
-using Microsoft.AspNetCore.Identity;
+﻿using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using QuanLyDaoTao.Data;
 using QuanLyDaoTao.Models;
@@ -12,8 +12,66 @@ namespace QuanLyDaoTao.Services;
 /// </summary>
 public class QuanTriDuLieuDichVu : IQuanTriDuLieuDichVu
 {
+    /// <summary>Nhóm danh mục dùng chung (Quản trị viên được sửa).</summary>
+    public const string NhomDanhMuc = "Danh mục dùng chung";
+    /// <summary>Nhóm bảng vùng Tổ chức - Cán bộ.</summary>
+    public const string NhomToChuc = "Tổ chức - Cán bộ";
+    /// <summary>Nhóm bảng vùng Đào tạo.</summary>
+    public const string NhomDaoTao = "Đào tạo";
+    /// <summary>Nhóm bảng hệ thống.</summary>
+    public const string NhomHeThong = "Hệ thống";
+
+    /// <summary>Bảng chỉ cho xem: nhật ký kiểm toán phải bất biến để còn giá trị làm bằng chứng.</summary>
+    public static bool LaBangChiDoc(string tenBang) => ChuanHoaTenBang(tenBang) == "NhatKyHeThong";
+
+    private static void ChanGhiBangChiDoc(string bangChuan)
+    {
+        if (LaBangChiDoc(bangChuan))
+        {
+            throw new InvalidOperationException("Nhật ký kiểm toán chỉ được xem, không được thêm, sửa hoặc xóa.");
+        }
+    }
+
     private readonly QuanLyDaoTaoDbContext _coSoDuLieu;
     private readonly INhatKyDichVu _nhatKyDichVu;
+    private readonly INhanSuDichVu? _nhanSuDichVu;
+    private readonly IHocVienDichVu? _hocVienDichVu;
+    private readonly ILopHocDichVu? _lopHocDichVu;
+    private readonly IKhoaDichVu? _khoaDichVu;
+    private readonly IBoMonDichVu? _boMonDichVu;
+    private readonly IMonHocDichVu? _monHocDichVu;
+    private readonly IChucVuDichVu? _chucVuDichVu;
+    private readonly ITrinhDoChuyenMonDichVu? _trinhDoDichVu;
+
+    /// <summary>
+    /// Khởi tạo đầy đủ (dùng khi chạy thật): MỌI bảng nghiệp vụ được ghi qua dịch vụ tương ứng, nên Studio
+    /// tuân thủ cả quy tắc dữ liệu lẫn phân quyền theo vùng / khoa của người đang thao tác.
+    /// </summary>
+    public QuanTriDuLieuDichVu(QuanLyDaoTaoDbContext coSoDuLieu, INhatKyDichVu nhatKyDichVu,
+        INhanSuDichVu nhanSuDichVu, IHocVienDichVu hocVienDichVu, ILopHocDichVu lopHocDichVu,
+        IKhoaDichVu khoaDichVu, IBoMonDichVu boMonDichVu, IMonHocDichVu monHocDichVu,
+        IChucVuDichVu chucVuDichVu, ITrinhDoChuyenMonDichVu trinhDoDichVu)
+        : this(coSoDuLieu, nhatKyDichVu, nhanSuDichVu, hocVienDichVu, lopHocDichVu)
+    {
+        _khoaDichVu = khoaDichVu;
+        _boMonDichVu = boMonDichVu;
+        _monHocDichVu = monHocDichVu;
+        _chucVuDichVu = chucVuDichVu;
+        _trinhDoDichVu = trinhDoDichVu;
+    }
+
+    /// <summary>
+    /// Khởi tạo kèm dịch vụ nghiệp vụ: ghi Cán bộ / Học viên / Lớp từ Studio đi qua CÙNG bộ quy tắc với biểu mẫu
+    /// (CCCD, SĐT, trùng hồ sơ, chỉ tiêu lãnh đạo, sĩ số, niên khóa…), không có đường tắt bỏ qua kiểm tra.
+    /// </summary>
+    public QuanTriDuLieuDichVu(QuanLyDaoTaoDbContext coSoDuLieu, INhatKyDichVu nhatKyDichVu,
+        INhanSuDichVu nhanSuDichVu, IHocVienDichVu hocVienDichVu, ILopHocDichVu lopHocDichVu)
+        : this(coSoDuLieu, nhatKyDichVu)
+    {
+        _nhanSuDichVu = nhanSuDichVu;
+        _hocVienDichVu = hocVienDichVu;
+        _lopHocDichVu = lopHocDichVu;
+    }
 
     /// <summary>
     /// Khởi tạo dịch vụ Quản trị dữ liệu với DbContext và Dịch vụ Nhật ký.
@@ -41,17 +99,17 @@ public class QuanTriDuLieuDichVu : IQuanTriDuLieuDichVu
 
         var danhSach = new List<ThongTinBangHeThong>
         {
-            new() { TenBang = "Khoa", TenHienThi = "Khoa Đào Tạo", BieuTuong = "bi-bank", SoBanGhi = await _coSoDuLieu.Khoas.CountAsync(cancellationToken) },
-            new() { TenBang = "BoMon", TenHienThi = "Bộ Môn Trực Thuộc", BieuTuong = "bi-diagram-2", SoBanGhi = await _coSoDuLieu.BoMons.CountAsync(cancellationToken) },
-            new() { TenBang = "LopHoc", TenHienThi = "Lớp Học Đào Tạo", BieuTuong = "bi-people", SoBanGhi = await _coSoDuLieu.LopHocs.CountAsync(cancellationToken) },
-            new() { TenBang = "HocVien", TenHienThi = "Học Viên", BieuTuong = "bi-person-badge", SoBanGhi = await _coSoDuLieu.HocViens.CountAsync(cancellationToken) },
-            new() { TenBang = "NhanSu", TenHienThi = "Hồ Sơ Cán Bộ / Giảng Viên", BieuTuong = "bi-person-lines-fill", SoBanGhi = await _coSoDuLieu.NhanSus.CountAsync(cancellationToken) },
-            new() { TenBang = "MonHoc", TenHienThi = "Môn Học Đào Tạo", BieuTuong = "bi-journal-bookmark", SoBanGhi = await _coSoDuLieu.MonHocs.CountAsync(cancellationToken) },
-            new() { TenBang = "PhanCongGiangDay", TenHienThi = "Phân Công Giảng Dạy", BieuTuong = "bi-calendar-check", SoBanGhi = await _coSoDuLieu.PhanCongGiangDays.CountAsync(cancellationToken) },
-            new() { TenBang = "ChucVu", TenHienThi = "Danh Mục Chức Vụ", BieuTuong = "bi-award", SoBanGhi = await _coSoDuLieu.ChucVus.CountAsync(cancellationToken) },
-            new() { TenBang = "TrinhDoChuyenMon", TenHienThi = "Trình Độ Chuyên Môn", BieuTuong = "bi-mortarboard", SoBanGhi = await _coSoDuLieu.TrinhDoChuyenMons.CountAsync(cancellationToken) },
-            new() { TenBang = "TaiKhoan", TenHienThi = "Tài Khoản Hệ Thống", BieuTuong = "bi-shield-lock", SoBanGhi = await _coSoDuLieu.Users.CountAsync(cancellationToken) },
-            new() { TenBang = "NhatKyHeThong", TenHienThi = "Nhật Ký Kiểm Toán", BieuTuong = "bi-clock-history", SoBanGhi = await _coSoDuLieu.NhatKyHeThongs.CountAsync(cancellationToken) }
+            new() { TenBang = "ChucVu", Nhom = NhomDanhMuc, TenHienThi = "Chức vụ", BieuTuong = "bi-award", SoBanGhi = await _coSoDuLieu.ChucVus.CountAsync(cancellationToken) },
+            new() { TenBang = "TrinhDoChuyenMon", Nhom = NhomDanhMuc, TenHienThi = "Trình độ chuyên môn", BieuTuong = "bi-mortarboard", SoBanGhi = await _coSoDuLieu.TrinhDoChuyenMons.CountAsync(cancellationToken) },
+            new() { TenBang = "Khoa", Nhom = NhomToChuc, TenHienThi = "Khoa", BieuTuong = "bi-bank", SoBanGhi = await _coSoDuLieu.Khoas.CountAsync(cancellationToken) },
+            new() { TenBang = "BoMon", Nhom = NhomToChuc, TenHienThi = "Bộ môn", BieuTuong = "bi-diagram-2", SoBanGhi = await _coSoDuLieu.BoMons.CountAsync(cancellationToken) },
+            new() { TenBang = "LopHoc", Nhom = NhomDaoTao, TenHienThi = "Lớp đào tạo", BieuTuong = "bi-people", SoBanGhi = await _coSoDuLieu.LopHocs.CountAsync(cancellationToken) },
+            new() { TenBang = "HocVien", Nhom = NhomDaoTao, TenHienThi = "Học viên", BieuTuong = "bi-person-badge", SoBanGhi = await _coSoDuLieu.HocViens.CountAsync(cancellationToken) },
+            new() { TenBang = "NhanSu", Nhom = NhomToChuc, TenHienThi = "Cán bộ, giảng viên", BieuTuong = "bi-person-lines-fill", SoBanGhi = await _coSoDuLieu.NhanSus.CountAsync(cancellationToken) },
+            new() { TenBang = "MonHoc", Nhom = NhomDaoTao, TenHienThi = "Môn học", BieuTuong = "bi-journal-bookmark", SoBanGhi = await _coSoDuLieu.MonHocs.CountAsync(cancellationToken) },
+            new() { TenBang = "PhanCongGiangDay", Nhom = NhomDaoTao, TenHienThi = "Phân công giảng dạy", BieuTuong = "bi-calendar-check", SoBanGhi = await _coSoDuLieu.PhanCongGiangDays.CountAsync(cancellationToken) },
+            new() { TenBang = "TaiKhoan", Nhom = NhomHeThong, TenHienThi = "Tài khoản", BieuTuong = "bi-shield-lock", SoBanGhi = await _coSoDuLieu.Users.CountAsync(cancellationToken) },
+            new() { TenBang = "NhatKyHeThong", Nhom = NhomHeThong, ChiDoc = true, TenHienThi = "Nhật ký kiểm toán", BieuTuong = "bi-clock-history", SoBanGhi = await _coSoDuLieu.NhatKyHeThongs.CountAsync(cancellationToken) }
         };
 
         foreach (var item in danhSach)
@@ -208,22 +266,25 @@ public class QuanTriDuLieuDichVu : IQuanTriDuLieuDichVu
                 break;
 
             case "LopHoc":
-                ketQua.TenHienThi = "Lớp Học Đào Tạo";
+                ketQua.TenHienThi = "Lớp đào tạo";
                 ketQua.TenKhoaChinh = "LopHocId";
                 ketQua.DanhSachCot.AddRange(new[]
                 {
                     new MoTaCotDuLieu { MaCot = "LopHocId", TenHienThi = "ID", KieuDuLieu = "SoNguyen", LaKhoaChinh = true },
-                    new MoTaCotDuLieu { MaCot = "MaLop", TenHienThi = "Mã Lớp", KieuDuLieu = "VanBan", LaBatBuoc = true },
-                    new MoTaCotDuLieu { MaCot = "TenLop", TenHienThi = "Tên Lớp", KieuDuLieu = "VanBan", LaBatBuoc = true },
-                    new MoTaCotDuLieu { MaCot = "NienKhoa", TenHienThi = "Niên Khóa", KieuDuLieu = "VanBan", LaBatBuoc = true },
-                    new MoTaCotDuLieu { MaCot = "KhoaId", TenHienThi = "Khoa Quản Lý", KieuDuLieu = "KhoaNgoai", LaBatBuoc = true, DanhSachLuaChon = luaChonKhoa },
-                    new MoTaCotDuLieu { MaCot = "SoLuongToiDa", TenHienThi = "Sĩ Số Tối Đa", KieuDuLieu = "SoNguyen" },
-                    new MoTaCotDuLieu { MaCot = "CoHoatDong", TenHienThi = "Hoạt Động", KieuDuLieu = "Logic" }
+                    new MoTaCotDuLieu { MaCot = "MaLop", TenHienThi = "Mã lớp", KieuDuLieu = "VanBan", LaBatBuoc = true },
+                    new MoTaCotDuLieu { MaCot = "TenLop", TenHienThi = "Tên lớp", KieuDuLieu = "VanBan" },
+                    new MoTaCotDuLieu { MaCot = "HeDaoTao", TenHienThi = "Hệ", KieuDuLieu = "DanhSach", LaBatBuoc = true, DanhSachLuaChon = TaoLuaChon(QuyTacNghiepVu.DanhSachHeDaoTao) },
+                    new MoTaCotDuLieu { MaCot = "KhoaHoc", TenHienThi = "Khóa (D57…)", KieuDuLieu = "VanBan" },
+                    new MoTaCotDuLieu { MaCot = "NienKhoa", TenHienThi = "Niên khóa", KieuDuLieu = "VanBan" },
+                    new MoTaCotDuLieu { MaCot = "ChuyenNganh", TenHienThi = "Chuyên ngành", KieuDuLieu = "VanBan" },
+                    new MoTaCotDuLieu { MaCot = "KhoaId", TenHienThi = "Khoa quản lý", KieuDuLieu = "KhoaNgoai", LaBatBuoc = true, DanhSachLuaChon = luaChonKhoa },
+                    new MoTaCotDuLieu { MaCot = "SoLuongToiDa", TenHienThi = "Chỉ tiêu", KieuDuLieu = "SoNguyen", LaBatBuoc = true },
+                    new MoTaCotDuLieu { MaCot = "CoHoatDong", TenHienThi = "Hoạt động", KieuDuLieu = "Logic" }
                 });
 
                 var dsLop = await _coSoDuLieu.LopHocs.AsNoTracking()
                     .Where(l => tkChuan == null || l.MaLop.Contains(tkChuan) || l.TenLop.Contains(tkChuan) || l.NienKhoa.Contains(tkChuan))
-                    .OrderBy(l => l.MaLop)
+                    .OrderByDescending(l => l.KhoaHoc).ThenBy(l => l.MaLop.Length).ThenBy(l => l.MaLop)
                     .ToListAsync(cancellationToken);
 
                 foreach (var l in dsLop)
@@ -233,46 +294,39 @@ public class QuanTriDuLieuDichVu : IQuanTriDuLieuDichVu
                         ["LopHocId"] = l.LopHocId.ToString(),
                         ["MaLop"] = l.MaLop,
                         ["TenLop"] = l.TenLop,
+                        ["HeDaoTao"] = l.HeDaoTao,
+                        ["KhoaHoc"] = l.KhoaHoc,
                         ["NienKhoa"] = l.NienKhoa,
+                        ["ChuyenNganh"] = l.ChuyenNganh,
                         ["KhoaId"] = l.KhoaId.ToString(),
                         ["SoLuongToiDa"] = l.SoLuongToiDa.ToString(),
                         ["CoHoatDong"] = l.CoHoatDong ? "true" : "false"
                     });
                 }
                 break;
-
             case "HocVien":
-                ketQua.TenHienThi = "Học Viên Đào Tạo";
+                ketQua.TenHienThi = "Học viên";
                 ketQua.TenKhoaChinh = "HocVienId";
                 ketQua.DanhSachCot.AddRange(new[]
                 {
                     new MoTaCotDuLieu { MaCot = "HocVienId", TenHienThi = "ID", KieuDuLieu = "SoNguyen", LaKhoaChinh = true },
-                    new MoTaCotDuLieu { MaCot = "MaHocVien", TenHienThi = "Mã Học Viên", KieuDuLieu = "VanBan", LaBatBuoc = true },
-                    new MoTaCotDuLieu { MaCot = "HoVaTen", TenHienThi = "Họ và Tên", KieuDuLieu = "VanBan", LaBatBuoc = true },
-                    new MoTaCotDuLieu { MaCot = "NgaySinh", TenHienThi = "Ngày Sinh", KieuDuLieu = "NgayThang", LaBatBuoc = true },
-                    new MoTaCotDuLieu
-                    {
-                        MaCot = "GioiTinh",
-                        TenHienThi = "Giới Tính",
-                        KieuDuLieu = "DanhSach",
-                        LaBatBuoc = true,
-                        DanhSachLuaChon = new()
-                        {
-                            new() { GiaTri = "Nam", NhanHienThi = "Nam" },
-                            new() { GiaTri = "Nữ", NhanHienThi = "Nữ" },
-                            new() { GiaTri = "Khác", NhanHienThi = "Khác" }
-                        }
-                    },
-                    new MoTaCotDuLieu { MaCot = "LopHocId", TenHienThi = "Lớp Học", KieuDuLieu = "KhoaNgoai", LaBatBuoc = true, DanhSachLuaChon = luaChonLop },
+                    new MoTaCotDuLieu { MaCot = "MaHocVien", TenHienThi = "Mã học viên", KieuDuLieu = "VanBan", LaBatBuoc = true },
+                    new MoTaCotDuLieu { MaCot = "HoVaTen", TenHienThi = "Họ và tên", KieuDuLieu = "VanBan", LaBatBuoc = true },
+                    new MoTaCotDuLieu { MaCot = "NgaySinh", TenHienThi = "Ngày sinh", KieuDuLieu = "NgayThang", LaBatBuoc = true },
+                    new MoTaCotDuLieu { MaCot = "GioiTinh", TenHienThi = "Giới tính", KieuDuLieu = "DanhSach", LaBatBuoc = true, DanhSachLuaChon = TaoLuaChon(QuyTacNghiepVu.DanhSachGioiTinh) },
+                    new MoTaCotDuLieu { MaCot = "LopHocId", TenHienThi = "Lớp", KieuDuLieu = "KhoaNgoai", LaBatBuoc = true, DanhSachLuaChon = luaChonLop },
+                    new MoTaCotDuLieu { MaCot = "TrangThai", TenHienThi = "Trạng thái", KieuDuLieu = "DanhSach", LaBatBuoc = true, DanhSachLuaChon = TaoLuaChon(QuyTacNghiepVu.DanhSachTrangThaiHocVien) },
+                    new MoTaCotDuLieu { MaCot = "ChucVuLop", TenHienThi = "Chức vụ lớp (BT, BP, AT…)", KieuDuLieu = "VanBan" },
+                    new MoTaCotDuLieu { MaCot = "SoCCCD", TenHienThi = "Số CCCD", KieuDuLieu = "VanBan" },
+                    new MoTaCotDuLieu { MaCot = "SoDienThoai", TenHienThi = "Số điện thoại", KieuDuLieu = "VanBan" },
                     new MoTaCotDuLieu { MaCot = "Email", TenHienThi = "Email", KieuDuLieu = "VanBan" },
-                    new MoTaCotDuLieu { MaCot = "SoDienThoai", TenHienThi = "Số Điện Thoại", KieuDuLieu = "VanBan" },
-                    new MoTaCotDuLieu { MaCot = "DiaChi", TenHienThi = "Địa Chỉ", KieuDuLieu = "VanBan" },
-                    new MoTaCotDuLieu { MaCot = "CoHoatDong", TenHienThi = "Đang Học", KieuDuLieu = "Logic" }
+                    new MoTaCotDuLieu { MaCot = "DiaChi", TenHienThi = "Quê quán / địa chỉ", KieuDuLieu = "VanBan" }
                 });
 
+                var khoaCuaLop = await _coSoDuLieu.LopHocs.AsNoTracking().ToDictionaryAsync(l => l.LopHocId, l => l.KhoaId, cancellationToken);
                 var dsHocVien = await _coSoDuLieu.HocViens.AsNoTracking()
                     .Where(h => tkChuan == null || h.MaHocVien.Contains(tkChuan) || h.HoVaTen.Contains(tkChuan))
-                    .OrderBy(h => h.MaHocVien)
+                    .OrderBy(h => h.LopHocId).ThenBy(h => h.MaHocVien)
                     .ToListAsync(cancellationToken);
 
                 foreach (var h in dsHocVien)
@@ -285,60 +339,41 @@ public class QuanTriDuLieuDichVu : IQuanTriDuLieuDichVu
                         ["NgaySinh"] = h.NgaySinh.ToString("yyyy-MM-dd"),
                         ["GioiTinh"] = h.GioiTinh,
                         ["LopHocId"] = h.LopHocId.ToString(),
-                        ["Email"] = h.Email,
+                        ["TrangThai"] = h.TrangThai,
+                        ["ChucVuLop"] = h.ChucVuLop,
+                        ["SoCCCD"] = h.SoCCCD,
                         ["SoDienThoai"] = h.SoDienThoai,
+                        ["Email"] = h.Email,
                         ["DiaChi"] = h.DiaChi,
-                        ["CoHoatDong"] = h.CoHoatDong ? "true" : "false"
+                        ["__KhoaId"] = khoaCuaLop.GetValueOrDefault(h.LopHocId).ToString()
                     });
                 }
                 break;
-
             case "NhanSu":
-                ketQua.TenHienThi = "Hồ Sơ Cán Bộ / Giảng Viên";
+                ketQua.TenHienThi = "Cán bộ, giảng viên";
                 ketQua.TenKhoaChinh = "NhanSuId";
                 ketQua.DanhSachCot.AddRange(new[]
                 {
                     new MoTaCotDuLieu { MaCot = "NhanSuId", TenHienThi = "ID", KieuDuLieu = "SoNguyen", LaKhoaChinh = true },
-                    new MoTaCotDuLieu { MaCot = "MaNhanSu", TenHienThi = "Mã Cán Bộ", KieuDuLieu = "VanBan", LaBatBuoc = true },
-                    new MoTaCotDuLieu { MaCot = "HoVaTen", TenHienThi = "Họ và Tên", KieuDuLieu = "VanBan", LaBatBuoc = true },
-                    new MoTaCotDuLieu { MaCot = "NgaySinh", TenHienThi = "Ngày Sinh", KieuDuLieu = "NgayThang", LaBatBuoc = true },
-                    new MoTaCotDuLieu
-                    {
-                        MaCot = "GioiTinh",
-                        TenHienThi = "Giới Tính",
-                        KieuDuLieu = "DanhSach",
-                        LaBatBuoc = true,
-                        DanhSachLuaChon = new()
-                        {
-                            new() { GiaTri = "Nam", NhanHienThi = "Nam" },
-                            new() { GiaTri = "Nữ", NhanHienThi = "Nữ" },
-                            new() { GiaTri = "Khác", NhanHienThi = "Khác" }
-                        }
-                    },
-                    new MoTaCotDuLieu { MaCot = "SoCCCD", TenHienThi = "Số CCCD (12 số)", KieuDuLieu = "VanBan" },
-                    new MoTaCotDuLieu { MaCot = "SoDienThoai", TenHienThi = "Số Điện Thoại", KieuDuLieu = "VanBan" },
-                    new MoTaCotDuLieu { MaCot = "Email", TenHienThi = "Email Công Vụ", KieuDuLieu = "VanBan", LaBatBuoc = true },
-                    new MoTaCotDuLieu { MaCot = "DiaChi", TenHienThi = "Địa Chỉ Cư Trú", KieuDuLieu = "VanBan" },
+                    new MoTaCotDuLieu { MaCot = "MaNhanSu", TenHienThi = "Mã cán bộ", KieuDuLieu = "VanBan", LaBatBuoc = true },
+                    new MoTaCotDuLieu { MaCot = "HoVaTen", TenHienThi = "Họ và tên", KieuDuLieu = "VanBan", LaBatBuoc = true },
+                    new MoTaCotDuLieu { MaCot = "NgaySinh", TenHienThi = "Ngày sinh", KieuDuLieu = "NgayThang", LaBatBuoc = true },
+                    new MoTaCotDuLieu { MaCot = "GioiTinh", TenHienThi = "Giới tính", KieuDuLieu = "DanhSach", LaBatBuoc = true, DanhSachLuaChon = TaoLuaChon(QuyTacNghiepVu.DanhSachGioiTinh) },
+                    new MoTaCotDuLieu { MaCot = "SoCCCD", TenHienThi = "Số CCCD", KieuDuLieu = "VanBan" },
+                    new MoTaCotDuLieu { MaCot = "SoDienThoai", TenHienThi = "Số điện thoại", KieuDuLieu = "VanBan" },
+                    new MoTaCotDuLieu { MaCot = "Email", TenHienThi = "Email công việc", KieuDuLieu = "VanBan", LaBatBuoc = true },
+                    new MoTaCotDuLieu { MaCot = "BoMonId", TenHienThi = "Bộ môn (khoa tự theo bộ môn)", KieuDuLieu = "KhoaNgoai", DanhSachLuaChon = luaChonBoMon },
                     new MoTaCotDuLieu { MaCot = "KhoaId", TenHienThi = "Khoa", KieuDuLieu = "KhoaNgoai", DanhSachLuaChon = luaChonKhoa },
-                    new MoTaCotDuLieu { MaCot = "BoMonId", TenHienThi = "Bộ Môn", KieuDuLieu = "KhoaNgoai", DanhSachLuaChon = luaChonBoMon },
-                    new MoTaCotDuLieu { MaCot = "ChucVuId", TenHienThi = "Chức Vụ", KieuDuLieu = "KhoaNgoai", DanhSachLuaChon = luaChonChucVu },
-                    new MoTaCotDuLieu { MaCot = "TrinhDoChuyenMonId", TenHienThi = "Trình Độ", KieuDuLieu = "KhoaNgoai", DanhSachLuaChon = luaChonTrinhDo },
-                    new MoTaCotDuLieu { MaCot = "ChuyenMonDaoTao", TenHienThi = "Chuyên Môn & Trường ĐT", KieuDuLieu = "VanBan" },
-                    new MoTaCotDuLieu { MaCot = "NgayVaoLam", TenHienThi = "Ngày Vào Làm", KieuDuLieu = "NgayThang" },
-                    new MoTaCotDuLieu
-                    {
-                        MaCot = "TrangThai",
-                        TenHienThi = "Trạng Thái",
-                        KieuDuLieu = "DanhSach",
-                        DanhSachLuaChon = new()
-                        {
-                            new() { GiaTri = "Đang làm việc", NhanHienThi = "Đang làm việc" },
-                            new() { GiaTri = "Tạm nghỉ", NhanHienThi = "Tạm nghỉ" },
-                            new() { GiaTri = "Đã nghỉ việc", NhanHienThi = "Đã nghỉ việc" },
-                            new() { GiaTri = "Đã khóa", NhanHienThi = "Đã khóa" }
-                        }
-                    },
-                    new MoTaCotDuLieu { MaCot = "GhiChu", TenHienThi = "Ghi Chú Đa Năng", KieuDuLieu = "VanBan" }
+                    new MoTaCotDuLieu { MaCot = "ChucVuId", TenHienThi = "Chức vụ", KieuDuLieu = "KhoaNgoai", DanhSachLuaChon = luaChonChucVu },
+                    new MoTaCotDuLieu { MaCot = "CapBacHam", TenHienThi = "Cấp bậc hàm", KieuDuLieu = "DanhSach", DanhSachLuaChon = TaoLuaChon(QuyTacNghiepVu.DanhSachCapBacHam) },
+                    new MoTaCotDuLieu { MaCot = "TrinhDoChuyenMonId", TenHienThi = "Trình độ (học vị)", KieuDuLieu = "KhoaNgoai", DanhSachLuaChon = luaChonTrinhDo },
+                    new MoTaCotDuLieu { MaCot = "HocHam", TenHienThi = "Học hàm", KieuDuLieu = "DanhSach", DanhSachLuaChon = TaoLuaChon(QuyTacNghiepVu.DanhSachHocHam) },
+                    new MoTaCotDuLieu { MaCot = "ChuyenMonDaoTao", TenHienThi = "Chuyên ngành & nơi đào tạo", KieuDuLieu = "VanBan" },
+                    new MoTaCotDuLieu { MaCot = "NgayVaoLam", TenHienThi = "Ngày vào ngành", KieuDuLieu = "NgayThang" },
+                    new MoTaCotDuLieu { MaCot = "TrangThai", TenHienThi = "Trạng thái", KieuDuLieu = "DanhSach", LaBatBuoc = true, DanhSachLuaChon = TaoLuaChon(QuyTacNghiepVu.DanhSachTrangThaiCanBo) },
+                    new MoTaCotDuLieu { MaCot = "QueQuan", TenHienThi = "Quê quán", KieuDuLieu = "DanhSach", DanhSachLuaChon = TaoLuaChon(QuyTacNghiepVu.DanhSachTinhThanh) },
+                    new MoTaCotDuLieu { MaCot = "DiaChi", TenHienThi = "Địa chỉ", KieuDuLieu = "VanBan" },
+                    new MoTaCotDuLieu { MaCot = "GhiChu", TenHienThi = "Ghi chú", KieuDuLieu = "VanBan" }
                 });
 
                 var dsNhanSu = await _coSoDuLieu.NhanSus.AsNoTracking()
@@ -358,19 +393,21 @@ public class QuanTriDuLieuDichVu : IQuanTriDuLieuDichVu
                         ["SoCCCD"] = n.SoCCCD,
                         ["SoDienThoai"] = n.SoDienThoai,
                         ["Email"] = n.Email,
-                        ["DiaChi"] = n.DiaChi,
-                        ["KhoaId"] = n.KhoaId?.ToString() ?? "",
                         ["BoMonId"] = n.BoMonId?.ToString() ?? "",
+                        ["KhoaId"] = n.KhoaId?.ToString() ?? "",
                         ["ChucVuId"] = n.ChucVuId?.ToString() ?? "",
+                        ["CapBacHam"] = n.CapBacHam,
                         ["TrinhDoChuyenMonId"] = n.TrinhDoChuyenMonId?.ToString() ?? "",
+                        ["HocHam"] = n.HocHam,
                         ["ChuyenMonDaoTao"] = n.ChuyenMonDaoTao,
                         ["NgayVaoLam"] = n.NgayVaoLam?.ToString("yyyy-MM-dd") ?? "",
                         ["TrangThai"] = n.TrangThai,
+                        ["QueQuan"] = n.QueQuan,
+                        ["DiaChi"] = n.DiaChi,
                         ["GhiChu"] = n.GhiChu
                     });
                 }
                 break;
-
             case "MonHoc":
                 ketQua.TenHienThi = "Môn Học Đào Tạo";
                 ketQua.TenKhoaChinh = "MonHocId";
@@ -548,7 +585,7 @@ public class QuanTriDuLieuDichVu : IQuanTriDuLieuDichVu
                         DanhSachLuaChon = new()
                         {
                             new() { GiaTri = VaiTroMacDinh.QuanTriVien, NhanHienThi = "Quản trị viên (Admin)" },
-                            new() { GiaTri = VaiTroMacDinh.QuanLyDaoTao, NhanHienThi = "Quản lý đào tạo (DataManager)" },
+                            new() { GiaTri = VaiTroMacDinh.QuanLy, NhanHienThi = "Quản lý (Manager)" },
                             new() { GiaTri = VaiTroMacDinh.NguoiXem, NhanHienThi = "Người xem (Viewer)" }
                         }
                     },
@@ -711,6 +748,15 @@ public class QuanTriDuLieuDichVu : IQuanTriDuLieuDichVu
         }
 
         var bangChuan = ChuanHoaTenBang(tenBang);
+        ChanGhiBangChiDoc(bangChuan);
+        if (GhiQuaDichVu(bangChuan))
+        {
+            int.TryParse(khoaBanGhi, out var idNghiepVu);
+            await CapNhatQuaNghiepVuAsync(bangChuan, idNghiepVu, duLieuCapNhat, nguoiThucHien, cancellationToken);
+            await LuuGiaTriTruongTuyChinhAsync(bangChuan, khoaBanGhi, duLieuCapNhat, cancellationToken);
+            return true;
+        }
+
         int.TryParse(khoaBanGhi, out int idSo);
 
         switch (bangChuan)
@@ -759,93 +805,6 @@ public class QuanTriDuLieuDichVu : IQuanTriDuLieuDichVu
                 boMon.KhoaId = LaySoNguyen(duLieuCapNhat, "KhoaId", boMon.KhoaId);
                 boMon.MoTa = LayChuoiHoacNull(duLieuCapNhat, "MoTa", boMon.MoTa);
                 boMon.CoHoatDong = LayBoolean(duLieuCapNhat, "CoHoatDong", boMon.CoHoatDong);
-                break;
-
-            case "LopHoc":
-                var lop = await _coSoDuLieu.LopHocs.FirstOrDefaultAsync(l => l.LopHocId == idSo, cancellationToken)
-                    ?? throw new KeyNotFoundException($"Không tìm thấy Lớp học có ID {idSo}.");
-
-                var maLopMoi = LayChuoi(duLieuCapNhat, "MaLop", lop.MaLop);
-                var tenLopMoi = LayChuoi(duLieuCapNhat, "TenLop", lop.TenLop);
-                if (string.IsNullOrWhiteSpace(maLopMoi) || string.IsNullOrWhiteSpace(tenLopMoi))
-                {
-                    throw new InvalidOperationException("Mã lớp và Tên lớp không được để trống.");
-                }
-                if (await _coSoDuLieu.LopHocs.AnyAsync(l => l.MaLop == maLopMoi && l.LopHocId != idSo, cancellationToken))
-                {
-                    throw new InvalidOperationException($"Mã lớp '{maLopMoi}' đã tồn tại ở bản ghi khác.");
-                }
-
-                lop.MaLop = maLopMoi;
-                lop.TenLop = tenLopMoi;
-                lop.NienKhoa = LayChuoi(duLieuCapNhat, "NienKhoa", lop.NienKhoa);
-                lop.KhoaId = LaySoNguyen(duLieuCapNhat, "KhoaId", lop.KhoaId);
-                lop.SoLuongToiDa = LaySoNguyen(duLieuCapNhat, "SoLuongToiDa", lop.SoLuongToiDa);
-                lop.CoHoatDong = LayBoolean(duLieuCapNhat, "CoHoatDong", lop.CoHoatDong);
-                break;
-
-            case "HocVien":
-                var hv = await _coSoDuLieu.HocViens.FirstOrDefaultAsync(h => h.HocVienId == idSo, cancellationToken)
-                    ?? throw new KeyNotFoundException($"Không tìm thấy Học viên có ID {idSo}.");
-
-                var maHvMoi = LayChuoi(duLieuCapNhat, "MaHocVien", hv.MaHocVien);
-                var hoTenHvMoi = LayChuoi(duLieuCapNhat, "HoVaTen", hv.HoVaTen);
-                if (string.IsNullOrWhiteSpace(maHvMoi) || string.IsNullOrWhiteSpace(hoTenHvMoi))
-                {
-                    throw new InvalidOperationException("Mã học viên và Họ tên không được để trống.");
-                }
-                if (await _coSoDuLieu.HocViens.AnyAsync(h => h.MaHocVien == maHvMoi && h.HocVienId != idSo, cancellationToken))
-                {
-                    throw new InvalidOperationException($"Mã học viên '{maHvMoi}' đã tồn tại ở bản ghi khác.");
-                }
-
-                hv.MaHocVien = maHvMoi;
-                hv.HoVaTen = hoTenHvMoi;
-                hv.NgaySinh = LayNgayThang(duLieuCapNhat, "NgaySinh", hv.NgaySinh);
-                hv.GioiTinh = LayChuoi(duLieuCapNhat, "GioiTinh", hv.GioiTinh);
-                hv.LopHocId = LaySoNguyen(duLieuCapNhat, "LopHocId", hv.LopHocId);
-                hv.Email = LayChuoiHoacNull(duLieuCapNhat, "Email", hv.Email);
-                hv.SoDienThoai = LayChuoiHoacNull(duLieuCapNhat, "SoDienThoai", hv.SoDienThoai);
-                hv.DiaChi = LayChuoiHoacNull(duLieuCapNhat, "DiaChi", hv.DiaChi);
-                hv.CoHoatDong = LayBoolean(duLieuCapNhat, "CoHoatDong", hv.CoHoatDong);
-                break;
-
-            case "NhanSu":
-                var ns = await _coSoDuLieu.NhanSus.FirstOrDefaultAsync(n => n.NhanSuId == idSo, cancellationToken)
-                    ?? throw new KeyNotFoundException($"Không tìm thấy Nhân sự có ID {idSo}.");
-
-                var maNsMoi = LayChuoi(duLieuCapNhat, "MaNhanSu", ns.MaNhanSu);
-                var hoTenNsMoi = LayChuoi(duLieuCapNhat, "HoVaTen", ns.HoVaTen);
-                var emailNsMoi = LayChuoi(duLieuCapNhat, "EmailCongViec", ns.EmailCongViec);
-                if (string.IsNullOrWhiteSpace(maNsMoi) || string.IsNullOrWhiteSpace(hoTenNsMoi) || string.IsNullOrWhiteSpace(emailNsMoi))
-                {
-                    throw new InvalidOperationException("Mã nhân sự, Họ tên và Email công việc là bắt buộc.");
-                }
-                if (await _coSoDuLieu.NhanSus.AnyAsync(n => n.MaNhanSu == maNsMoi && n.NhanSuId != idSo, cancellationToken))
-                {
-                    throw new InvalidOperationException($"Mã nhân sự '{maNsMoi}' đã tồn tại ở bản ghi khác.");
-                }
-
-                ns.MaNhanSu = maNsMoi;
-                ns.HoVaTen = hoTenNsMoi;
-                ns.NgaySinh = LayNgayThang(duLieuCapNhat, "NgaySinh", ns.NgaySinh);
-                ns.GioiTinh = LayChuoi(duLieuCapNhat, "GioiTinh", ns.GioiTinh);
-                ns.EmailCongViec = emailNsMoi;
-                ns.SoDienThoai = LayChuoiHoacNull(duLieuCapNhat, "SoDienThoai", ns.SoDienThoai);
-                ns.SoGiayTo = LayChuoiHoacNull(duLieuCapNhat, "SoGiayTo", ns.SoGiayTo);
-                ns.KhoaId = LaySoNguyenHoacNull(duLieuCapNhat, "KhoaId", ns.KhoaId);
-                ns.BoMonId = LaySoNguyenHoacNull(duLieuCapNhat, "BoMonId", ns.BoMonId);
-                ns.ChucVuId = LaySoNguyenHoacNull(duLieuCapNhat, "ChucVuId", ns.ChucVuId);
-                ns.TrinhDoChuyenMonId = LaySoNguyenHoacNull(duLieuCapNhat, "TrinhDoChuyenMonId", ns.TrinhDoChuyenMonId);
-                ns.ChucDanhNgheNghiep = LayChuoiHoacNull(duLieuCapNhat, "ChucDanhNgheNghiep", ns.ChucDanhNgheNghiep);
-                ns.HocVi = LayChuoiHoacNull(duLieuCapNhat, "HocVi", ns.HocVi);
-                ns.HocHam = LayChuoiHoacNull(duLieuCapNhat, "HocHam", ns.HocHam);
-                ns.ChuyenNganh = LayChuoiHoacNull(duLieuCapNhat, "ChuyenNganh", ns.ChuyenNganh);
-                ns.TruongDaoTao = LayChuoiHoacNull(duLieuCapNhat, "TruongDaoTao", ns.TruongDaoTao);
-                ns.TrangThaiCongTac = LayChuoi(duLieuCapNhat, "TrangThaiCongTac", ns.TrangThaiCongTac);
-                ns.CoHoatDong = LayBoolean(duLieuCapNhat, "CoHoatDong", ns.CoHoatDong);
-                ns.NgayCapNhat = DateTime.UtcNow;
-                ns.NguoiCapNhat = nguoiThucHien;
                 break;
 
             case "MonHoc":
@@ -1022,6 +981,14 @@ public class QuanTriDuLieuDichVu : IQuanTriDuLieuDichVu
     {
         ArgumentNullException.ThrowIfNull(duLieuMoi);
         var bangChuan = ChuanHoaTenBang(tenBang);
+        ChanGhiBangChiDoc(bangChuan);
+        if (GhiQuaDichVu(bangChuan))
+        {
+            var khoaMoi = await ThemQuaNghiepVuAsync(bangChuan, duLieuMoi, nguoiThucHien, cancellationToken);
+            await LuuGiaTriTruongTuyChinhAsync(bangChuan, khoaMoi, duLieuMoi, cancellationToken);
+            return khoaMoi;
+        }
+
         string khoaBanGhiMoi = "";
 
         switch (bangChuan)
@@ -1079,107 +1046,6 @@ public class QuanTriDuLieuDichVu : IQuanTriDuLieuDichVu
                 await _coSoDuLieu.BoMons.AddAsync(bmMoi, cancellationToken);
                 await _coSoDuLieu.SaveChangesAsync(cancellationToken);
                 khoaBanGhiMoi = bmMoi.BoMonId.ToString();
-                break;
-
-            case "LopHoc":
-                var maLop = LayChuoi(duLieuMoi, "MaLop", "");
-                var tenLop = LayChuoi(duLieuMoi, "TenLop", "");
-                var nienKhoa = LayChuoi(duLieuMoi, "NienKhoa", "2024-2028");
-                var khoaIdLop = LaySoNguyen(duLieuMoi, "KhoaId", 0);
-                if (string.IsNullOrWhiteSpace(maLop) || string.IsNullOrWhiteSpace(tenLop) || khoaIdLop <= 0)
-                {
-                    throw new InvalidOperationException("Mã lớp, Tên lớp và Khoa quản lý là bắt buộc.");
-                }
-                if (await _coSoDuLieu.LopHocs.AnyAsync(l => l.MaLop == maLop, cancellationToken))
-                {
-                    throw new InvalidOperationException($"Mã lớp '{maLop}' đã tồn tại.");
-                }
-
-                var lopMoi = new LopHoc
-                {
-                    MaLop = maLop,
-                    TenLop = tenLop,
-                    NienKhoa = nienKhoa,
-                    KhoaId = khoaIdLop,
-                    SoLuongToiDa = LaySoNguyen(duLieuMoi, "SoLuongToiDa", 50),
-                    CoHoatDong = LayBoolean(duLieuMoi, "CoHoatDong", true),
-                    NgayTao = DateTime.UtcNow
-                };
-                await _coSoDuLieu.LopHocs.AddAsync(lopMoi, cancellationToken);
-                await _coSoDuLieu.SaveChangesAsync(cancellationToken);
-                khoaBanGhiMoi = lopMoi.LopHocId.ToString();
-                break;
-
-            case "HocVien":
-                var maHv = LayChuoi(duLieuMoi, "MaHocVien", "");
-                var hoTenHv = LayChuoi(duLieuMoi, "HoVaTen", "");
-                var lopIdHv = LaySoNguyen(duLieuMoi, "LopHocId", 0);
-                if (string.IsNullOrWhiteSpace(maHv) || string.IsNullOrWhiteSpace(hoTenHv) || lopIdHv <= 0)
-                {
-                    throw new InvalidOperationException("Mã học viên, Họ tên và Lớp học là bắt buộc.");
-                }
-                if (await _coSoDuLieu.HocViens.AnyAsync(h => h.MaHocVien == maHv, cancellationToken))
-                {
-                    throw new InvalidOperationException($"Mã học viên '{maHv}' đã tồn tại.");
-                }
-
-                var hvMoi = new HocVien
-                {
-                    MaHocVien = maHv,
-                    HoVaTen = hoTenHv,
-                    NgaySinh = LayNgayThang(duLieuMoi, "NgaySinh", new DateTime(2005, 1, 1)),
-                    GioiTinh = LayChuoi(duLieuMoi, "GioiTinh", "Nam"),
-                    LopHocId = lopIdHv,
-                    Email = LayChuoiHoacNull(duLieuMoi, "Email", null),
-                    SoDienThoai = LayChuoiHoacNull(duLieuMoi, "SoDienThoai", null),
-                    DiaChi = LayChuoiHoacNull(duLieuMoi, "DiaChi", null),
-                    CoHoatDong = LayBoolean(duLieuMoi, "CoHoatDong", true),
-                    NgayTao = DateTime.UtcNow
-                };
-                await _coSoDuLieu.HocViens.AddAsync(hvMoi, cancellationToken);
-                await _coSoDuLieu.SaveChangesAsync(cancellationToken);
-                khoaBanGhiMoi = hvMoi.HocVienId.ToString();
-                break;
-
-            case "NhanSu":
-                var maNs = LayChuoi(duLieuMoi, "MaNhanSu", "");
-                var hoTenNs = LayChuoi(duLieuMoi, "HoVaTen", "");
-                var emailNs = LayChuoi(duLieuMoi, "EmailCongViec", "");
-                if (string.IsNullOrWhiteSpace(maNs) || string.IsNullOrWhiteSpace(hoTenNs) || string.IsNullOrWhiteSpace(emailNs))
-                {
-                    throw new InvalidOperationException("Mã cán bộ, Họ tên và Email công việc là bắt buộc.");
-                }
-                if (await _coSoDuLieu.NhanSus.AnyAsync(n => n.MaNhanSu == maNs, cancellationToken))
-                {
-                    throw new InvalidOperationException($"Mã nhân sự '{maNs}' đã tồn tại.");
-                }
-
-                var nsMoi = new NhanSu
-                {
-                    MaNhanSu = maNs,
-                    HoVaTen = hoTenNs,
-                    NgaySinh = LayNgayThang(duLieuMoi, "NgaySinh", new DateTime(1990, 1, 1)),
-                    GioiTinh = LayChuoi(duLieuMoi, "GioiTinh", "Nam"),
-                    EmailCongViec = emailNs,
-                    SoDienThoai = LayChuoiHoacNull(duLieuMoi, "SoDienThoai", null),
-                    SoGiayTo = LayChuoiHoacNull(duLieuMoi, "SoGiayTo", null),
-                    KhoaId = LaySoNguyenHoacNull(duLieuMoi, "KhoaId", null),
-                    BoMonId = LaySoNguyenHoacNull(duLieuMoi, "BoMonId", null),
-                    ChucVuId = LaySoNguyenHoacNull(duLieuMoi, "ChucVuId", null),
-                    TrinhDoChuyenMonId = LaySoNguyenHoacNull(duLieuMoi, "TrinhDoChuyenMonId", null),
-                    ChucDanhNgheNghiep = LayChuoiHoacNull(duLieuMoi, "ChucDanhNgheNghiep", null),
-                    HocVi = LayChuoiHoacNull(duLieuMoi, "HocVi", null),
-                    HocHam = LayChuoiHoacNull(duLieuMoi, "HocHam", null),
-                    ChuyenNganh = LayChuoiHoacNull(duLieuMoi, "ChuyenNganh", null),
-                    TruongDaoTao = LayChuoiHoacNull(duLieuMoi, "TruongDaoTao", null),
-                    TrangThaiCongTac = LayChuoi(duLieuMoi, "TrangThaiCongTac", "Đang làm việc"),
-                    CoHoatDong = LayBoolean(duLieuMoi, "CoHoatDong", true),
-                    NgayTao = DateTime.UtcNow,
-                    NguoiTao = nguoiThucHien
-                };
-                await _coSoDuLieu.NhanSus.AddAsync(nsMoi, cancellationToken);
-                await _coSoDuLieu.SaveChangesAsync(cancellationToken);
-                khoaBanGhiMoi = nsMoi.NhanSuId.ToString();
                 break;
 
             case "MonHoc":
@@ -1389,6 +1255,14 @@ public class QuanTriDuLieuDichVu : IQuanTriDuLieuDichVu
         }
 
         var bangChuan = ChuanHoaTenBang(tenBang);
+        ChanGhiBangChiDoc(bangChuan);
+        if (GhiQuaDichVu(bangChuan))
+        {
+            int.TryParse(khoaBanGhi, out var idNghiepVu);
+            await XoaQuaNghiepVuAsync(bangChuan, idNghiepVu, nguoiThucHien, cancellationToken);
+            return true;
+        }
+
         int.TryParse(khoaBanGhi, out int idSo);
 
         switch (bangChuan)
@@ -1414,33 +1288,6 @@ public class QuanTriDuLieuDichVu : IQuanTriDuLieuDichVu
                     throw new InvalidOperationException("Không thể xóa Bộ môn vì còn Nhân sự hoặc Môn học trực thuộc.");
                 }
                 _coSoDuLieu.BoMons.Remove(bm);
-                break;
-
-            case "LopHoc":
-                var lop = await _coSoDuLieu.LopHocs.FirstOrDefaultAsync(l => l.LopHocId == idSo, cancellationToken)
-                    ?? throw new KeyNotFoundException($"Không tìm thấy Lớp học có ID {idSo}.");
-                if (await _coSoDuLieu.HocViens.AnyAsync(h => h.LopHocId == idSo, cancellationToken) ||
-                    await _coSoDuLieu.PhanCongGiangDays.AnyAsync(p => p.LopHocId == idSo, cancellationToken))
-                {
-                    throw new InvalidOperationException("Không thể xóa Lớp học vì còn Học viên hoặc Phân công giảng dạy.");
-                }
-                _coSoDuLieu.LopHocs.Remove(lop);
-                break;
-
-            case "HocVien":
-                var hv = await _coSoDuLieu.HocViens.FirstOrDefaultAsync(h => h.HocVienId == idSo, cancellationToken)
-                    ?? throw new KeyNotFoundException($"Không tìm thấy Học viên có ID {idSo}.");
-                _coSoDuLieu.HocViens.Remove(hv);
-                break;
-
-            case "NhanSu":
-                var ns = await _coSoDuLieu.NhanSus.FirstOrDefaultAsync(n => n.NhanSuId == idSo, cancellationToken)
-                    ?? throw new KeyNotFoundException($"Không tìm thấy Nhân sự có ID {idSo}.");
-                if (await _coSoDuLieu.PhanCongGiangDays.AnyAsync(p => p.NhanSuId == idSo, cancellationToken))
-                {
-                    throw new InvalidOperationException("Không thể xóa Nhân sự vì đang có Phân công giảng dạy.");
-                }
-                _coSoDuLieu.NhanSus.Remove(ns);
                 break;
 
             case "MonHoc":
@@ -1715,6 +1562,248 @@ public class QuanTriDuLieuDichVu : IQuanTriDuLieuDichVu
 
         await _coSoDuLieu.SaveChangesAsync(ct);
     }
+
+    // =========================================================================
+    // GHI QUA DỊCH VỤ NGHIỆP VỤ (Cán bộ, Học viên, Lớp): một nguồn quy tắc duy nhất
+    // =========================================================================
+
+    private static readonly HashSet<string> BangNghiepVu = ["NhanSu", "HocVien", "LopHoc"];
+
+    /// <summary>Bảng có quy tắc nghiệp vụ riêng, Studio không được ghi thẳng xuống CSDL.</summary>
+    public static bool LaBangNghiepVu(string tenBang) => BangNghiepVu.Contains(ChuanHoaTenBang(tenBang));
+
+    /// <summary>Bảng ghi qua dịch vụ: luôn với 3 bảng nghiệp vụ, và với danh mục / khoa / bộ môn / môn học khi có dịch vụ.</summary>
+    private bool GhiQuaDichVu(string bang) => LaBangNghiepVu(bang) || bang switch
+    {
+        "Khoa" => _khoaDichVu is not null,
+        "BoMon" => _boMonDichVu is not null,
+        "MonHoc" => _monHocDichVu is not null,
+        "ChucVu" => _chucVuDichVu is not null,
+        "TrinhDoChuyenMon" => _trinhDoDichVu is not null,
+        _ => false
+    };
+
+    private static List<LuaChonKhoaNgoai> TaoLuaChon(IEnumerable<string> giaTri) =>
+        giaTri.Select(g => new LuaChonKhoaNgoai { GiaTri = g, NhanHienThi = g }).ToList();
+
+    private InvalidOperationException ThieuDichVuNghiepVu(string bang) =>
+        new($"Bảng {bang} phải ghi qua dịch vụ nghiệp vụ để áp dụng đủ quy tắc kiểm tra.");
+
+    private static NhanSu DocNhanSu(Dictionary<string, string?> d, NhanSu? goc) => new()
+    {
+        NhanSuId = goc?.NhanSuId ?? 0,
+        MaNhanSu = LayChuoi(d, "MaNhanSu", goc?.MaNhanSu ?? string.Empty),
+        HoVaTen = LayChuoi(d, "HoVaTen", goc?.HoVaTen ?? string.Empty),
+        NgaySinh = LayNgayThang(d, "NgaySinh", goc?.NgaySinh ?? DateTime.MinValue),
+        GioiTinh = LayChuoi(d, "GioiTinh", goc?.GioiTinh ?? string.Empty),
+        SoCCCD = LayChuoiHoacNull(d, "SoCCCD", goc?.SoCCCD),
+        SoDienThoai = LayChuoiHoacNull(d, "SoDienThoai", goc?.SoDienThoai),
+        Email = LayChuoi(d, "Email", goc?.Email ?? string.Empty),
+        BoMonId = LaySoNguyenHoacNull(d, "BoMonId", goc?.BoMonId),
+        KhoaId = LaySoNguyenHoacNull(d, "KhoaId", goc?.KhoaId),
+        ChucVuId = LaySoNguyenHoacNull(d, "ChucVuId", goc?.ChucVuId),
+        CapBacHam = LayChuoiHoacNull(d, "CapBacHam", goc?.CapBacHam),
+        TrinhDoChuyenMonId = LaySoNguyenHoacNull(d, "TrinhDoChuyenMonId", goc?.TrinhDoChuyenMonId),
+        HocHam = LayChuoiHoacNull(d, "HocHam", goc?.HocHam),
+        ChuyenMonDaoTao = LayChuoiHoacNull(d, "ChuyenMonDaoTao", goc?.ChuyenMonDaoTao),
+        NgayVaoLam = d.TryGetValue("NgayVaoLam", out var nvl)
+            ? (string.IsNullOrWhiteSpace(nvl) ? null : LayNgayThang(d, "NgayVaoLam", DateTime.MinValue))
+            : goc?.NgayVaoLam,
+        TrangThai = LayChuoi(d, "TrangThai", goc?.TrangThai ?? "Đang làm việc"),
+        QueQuan = LayChuoiHoacNull(d, "QueQuan", goc?.QueQuan),
+        DiaChi = LayChuoiHoacNull(d, "DiaChi", goc?.DiaChi),
+        GhiChu = LayChuoiHoacNull(d, "GhiChu", goc?.GhiChu)
+    };
+
+    private static HocVien DocHocVien(Dictionary<string, string?> d, HocVien? goc) => new()
+    {
+        HocVienId = goc?.HocVienId ?? 0,
+        MaHocVien = LayChuoi(d, "MaHocVien", goc?.MaHocVien ?? string.Empty),
+        HoVaTen = LayChuoi(d, "HoVaTen", goc?.HoVaTen ?? string.Empty),
+        NgaySinh = LayNgayThang(d, "NgaySinh", goc?.NgaySinh ?? DateTime.MinValue),
+        GioiTinh = LayChuoi(d, "GioiTinh", goc?.GioiTinh ?? string.Empty),
+        LopHocId = LaySoNguyen(d, "LopHocId", goc?.LopHocId ?? 0),
+        TrangThai = LayChuoi(d, "TrangThai", goc?.TrangThai ?? "Đang học"),
+        ChucVuLop = LayChuoiHoacNull(d, "ChucVuLop", goc?.ChucVuLop),
+        SoCCCD = LayChuoiHoacNull(d, "SoCCCD", goc?.SoCCCD),
+        SoDienThoai = LayChuoiHoacNull(d, "SoDienThoai", goc?.SoDienThoai),
+        Email = LayChuoiHoacNull(d, "Email", goc?.Email),
+        DiaChi = LayChuoiHoacNull(d, "DiaChi", goc?.DiaChi)
+    };
+
+    private static LopHoc DocLopHoc(Dictionary<string, string?> d, LopHoc? goc) => new()
+    {
+        LopHocId = goc?.LopHocId ?? 0,
+        MaLop = LayChuoi(d, "MaLop", goc?.MaLop ?? string.Empty),
+        TenLop = LayChuoi(d, "TenLop", goc?.TenLop ?? string.Empty),
+        HeDaoTao = LayChuoi(d, "HeDaoTao", goc?.HeDaoTao ?? "Chính quy"),
+        KhoaHoc = LayChuoiHoacNull(d, "KhoaHoc", goc?.KhoaHoc),
+        NienKhoa = LayChuoi(d, "NienKhoa", goc?.NienKhoa ?? string.Empty),
+        ChuyenNganh = LayChuoiHoacNull(d, "ChuyenNganh", goc?.ChuyenNganh),
+        KhoaId = LaySoNguyen(d, "KhoaId", goc?.KhoaId ?? 0),
+        SoLuongToiDa = LaySoNguyen(d, "SoLuongToiDa", goc?.SoLuongToiDa ?? 50),
+        CoHoatDong = LayBoolean(d, "CoHoatDong", goc?.CoHoatDong ?? true)
+    };
+
+    private static Khoa DocKhoa(Dictionary<string, string?> d, Khoa? goc) => new()
+    {
+        KhoaId = goc?.KhoaId ?? 0,
+        MaKhoa = LayChuoi(d, "MaKhoa", goc?.MaKhoa ?? string.Empty),
+        TenKhoa = LayChuoi(d, "TenKhoa", goc?.TenKhoa ?? string.Empty),
+        SoDienThoai = LayChuoiHoacNull(d, "SoDienThoai", goc?.SoDienThoai),
+        Email = LayChuoiHoacNull(d, "Email", goc?.Email),
+        DiaDiem = LayChuoiHoacNull(d, "DiaDiem", goc?.DiaDiem),
+        MoTa = LayChuoiHoacNull(d, "MoTa", goc?.MoTa),
+        CoHoatDong = LayBoolean(d, "CoHoatDong", goc?.CoHoatDong ?? true)
+    };
+
+    private static BoMon DocBoMon(Dictionary<string, string?> d, BoMon? goc) => new()
+    {
+        BoMonId = goc?.BoMonId ?? 0,
+        MaBoMon = LayChuoi(d, "MaBoMon", goc?.MaBoMon ?? string.Empty),
+        TenBoMon = LayChuoi(d, "TenBoMon", goc?.TenBoMon ?? string.Empty),
+        KhoaId = LaySoNguyen(d, "KhoaId", goc?.KhoaId ?? 0),
+        MoTa = LayChuoiHoacNull(d, "MoTa", goc?.MoTa),
+        CoHoatDong = LayBoolean(d, "CoHoatDong", goc?.CoHoatDong ?? true)
+    };
+
+    private static MonHoc DocMonHoc(Dictionary<string, string?> d, MonHoc? goc) => new()
+    {
+        MonHocId = goc?.MonHocId ?? 0,
+        MaMonHoc = LayChuoi(d, "MaMonHoc", goc?.MaMonHoc ?? string.Empty),
+        TenMonHoc = LayChuoi(d, "TenMonHoc", goc?.TenMonHoc ?? string.Empty),
+        SoTinChi = LaySoNguyen(d, "SoTinChi", goc?.SoTinChi ?? 3),
+        SoTietLyThuyet = LaySoNguyen(d, "SoTietLyThuyet", goc?.SoTietLyThuyet ?? 30),
+        SoTietThucHanh = LaySoNguyen(d, "SoTietThucHanh", goc?.SoTietThucHanh ?? 15),
+        BoMonId = LaySoNguyenHoacNull(d, "BoMonId", goc?.BoMonId),
+        CoHoatDong = LayBoolean(d, "CoHoatDong", goc?.CoHoatDong ?? true)
+    };
+
+    private static ChucVu DocChucVu(Dictionary<string, string?> d, ChucVu? goc) => new()
+    {
+        ChucVuId = goc?.ChucVuId ?? 0,
+        MaChucVu = LayChuoi(d, "MaChucVu", goc?.MaChucVu ?? string.Empty),
+        TenChucVu = LayChuoi(d, "TenChucVu", goc?.TenChucVu ?? string.Empty),
+        MoTa = LayChuoiHoacNull(d, "MoTa", goc?.MoTa),
+        CoHoatDong = LayBoolean(d, "CoHoatDong", goc?.CoHoatDong ?? true)
+    };
+
+    private static TrinhDoChuyenMon DocTrinhDo(Dictionary<string, string?> d, TrinhDoChuyenMon? goc) => new()
+    {
+        TrinhDoChuyenMonId = goc?.TrinhDoChuyenMonId ?? 0,
+        MaTrinhDo = LayChuoi(d, "MaTrinhDo", goc?.MaTrinhDo ?? string.Empty),
+        TenTrinhDo = LayChuoi(d, "TenTrinhDo", goc?.TenTrinhDo ?? string.Empty),
+        MoTa = LayChuoiHoacNull(d, "MoTa", goc?.MoTa),
+        CoHoatDong = LayBoolean(d, "CoHoatDong", goc?.CoHoatDong ?? true)
+    };
+
+    private async Task CapNhatQuaNghiepVuAsync(string bang, int id, Dictionary<string, string?> d, string? nguoiThucHien, CancellationToken ct)
+    {
+        switch (bang)
+        {
+            case "NhanSu":
+                var ns = await _coSoDuLieu.NhanSus.AsNoTracking().FirstOrDefaultAsync(n => n.NhanSuId == id, ct)
+                    ?? throw new KeyNotFoundException($"Không tìm thấy cán bộ có ID {id}.");
+                var banSuaNs = DocNhanSu(d, ns);
+                // Đổi bộ môn mà không chọn lại khoa: khoa đi theo bộ môn mới.
+                if (d.ContainsKey("BoMonId") && banSuaNs.BoMonId != ns.BoMonId && (!d.ContainsKey("KhoaId") || banSuaNs.KhoaId == ns.KhoaId))
+                {
+                    banSuaNs.KhoaId = null;
+                }
+                await (_nhanSuDichVu ?? throw ThieuDichVuNghiepVu(bang)).CapNhatNhanSuAsync(banSuaNs, nguoiThucHien, ct);
+                break;
+            case "HocVien":
+                var hv = await _coSoDuLieu.HocViens.AsNoTracking().FirstOrDefaultAsync(h => h.HocVienId == id, ct)
+                    ?? throw new KeyNotFoundException($"Không tìm thấy học viên có ID {id}.");
+                await (_hocVienDichVu ?? throw ThieuDichVuNghiepVu(bang)).CapNhatHocVienAsync(DocHocVien(d, hv), ct);
+                break;
+            case "LopHoc":
+                var lop = await _coSoDuLieu.LopHocs.AsNoTracking().FirstOrDefaultAsync(l => l.LopHocId == id, ct)
+                    ?? throw new KeyNotFoundException($"Không tìm thấy lớp có ID {id}.");
+                await (_lopHocDichVu ?? throw ThieuDichVuNghiepVu(bang)).CapNhatLopHocAsync(DocLopHoc(d, lop), ct);
+                break;
+            case "Khoa":
+                var khoa = await _coSoDuLieu.Khoas.AsNoTracking().FirstOrDefaultAsync(k => k.KhoaId == id, ct)
+                    ?? throw new KeyNotFoundException($"Không tìm thấy khoa có ID {id}.");
+                await _khoaDichVu!.CapNhatKhoaAsync(DocKhoa(d, khoa), ct);
+                break;
+            case "BoMon":
+                var bm = await _coSoDuLieu.BoMons.AsNoTracking().FirstOrDefaultAsync(b => b.BoMonId == id, ct)
+                    ?? throw new KeyNotFoundException($"Không tìm thấy bộ môn có ID {id}.");
+                await _boMonDichVu!.CapNhatBoMonAsync(DocBoMon(d, bm), ct);
+                break;
+            case "MonHoc":
+                var mh = await _coSoDuLieu.MonHocs.AsNoTracking().FirstOrDefaultAsync(m => m.MonHocId == id, ct)
+                    ?? throw new KeyNotFoundException($"Không tìm thấy môn học có ID {id}.");
+                await _monHocDichVu!.CapNhatMonHocAsync(DocMonHoc(d, mh), ct);
+                break;
+            case "ChucVu":
+                var cv = await _coSoDuLieu.ChucVus.AsNoTracking().FirstOrDefaultAsync(c => c.ChucVuId == id, ct)
+                    ?? throw new KeyNotFoundException($"Không tìm thấy chức vụ có ID {id}.");
+                await _chucVuDichVu!.CapNhatChucVuAsync(DocChucVu(d, cv), ct);
+                break;
+            case "TrinhDoChuyenMon":
+                var td = await _coSoDuLieu.TrinhDoChuyenMons.AsNoTracking().FirstOrDefaultAsync(t => t.TrinhDoChuyenMonId == id, ct)
+                    ?? throw new KeyNotFoundException($"Không tìm thấy trình độ có ID {id}.");
+                await _trinhDoDichVu!.CapNhatTrinhDoAsync(DocTrinhDo(d, td), ct);
+                break;
+        }
+    }
+
+    private async Task<string> ThemQuaNghiepVuAsync(string bang, Dictionary<string, string?> d, string? nguoiThucHien, CancellationToken ct)
+    {
+        switch (bang)
+        {
+            case "NhanSu":
+                return (await (_nhanSuDichVu ?? throw ThieuDichVuNghiepVu(bang)).ThemNhanSuAsync(DocNhanSu(d, null), nguoiThucHien, ct)).NhanSuId.ToString();
+            case "HocVien":
+                return (await (_hocVienDichVu ?? throw ThieuDichVuNghiepVu(bang)).ThemHocVienAsync(DocHocVien(d, null), ct)).HocVienId.ToString();
+            case "Khoa":
+                return (await _khoaDichVu!.ThemKhoaAsync(DocKhoa(d, null), ct)).KhoaId.ToString();
+            case "BoMon":
+                return (await _boMonDichVu!.ThemBoMonAsync(DocBoMon(d, null), ct)).BoMonId.ToString();
+            case "MonHoc":
+                return (await _monHocDichVu!.ThemMonHocAsync(DocMonHoc(d, null), ct)).MonHocId.ToString();
+            case "ChucVu":
+                return (await _chucVuDichVu!.ThemChucVuAsync(DocChucVu(d, null), ct)).ChucVuId.ToString();
+            case "TrinhDoChuyenMon":
+                return (await _trinhDoDichVu!.ThemTrinhDoAsync(DocTrinhDo(d, null), ct)).TrinhDoChuyenMonId.ToString();
+            default:
+                return (await (_lopHocDichVu ?? throw ThieuDichVuNghiepVu(bang)).ThemLopHocAsync(DocLopHoc(d, null), ct)).LopHocId.ToString();
+        }
+    }
+
+    private async Task XoaQuaNghiepVuAsync(string bang, int id, string? nguoiThucHien, CancellationToken ct)
+    {
+        switch (bang)
+        {
+            case "NhanSu":
+                await (_nhanSuDichVu ?? throw ThieuDichVuNghiepVu(bang)).XoaNhanSuAsync(id, nguoiThucHien, ct);
+                break;
+            case "HocVien":
+                await (_hocVienDichVu ?? throw ThieuDichVuNghiepVu(bang)).XoaHocVienAsync(id, ct);
+                break;
+            case "Khoa":
+                await _khoaDichVu!.XoaKhoaAsync(id, ct);
+                break;
+            case "BoMon":
+                await _boMonDichVu!.XoaBoMonAsync(id, ct);
+                break;
+            case "MonHoc":
+                await _monHocDichVu!.XoaMonHocAsync(id, ct);
+                break;
+            case "ChucVu":
+                await _chucVuDichVu!.XoaChucVuAsync(id, ct);
+                break;
+            case "TrinhDoChuyenMon":
+                await _trinhDoDichVu!.XoaTrinhDoAsync(id, ct);
+                break;
+            default:
+                await (_lopHocDichVu ?? throw ThieuDichVuNghiepVu(bang)).XoaLopHocAsync(id, ct);
+                break;
+        }
+    }
+
 
     private static string LayChuoi(Dictionary<string, string?> dict, string key, string macDinh)
     {

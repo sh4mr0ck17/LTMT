@@ -33,6 +33,22 @@ public class TaiKhoan : IdentityUser
     public DateTime NgayTao { get; set; } = DateTime.UtcNow;
 
     /// <summary>
+    /// Vùng quản lý của tài khoản Manager (<see cref="QuanLyDaoTao.Models.VungQuanLy"/>). Rỗng với các vai trò khác.
+    /// </summary>
+    [StringLength(20)]
+    public string? VungQuanLy { get; set; }
+
+    /// <summary>
+    /// Khoa phụ trách của tài khoản Manager. Null nghĩa là được ghi trên mọi khoa trong vùng.
+    /// </summary>
+    public int? KhoaPhuTrachId { get; set; }
+
+    /// <summary>
+    /// Thời điểm đăng nhập thành công gần nhất (phục vụ kiểm soát tài khoản không hoạt động).
+    /// </summary>
+    public DateTime? LanDangNhapCuoi { get; set; }
+
+    /// <summary>
     /// Đường dẫn ảnh đại diện (Avatar mặt người) của chủ tài khoản.
     /// </summary>
     [NotMapped]

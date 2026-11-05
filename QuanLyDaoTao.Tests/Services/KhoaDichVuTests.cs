@@ -139,7 +139,7 @@ public class KhoaDichVuTests
         {
             MaNhanSu = "NS_01",
             HoVaTen = "Nguyễn Văn A",
-            EmailCongViec = "a@test.local",
+            Email = "a@test.local",
             KhoaId = k.KhoaId
         });
         await db.SaveChangesAsync();
