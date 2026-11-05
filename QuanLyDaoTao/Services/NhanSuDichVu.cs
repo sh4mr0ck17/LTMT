@@ -143,16 +143,6 @@ public class NhanSuDichVu : INhanSuDichVu
             throw new InvalidOperationException($"Email công việc '{nhanSu.EmailCongViec}' đã được sử dụng bởi nhân sự khác.");
         }
 
-        // Kiểm tra số CCCD trùng nếu có cung cấp
-        if (!string.IsNullOrWhiteSpace(nhanSu.SoCCCD))
-        {
-            var cccdTonTai = await _coSoDuLieu.NhanSus.AnyAsync(ns => ns.SoCCCD == nhanSu.SoCCCD.Trim(), cancellationToken);
-            if (cccdTonTai)
-            {
-                throw new InvalidOperationException($"Số CCCD '{nhanSu.SoCCCD}' đã được sử dụng bởi nhân sự khác trong hệ thống.");
-            }
-        }
-
         // Kiểm tra khóa ngoại hợp lệ nếu có chỉ định
         if (nhanSu.KhoaId.HasValue && !await _coSoDuLieu.Khoas.AnyAsync(k => k.KhoaId == nhanSu.KhoaId.Value, cancellationToken))
         {
@@ -216,16 +206,6 @@ public class NhanSuDichVu : INhanSuDichVu
         if (emailTonTai)
         {
             throw new InvalidOperationException($"Email công việc '{nhanSu.EmailCongViec}' đã được sử dụng bởi nhân sự khác.");
-        }
-
-        // Kiểm tra số CCCD trùng ở bản ghi khác nếu có cung cấp
-        if (!string.IsNullOrWhiteSpace(nhanSu.SoCCCD))
-        {
-            var cccdTonTai = await _coSoDuLieu.NhanSus.AnyAsync(ns => ns.SoCCCD == nhanSu.SoCCCD.Trim() && ns.NhanSuId != nhanSu.NhanSuId, cancellationToken);
-            if (cccdTonTai)
-            {
-                throw new InvalidOperationException($"Số CCCD '{nhanSu.SoCCCD}' đã được sử dụng bởi nhân sự khác trong hệ thống.");
-            }
         }
 
         if (nhanSu.KhoaId.HasValue && !await _coSoDuLieu.Khoas.AnyAsync(k => k.KhoaId == nhanSu.KhoaId.Value, cancellationToken))

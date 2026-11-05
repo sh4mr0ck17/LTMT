@@ -105,15 +105,6 @@ public class HocVienDichVu : IHocVienDichVu
             throw new InvalidOperationException($"Mã học viên '{hocVien.MaHocVien}' đã tồn tại trong hệ thống.");
         }
 
-        if (!string.IsNullOrWhiteSpace(hocVien.Email))
-        {
-            var emailTonTai = await _coSoDuLieu.HocViens.AnyAsync(h => h.Email == hocVien.Email.Trim(), cancellationToken);
-            if (emailTonTai)
-            {
-                throw new InvalidOperationException($"Email '{hocVien.Email}' đã được sử dụng bởi học viên khác trong hệ thống.");
-            }
-        }
-
         hocVien.NgayTao = DateTime.UtcNow;
         await _coSoDuLieu.HocViens.AddAsync(hocVien, cancellationToken);
         await _coSoDuLieu.SaveChangesAsync(cancellationToken);
@@ -142,15 +133,6 @@ public class HocVienDichVu : IHocVienDichVu
         if (await KiemTraTonTaiMaAsync(hocVien.MaHocVien, hocVien.HocVienId, cancellationToken))
         {
             throw new InvalidOperationException($"Mã học viên '{hocVien.MaHocVien}' đã tồn tại ở bản ghi khác.");
-        }
-
-        if (!string.IsNullOrWhiteSpace(hocVien.Email))
-        {
-            var emailTonTai = await _coSoDuLieu.HocViens.AnyAsync(h => h.Email == hocVien.Email.Trim() && h.HocVienId != hocVien.HocVienId, cancellationToken);
-            if (emailTonTai)
-            {
-                throw new InvalidOperationException($"Email '{hocVien.Email}' đã được sử dụng bởi học viên khác trong hệ thống.");
-            }
         }
 
         hocVienTonTai.MaHocVien = hocVien.MaHocVien;
