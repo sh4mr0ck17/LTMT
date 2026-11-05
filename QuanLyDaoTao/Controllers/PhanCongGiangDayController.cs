@@ -67,7 +67,7 @@ public class PhanCongGiangDayController : Controller
     /// Hiển thị biểu mẫu thêm mới một phân công giảng dạy.
     /// </summary>
     [HttpGet]
-    [Authorize(Roles = $"{VaiTroMacDinh.SuperAdmin},{VaiTroMacDinh.QuanTriVien},{VaiTroMacDinh.QuanLyDaoTao}")]
+    [Authorize(Roles = $"{VaiTroMacDinh.SuperAdmin},{VaiTroMacDinh.GiaoVien},{VaiTroMacDinh.QuanTriVien},{VaiTroMacDinh.QuanLyDaoTao}")]
     public async Task<IActionResult> ThemMoi()
     {
         await NapDuLieuDanhMucViewBagAsync();
@@ -84,7 +84,7 @@ public class PhanCongGiangDayController : Controller
     /// Xử lý lưu phân công giảng dạy mới.
     /// </summary>
     [HttpPost]
-    [Authorize(Roles = $"{VaiTroMacDinh.SuperAdmin},{VaiTroMacDinh.QuanTriVien},{VaiTroMacDinh.QuanLyDaoTao}")]
+    [Authorize(Roles = $"{VaiTroMacDinh.SuperAdmin},{VaiTroMacDinh.GiaoVien},{VaiTroMacDinh.QuanTriVien},{VaiTroMacDinh.QuanLyDaoTao}")]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> ThemMoi(PhanCongGiangDay phanCong)
     {
@@ -126,7 +126,7 @@ public class PhanCongGiangDayController : Controller
     /// Hiển thị biểu mẫu chỉnh sửa phân công giảng dạy.
     /// </summary>
     [HttpGet]
-    [Authorize(Roles = $"{VaiTroMacDinh.SuperAdmin},{VaiTroMacDinh.QuanTriVien},{VaiTroMacDinh.QuanLyDaoTao}")]
+    [Authorize(Roles = $"{VaiTroMacDinh.SuperAdmin},{VaiTroMacDinh.GiaoVien},{VaiTroMacDinh.QuanTriVien},{VaiTroMacDinh.QuanLyDaoTao}")]
     public async Task<IActionResult> ChinhSua(int id)
     {
         var pc = await _phanCongGiangDayDichVu.LayTheoIdAsync(id, HttpContext.RequestAborted);
@@ -144,7 +144,7 @@ public class PhanCongGiangDayController : Controller
     /// Xử lý cập nhật thông tin phân công giảng dạy.
     /// </summary>
     [HttpPost]
-    [Authorize(Roles = $"{VaiTroMacDinh.SuperAdmin},{VaiTroMacDinh.QuanTriVien},{VaiTroMacDinh.QuanLyDaoTao}")]
+    [Authorize(Roles = $"{VaiTroMacDinh.SuperAdmin},{VaiTroMacDinh.GiaoVien},{VaiTroMacDinh.QuanTriVien},{VaiTroMacDinh.QuanLyDaoTao}")]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> ChinhSua(int id, PhanCongGiangDay phanCong)
     {
@@ -195,7 +195,7 @@ public class PhanCongGiangDayController : Controller
     /// Xóa một phân công giảng dạy khỏi hệ thống.
     /// </summary>
     [HttpPost]
-    [Authorize(Roles = $"{VaiTroMacDinh.SuperAdmin},{VaiTroMacDinh.QuanTriVien},{VaiTroMacDinh.QuanLyDaoTao}")]
+    [Authorize(Roles = $"{VaiTroMacDinh.SuperAdmin},{VaiTroMacDinh.GiaoVien},{VaiTroMacDinh.QuanTriVien},{VaiTroMacDinh.QuanLyDaoTao}")]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> Xoa(int id)
     {

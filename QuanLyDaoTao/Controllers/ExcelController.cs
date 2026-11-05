@@ -58,7 +58,7 @@ public class ExcelController : Controller
     /// </summary>
     /// <param name="module">Tên module nghiệp vụ.</param>
     [HttpGet]
-    [Authorize(Roles = $"{VaiTroMacDinh.SuperAdmin},{VaiTroMacDinh.QuanTriVien},{VaiTroMacDinh.QuanLyDaoTao},{VaiTroMacDinh.CanBo},{VaiTroMacDinh.GiaoVien},{VaiTroMacDinh.NguoiDung}")]
+    [Authorize(Roles = $"{VaiTroMacDinh.SuperAdmin},{VaiTroMacDinh.GiaoVien},{VaiTroMacDinh.QuanTriVien},{VaiTroMacDinh.QuanLyDaoTao},{VaiTroMacDinh.CanBo}")]
     public IActionResult NhapExcel(string module)
     {
         if (string.IsNullOrWhiteSpace(module))
@@ -77,7 +77,7 @@ public class ExcelController : Controller
     /// <param name="module">Tên module nghiệp vụ.</param>
     /// <param name="tepExcel">Tệp Excel được tải lên từ máy khách.</param>
     [HttpPost]
-    [Authorize(Roles = $"{VaiTroMacDinh.SuperAdmin},{VaiTroMacDinh.QuanTriVien},{VaiTroMacDinh.QuanLyDaoTao},{VaiTroMacDinh.CanBo},{VaiTroMacDinh.GiaoVien},{VaiTroMacDinh.NguoiDung}")]
+    [Authorize(Roles = $"{VaiTroMacDinh.SuperAdmin},{VaiTroMacDinh.GiaoVien},{VaiTroMacDinh.QuanTriVien},{VaiTroMacDinh.QuanLyDaoTao},{VaiTroMacDinh.CanBo}")]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> KiemTraTep(string module, IFormFile? tepExcel, bool choPhepThieuTruong = true)
     {
@@ -126,7 +126,7 @@ public class ExcelController : Controller
     /// </summary>
     /// <param name="maPhien">Mã phiên xem trước (GUID).</param>
     [HttpPost]
-    [Authorize(Roles = $"{VaiTroMacDinh.SuperAdmin},{VaiTroMacDinh.QuanTriVien},{VaiTroMacDinh.QuanLyDaoTao},{VaiTroMacDinh.CanBo},{VaiTroMacDinh.GiaoVien},{VaiTroMacDinh.NguoiDung}")]
+    [Authorize(Roles = $"{VaiTroMacDinh.SuperAdmin},{VaiTroMacDinh.GiaoVien},{VaiTroMacDinh.QuanTriVien},{VaiTroMacDinh.QuanLyDaoTao},{VaiTroMacDinh.CanBo}")]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> XacNhanCommit(string maPhien, bool buDapTatCa = false)
     {

@@ -3,7 +3,7 @@
 @{
     ViewData["Title"] = "Quản lý Bộ môn";
     Layout = "_Layout";
-    bool laQuanTri = User.IsInRole(VaiTroMacDinh.QuanTriVien) || User.IsInRole(VaiTroMacDinh.QuanLyDaoTao);
+    bool laQuanTri = User.IsInRole(VaiTroMacDinh.SuperAdmin) || User.IsInRole(VaiTroMacDinh.GiaoVien) || User.IsInRole(VaiTroMacDinh.QuanTriVien) || User.IsInRole(VaiTroMacDinh.QuanLyDaoTao);
     var danhSachKhoa = ViewBag.DanhSachKhoa as List<Khoa> ?? new List<Khoa>();
 }
 

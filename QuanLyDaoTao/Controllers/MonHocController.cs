@@ -64,7 +64,7 @@ public class MonHocController : Controller
     /// Hiển thị biểu mẫu thêm mới một môn học.
     /// </summary>
     [HttpGet]
-    [Authorize(Roles = $"{VaiTroMacDinh.SuperAdmin},{VaiTroMacDinh.QuanTriVien},{VaiTroMacDinh.QuanLyDaoTao}")]
+    [Authorize(Roles = $"{VaiTroMacDinh.SuperAdmin},{VaiTroMacDinh.GiaoVien},{VaiTroMacDinh.QuanTriVien},{VaiTroMacDinh.QuanLyDaoTao}")]
     public async Task<IActionResult> ThemMoi()
     {
         ViewBag.DanhSachBoMon = await _boMonDichVu.LayDanhSachAsync(null, null, true, HttpContext.RequestAborted);
@@ -75,7 +75,7 @@ public class MonHocController : Controller
     /// Xử lý lưu thông tin môn học mới.
     /// </summary>
     [HttpPost]
-    [Authorize(Roles = $"{VaiTroMacDinh.SuperAdmin},{VaiTroMacDinh.QuanTriVien},{VaiTroMacDinh.QuanLyDaoTao}")]
+    [Authorize(Roles = $"{VaiTroMacDinh.SuperAdmin},{VaiTroMacDinh.GiaoVien},{VaiTroMacDinh.QuanTriVien},{VaiTroMacDinh.QuanLyDaoTao}")]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> ThemMoi(MonHoc monHoc)
     {
@@ -117,7 +117,7 @@ public class MonHocController : Controller
     /// Hiển thị biểu mẫu chỉnh sửa môn học.
     /// </summary>
     [HttpGet]
-    [Authorize(Roles = $"{VaiTroMacDinh.SuperAdmin},{VaiTroMacDinh.QuanTriVien},{VaiTroMacDinh.QuanLyDaoTao}")]
+    [Authorize(Roles = $"{VaiTroMacDinh.SuperAdmin},{VaiTroMacDinh.GiaoVien},{VaiTroMacDinh.QuanTriVien},{VaiTroMacDinh.QuanLyDaoTao}")]
     public async Task<IActionResult> ChinhSua(int id)
     {
         var monHoc = await _monHocDichVu.LayTheoIdAsync(id, HttpContext.RequestAborted);
@@ -135,7 +135,7 @@ public class MonHocController : Controller
     /// Xử lý cập nhật thông tin môn học.
     /// </summary>
     [HttpPost]
-    [Authorize(Roles = $"{VaiTroMacDinh.SuperAdmin},{VaiTroMacDinh.QuanTriVien},{VaiTroMacDinh.QuanLyDaoTao}")]
+    [Authorize(Roles = $"{VaiTroMacDinh.SuperAdmin},{VaiTroMacDinh.GiaoVien},{VaiTroMacDinh.QuanTriVien},{VaiTroMacDinh.QuanLyDaoTao}")]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> ChinhSua(int id, MonHoc monHoc)
     {
@@ -186,7 +186,7 @@ public class MonHocController : Controller
     /// Xóa môn học khỏi hệ thống nếu không còn phân công.
     /// </summary>
     [HttpPost]
-    [Authorize(Roles = $"{VaiTroMacDinh.SuperAdmin},{VaiTroMacDinh.QuanTriVien},{VaiTroMacDinh.QuanLyDaoTao}")]
+    [Authorize(Roles = $"{VaiTroMacDinh.SuperAdmin},{VaiTroMacDinh.GiaoVien},{VaiTroMacDinh.QuanTriVien},{VaiTroMacDinh.QuanLyDaoTao}")]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> Xoa(int id)
     {

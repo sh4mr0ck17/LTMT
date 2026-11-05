@@ -493,3 +493,37 @@ window.khoiTaoBieuDoDashboard = function (khoasJson, lopsJson) {
         }
     });
 })();
+// ========================================================
+// HỆ THỐNG DEBOUNCE / DELAY CHO TẤT CẢ CÁC Ô TÌM KIẾM (350MS)
+// ========================================================
+(function() {
+    function setupSearchDebounce() {
+        const searchInputs = document.querySelectorAll('input[type="search"], input[name="tuKhoa"], input#txtTimKiem, input#txtTimKiemNhanSu, .input-search-debounce');
+        searchInputs.forEach(input => {
+            if (input._hasDebounce) return;
+            input._hasDebounce = true;
+            let timer = null;
+            input.addEventListener('input', function(e) {
+                clearTimeout(timer);
+                const form = input.closest('form');
+                if (form && !input.getAttribute('oninput') && !input.getAttribute('@oninput')) {
+                    timer = setTimeout(() => {
+                        const submitBtn = form.querySelector('button[type="submit"], #btnTimKiem');
+                        if (submitBtn) {
+                            submitBtn.click();
+                        } else {
+                            form.submit();
+                        }
+                    }, 350);
+                }
+            });
+        });
+    }
+
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', setupSearchDebounce);
+    } else {
+        setupSearchDebounce();
+    }
+    window.addEventListener('load', setupSearchDebounce);
+})();

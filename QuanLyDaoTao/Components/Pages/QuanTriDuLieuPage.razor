@@ -8,36 +8,6 @@
 
 <div class="container-fluid px-4 py-3" id="pnlQuanTriDuLieu">
     <!-- Banner tiêu đề Quản trị DB trực tiếp -->
-    <div class="cand-banner-header p-3 mb-3 d-flex flex-column flex-xl-row justify-content-between align-items-xl-center gap-3">
-        <div class="d-flex align-items-center">
-            <img src="images/logo_badge.png" alt="Logo C500" class="logo-cand-nav me-3" />
-            <div>
-                <div class="d-flex align-items-center gap-2">
-                    <span class="badge badge-cand-gold">BLAZOR LIVE STUDIO</span>
-                    <span class="badge badge-cand-red">FULL DATABASE CRUD (+/- &amp; UNDO/REDO)</span>
-                </div>
-                <h4 class="mb-0 fw-bold text-white mt-1" id="lblTieuDe">
-                    <i class="bi bi-database-fill-gear me-2"></i>TRÌNH QUẢN TRỊ &amp; TÙY BIẾN DỮ LIỆU TRỰC TIẾP: @(duLieuBang?.TenHienThi?.ToUpper() ?? tenBangHienTai.ToUpper())
-                </h4>
-                <small style="color: #F2F0A5;">Thao tác trực tiếp trên giao diện Blazor: Thêm/Bớt <strong>[+] / [-]</strong>, Xóa <strong>Delete</strong>, Tùy biến cột và áp dụng thẳng xuống SQLite DB</small>
-            </div>
-        </div>
-
-        <div class="d-flex flex-wrap gap-2 align-items-center">
-            <button type="button" class="btn btn-warning fw-bold text-dark shadow-sm" id="btnThemDongPlus" @onclick="ThemDongMoi">
-                <i class="bi bi-plus-lg me-1"></i>Thêm Dòng [+]
-            </button>
-            <button type="button" class="btn btn-danger fw-bold shadow-sm" id="btnXoaDongMinus" @onclick="XoaDongCuoi" disabled="@(duLieuBang?.DanhSachDong.Count == 0)">
-                <i class="bi bi-dash-lg me-1"></i>Bớt Dòng Cuối [-]
-            </button>
-            <button type="button" class="btn btn-info fw-bold text-dark shadow-sm" id="btnMoModalTruongTuyChinh" @onclick="() => showModalCustomCols = true">
-                <i class="bi bi-columns-gap me-1"></i>+/- Cột Tùy Chỉnh (@(duLieuBang?.DanhSachTruongTuyChinh.Count ?? 0))
-            </button>
-            <button type="button" class="btn btn-success fw-bold shadow-sm" id="btnLuuTatCaThayDoi" @onclick="LuuTatCa">
-                <i class="bi bi-cloud-check-fill me-1"></i>Lưu Dữ Liệu
-            </button>
-        </div>
-    </div>
 
     <!-- Thanh chuyển đổi giữa 11 nhóm quản lý -->
     <div class="card shadow-sm border-0 mb-3" id="pnlChonNhomQuanLy">
@@ -188,6 +158,28 @@
                             }
                         </tbody>
                     </table>
+                </div>
+                <!-- Thanh công cụ tích hợp trực tiếp ngay bên dưới bảng -->
+                <div class="card-footer bg-white border-top py-3 px-4 d-flex flex-wrap justify-content-between align-items-center gap-2">
+                    <div class="d-flex align-items-center gap-2">
+                        <span class="text-muted small fw-semibold">
+                            <i class="bi bi-info-circle me-1 text-primary"></i>Nhóm DB: <strong>@(duLieuBang?.TenHienThi ?? tenBangHienTai)</strong> • Tổng: <strong>@(duLieuBang?.DanhSachDong.Count ?? 0)</strong> bản ghi
+                        </span>
+                    </div>
+                    <div class="d-flex flex-wrap gap-2 align-items-center">
+                        <button type="button" class="btn btn-warning fw-bold text-dark shadow-sm" id="btnThemDongPlus" @onclick="ThemDongMoi">
+                            <i class="bi bi-plus-lg me-1"></i>Thêm Dòng [+]
+                        </button>
+                        <button type="button" class="btn btn-danger fw-bold shadow-sm" id="btnXoaDongMinus" @onclick="XoaDongCuoi" disabled="@(duLieuBang?.DanhSachDong.Count == 0)">
+                            <i class="bi bi-dash-lg me-1"></i>Bớt Dòng Cuối [-]
+                        </button>
+                        <button type="button" class="btn btn-info fw-bold text-dark shadow-sm" id="btnMoModalTruongTuyChinh" @onclick="() => showModalCustomCols = true">
+                            <i class="bi bi-columns-gap me-1"></i>+/- Cột Tùy Chỉnh (@(duLieuBang?.DanhSachTruongTuyChinh.Count ?? 0))
+                        </button>
+                        <button type="button" class="btn btn-success fw-bold shadow-sm" id="btnLuuTatCaThayDoi" @onclick="LuuTatCa">
+                            <i class="bi bi-cloud-check-fill me-1"></i>Lưu Dữ Liệu
+                        </button>
+                    </div>
                 </div>
             }
         </div>

@@ -3,7 +3,7 @@
 @{
     ViewData["Title"] = "Quản lý Hồ sơ Nhân sự";
     Layout = "_Layout";
-    bool laQuanTri = User.IsInRole(VaiTroMacDinh.QuanTriVien) || User.IsInRole(VaiTroMacDinh.QuanLyDaoTao);
+    bool laQuanTri = User.IsInRole(VaiTroMacDinh.SuperAdmin) || User.IsInRole(VaiTroMacDinh.GiaoVien) || User.IsInRole(VaiTroMacDinh.QuanTriVien) || User.IsInRole(VaiTroMacDinh.QuanLyDaoTao);
     var danhSachKhoa = ViewBag.DanhSachKhoa as List<Khoa> ?? new List<Khoa>();
     var danhSachBoMon = ViewBag.DanhSachBoMon as List<BoMon> ?? new List<BoMon>();
     var danhSachChucVu = ViewBag.DanhSachChucVu as List<ChucVu> ?? new List<ChucVu>();

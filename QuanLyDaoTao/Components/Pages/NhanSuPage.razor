@@ -47,7 +47,7 @@
                     <span class="input-group-text bg-white border-end-0"><i class="bi bi-search text-primary"></i></span>
                     <input type="text" class="form-control border-start-0" id="txtTimKiemNhanSu"
                            placeholder="Tìm theo Mã, Họ tên, CCCD, Email, SĐT, Chứng chỉ, Chuyên môn..."
-                           @bind="tuKhoa" @bind:event="oninput" @onkeyup="LocVaSapXep" />
+                           value="@tuKhoa" @oninput="OnTimKiemChanged" />
                     @if (!string.IsNullOrWhiteSpace(tuKhoa))
                     {
                         <button type="button" class="btn btn-outline-secondary" @onclick="XoaTuKhoa"><i class="bi bi-x"></i></button>
@@ -689,6 +689,22 @@
     private bool CoBoLocDangHoatDong()
     {
         return DemSoTieuChiLoc() > 0 || !string.IsNullOrWhiteSpace(tuKhoa) || truongSapXep != "HoVaTen" || !chieuSapXepTang;
+    }
+
+    private System.Threading.Timer? _debounceTimer;
+
+    private void OnTimKiemChanged(ChangeEventArgs e)
+    {
+        tuKhoa = e.Value?.ToString() ?? "";
+        _debounceTimer?.Dispose();
+        _debounceTimer = new System.Threading.Timer(_ =>
+        {
+            InvokeAsync(() =>
+            {
+                LocVaSapXep();
+                StateHasChanged();
+            });
+        }, null, 350, Timeout.Infinite);
     }
 
     private void XoaTuKhoa()

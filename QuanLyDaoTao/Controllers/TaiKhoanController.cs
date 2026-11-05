@@ -139,19 +139,89 @@ public class TaiKhoanController : Controller
     [AllowAnonymous]
     public IActionResult DangKy(string? duongDanQuayLai = null)
     {
-        TempData["ThongBaoLoi"] = "Chức năng đăng ký tự do đã bị khóa theo quy định C500. Tài khoản chỉ do Quản trị viên cấp phát trong Admin Workspace.";
-        return RedirectToAction("DangNhap", "TaiKhoan", new { duongDanQuayLai });
+        if (User.Identity?.IsAuthenticated == true)
+        {
+            return RedirectToAction("Index", "Home");
+        }
+        return View(new DangKyViewModel { DuongDanQuayLai = duongDanQuayLai });
     }
 
     /// <summary>
-    /// Chặn việc gửi yêu cầu đăng ký tự do từ bên ngoài.
+    /// Xử lý đăng ký tài khoản người dùng mới bảo đảm an toàn thông tin:
+    /// - Xác thực tính toàn vẹn dữ liệu và độ phức tạp mật khẩu
+    /// - Làm sạch dữ liệu đầu vào chống XSS / Script Injection
+    /// - Băm mật khẩu chuẩn PBKDF2 của ASP.NET Core Identity
+    /// - Mặc định gán vai trò User (Chỉ xem) để bảo vệ toàn diện hệ thống
     /// </summary>
     [HttpPost]
     [AllowAnonymous]
-    public IActionResult DangKy(DangKyViewModel moHinh)
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> DangKy(DangKyViewModel moHinh)
     {
-        TempData["ThongBaoLoi"] = "Chức năng đăng ký tự do đã bị khóa theo quy định C500. Tài khoản chỉ do Quản trị viên cấp phát trong Admin Workspace.";
-        return RedirectToAction("DangNhap", "TaiKhoan");
+        ArgumentNullException.ThrowIfNull(moHinh);
+
+        if (!ModelState.IsValid)
+        {
+            return View(moHinh);
+        }
+
+        // 1. Kiểm tra an toàn độ mạnh mật khẩu
+        if (string.IsNullOrWhiteSpace(moHinh.MatKhau) || moHinh.MatKhau.Length < 6)
+        {
+            ModelState.AddModelError(nameof(moHinh.MatKhau), "Mật khẩu phải có độ dài tối thiểu 6 ký tự.");
+            return View(moHinh);
+        }
+
+        // 2. Làm sạch đầu vào (Sanitize)
+        var emailChuan = moHinh.Email.Trim().ToLowerInvariant();
+        var hoTenChuan = System.Net.WebUtility.HtmlEncode(moHinh.HoVaTen.Trim());
+
+        // 3. Kiểm tra email đã tồn tại chưa
+        var emailDaCo = await _userManager.FindByEmailAsync(emailChuan);
+        if (emailDaCo != null)
+        {
+            ModelState.AddModelError(nameof(moHinh.Email), "Địa chỉ email này đã được sử dụng. Vui lòng đăng nhập hoặc dùng email khác.");
+            return View(moHinh);
+        }
+
+        // 4. Khởi tạo tài khoản mới với cờ bảo mật
+        var taiKhoan = new TaiKhoan
+        {
+            UserName = emailChuan,
+            Email = emailChuan,
+            EmailConfirmed = true,
+            HoVaTen = hoTenChuan,
+            PhoneNumber = moHinh.SoDienThoai?.Trim(),
+            CoHoatDong = true,
+            NgayTao = DateTime.UtcNow
+        };
+
+        var ketQua = await _userManager.CreateAsync(taiKhoan, moHinh.MatKhau);
+        if (!ketQua.Succeeded)
+        {
+            foreach (var loi in ketQua.Errors)
+            {
+                ModelState.AddModelError("", loi.Description);
+            }
+            return View(moHinh);
+        }
+
+        // 5. Gán vai trò mặc định: User (Chỉ xem, tuyệt đối an toàn)
+        await _userManager.AddToRoleAsync(taiKhoan, VaiTroMacDinh.NguoiDung);
+
+        // 6. Ghi nhật ký kiểm toán hệ thống
+        await _nhatKyDichVu.GhiNhatKyAsync(
+            emailChuan,
+            "Đăng ký tài khoản",
+            "TaiKhoan",
+            taiKhoan.Id,
+            null,
+            $"Tài khoản {emailChuan} đăng ký với vai trò {VaiTroMacDinh.NguoiDung}",
+            "Thành công",
+            HttpContext.Connection.RemoteIpAddress?.ToString());
+
+        TempData["ThongBaoThanhCong"] = "Đăng ký tài khoản thành công! Bạn có thể đăng nhập ngay để tra cứu thông tin đào tạo.";
+        return RedirectToAction("DangNhap", "TaiKhoan", new { duongDanQuayLai = moHinh.DuongDanQuayLai });
     }
 
     /// <summary>

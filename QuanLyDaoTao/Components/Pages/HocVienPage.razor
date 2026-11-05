@@ -43,8 +43,8 @@
                     <div class="input-group">
                         <span class="input-group-text"><i class="bi bi-search"></i></span>
                         <input type="text" class="form-control" id="txtTimKiem" 
-                               placeholder="Tìm mã, họ tên, email, sđt, dân tộc..." 
-                               @bind="tuKhoa" @bind:event="oninput" @onkeyup="LocDuLieu" />
+                               placeholder="Tìm mã, họ tên, email, sđt, dân tộc, địa chỉ..." 
+                               value="@tuKhoa" @oninput="OnTimKiemChanged" />
                     </div>
                 </div>
                 <div class="col-md-4">
@@ -300,6 +300,22 @@
         catch
         {
         }
+    }
+
+    private System.Threading.Timer? _debounceTimer;
+
+    private void OnTimKiemChanged(ChangeEventArgs e)
+    {
+        tuKhoa = e.Value?.ToString() ?? "";
+        _debounceTimer?.Dispose();
+        _debounceTimer = new System.Threading.Timer(_ =>
+        {
+            InvokeAsync(() =>
+            {
+                LocDuLieu();
+                StateHasChanged();
+            });
+        }, null, 350, Timeout.Infinite);
     }
 
     private string? editingPk;

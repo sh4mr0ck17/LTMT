@@ -3,7 +3,7 @@
 @{
     ViewData["Title"] = $"Chi tiết: {Model.TenKhoa}";
     Layout = "_Layout";
-    bool laQuanTri = User.IsInRole(VaiTroMacDinh.QuanTriVien) || User.IsInRole(VaiTroMacDinh.QuanLyDaoTao);
+    bool laQuanTri = User.IsInRole(VaiTroMacDinh.SuperAdmin) || User.IsInRole(VaiTroMacDinh.GiaoVien) || User.IsInRole(VaiTroMacDinh.QuanTriVien) || User.IsInRole(VaiTroMacDinh.QuanLyDaoTao);
     bool coTheXoa = ViewBag.CoTheXoa as bool? ?? false;
 }
 

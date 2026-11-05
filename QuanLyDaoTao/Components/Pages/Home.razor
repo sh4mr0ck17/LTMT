@@ -20,35 +20,20 @@
     <!-- Thanh Tiêu Đề Không Gian Làm Việc Cá Nhân Hóa -->
     <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center bg-white border rounded-3 px-4 py-3 mb-4 shadow-sm" id="pnlCaNhanHoaWorkspace">
         <div>
-            <div class="d-flex align-items-center gap-2 mb-1">
-                <span class="badge bg-primary px-2 py-1" id="lblWorkspaceRoleBadge">@tenWorkspace</span>
-                @if (hoSoGiangVien != null)
-                {
-                    <span class="badge bg-light text-primary border font-monospace">Mã GV: @hoSoGiangVien.MaNhanSu</span>
-                    <span class="badge bg-light text-dark border">@(hoSoGiangVien.Khoa?.TenKhoa ?? "Học viện C500")</span>
-                }
-            </div>
-            <h5 class="mb-0 fw-bold text-primary" id="lblTieuDeDashboard">
+            <h4 class="mb-0 fw-bold text-primary" id="lblTieuDeDashboard">
                 Xin chào, @hoTenNguoiDung
-            </h5>
-            <span class="text-muted small">@moTaWorkspace</span>
+            </h4>
         </div>
 
         <div class="d-flex flex-wrap gap-2 mt-2 mt-md-0">
             <a href="HoSoCaNhan" class="btn btn-sm btn-outline-primary" id="btnXemProfileNhanh">
                 <i class="bi bi-person-vcard me-1"></i>Hồ Sơ Cá Nhân
             </a>
-            <button type="button" class="btn btn-sm btn-outline-primary" id="btnBatDauTourWorkspace" onclick="window.batDauTourHuongDan()">
-                <i class="bi bi-magic me-1"></i>Hướng Dẫn Làm Quen
-            </button>
-            @if (laSuperAdmin || laAdmin)
-            {
-                <a href="TaiKhoan/TaoMoi" class="btn btn-sm btn-outline-primary" id="btnCapTaiKhoanGv">
-                    <i class="bi bi-person-plus me-1"></i>Tạo TK Giáo Viên / Cán Bộ
-                </a>
-            }
             @if (laSuperAdmin)
             {
+                <a href="TaiKhoan/TaoMoi" class="btn btn-sm btn-outline-primary" id="btnCapTaiKhoanGv">
+                    <i class="bi bi-person-plus me-1"></i>Tạo Tài Khoản
+                </a>
                 <a href="QuanTriDuLieu" class="btn btn-sm btn-primary" id="btnXemStudio">
                     <i class="bi bi-database-fill-gear me-1"></i>Live CRUD Studio
                 </a>

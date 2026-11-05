@@ -51,9 +51,11 @@
                             <i class="bi bi-box-arrow-in-right me-2"></i>ĐĂNG NHẬP HỆ THỐNG
                         </button>
                     </div>
-                    <div class="alert alert-info py-2 px-3 small mt-3 mb-0 border-0 bg-light text-muted text-center" id="lblThongBaoCapQuyen">
-                        <i class="bi bi-shield-lock-fill text-primary me-1"></i>
-                        Hệ thống nội bộ Học viện ANND C500. Tài khoản người dùng do Quản trị viên cấp phát trực tiếp trong Admin Workspace.
+                    <div class="text-center mt-3 pt-3 border-top">
+                        <span class="text-muted small">Chưa có tài khoản truy cập?</span>
+                        <a asp-action="DangKy" asp-route-duongDanQuayLai="@Model.DuongDanQuayLai" class="btn btn-outline-success btn-sm w-100 mt-2 fw-semibold" id="btnChuyenSangDangKy">
+                            <i class="bi bi-person-plus-fill me-1"></i>Đăng ký tài khoản người dùng mới (An toàn &amp; Bảo mật)
+                        </a>
                     </div>
                 </form>
             </div>

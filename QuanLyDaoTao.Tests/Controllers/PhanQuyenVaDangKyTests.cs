@@ -66,21 +66,21 @@ public class PhanQuyenVaDangKyTests : IClassFixture<WebApplicationFactory<Progra
     }
 
     [Fact]
-    public async Task DangKyTuDo_BiKhoa_ChuyenHuongVeDangNhap()
+    public async Task DangKy_HienThiBieuMauDangKyAnToan()
     {
         // Arrange
-        var client = _factory.CreateClient(new WebApplicationFactoryClientOptions
-        {
-            AllowAutoRedirect = false
-        });
+        var client = _factory.CreateClient();
 
-        // Act: Khách cố gắng truy cập đăng ký tự do
+        // Act: Khách truy cập cổng đăng ký an toàn
         var response = await client.GetAsync("/TaiKhoan/DangKy");
 
-        // Assert: Bị khóa đăng ký tự do, chuyển hướng 302 về Đăng nhập
-        Assert.Equal(HttpStatusCode.Redirect, response.StatusCode);
-        Assert.NotNull(response.Headers.Location);
-        Assert.Contains("/TaiKhoan/DangNhap", response.Headers.Location.ToString());
+        // Assert: Trả về HTTP 200 OK và hiển thị phom đăng ký an toàn
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        var html = await response.Content.ReadAsStringAsync();
+        Assert.Contains("pnlDangKy", html);
+        Assert.Contains("btnDangKy", html);
+        Assert.Contains("txtHoVaTen", html);
+        Assert.Contains("txtEmail", html);
     }
     [Fact]
     public async Task DangKy_TaoTaiKhoanThanhCong_TuDongGanRoleNguoiDung()

@@ -17,7 +17,7 @@
             <a href="Excel/XuatDuLieu?module=MonHoc" class="btn btn-outline-primary" id="btnXuatExcel">
                 <i class="bi bi-file-earmark-excel me-1"></i>Xuất Excel
             </a>
-            <AuthorizeView Roles="Superadmin,Admin,DataManager,CanBo">
+            <AuthorizeView Roles="Superadmin,GiaoVien,Admin,DataManager,CanBo">
                 <Authorized>
                     <a href="Excel/TaiTepMau?module=MonHoc" class="btn btn-outline-secondary" id="btnTaiMauExcel">
                         <i class="bi bi-download me-1"></i>Tải Mẫu Excel
@@ -117,7 +117,7 @@
                                             <a href="MonHoc/ChiTiet/@mh.MonHocId" class="btn btn-outline-primary" title="Xem chi tiết" id="btnXem_@mh.MonHocId">
                                                 <i class="bi bi-eye"></i>
                                             </a>
-                                            <AuthorizeView Roles="Superadmin,Admin,DataManager,CanBo">
+                                            <AuthorizeView Roles="Superadmin,GiaoVien,Admin,DataManager,CanBo">
                                                 <Authorized>
                                                     <a href="MonHoc/ChinhSua/@mh.MonHocId" class="btn btn-outline-primary" title="Chỉnh sửa" id="btnSua_@mh.MonHocId">
                                                         <i class="bi bi-pencil"></i>

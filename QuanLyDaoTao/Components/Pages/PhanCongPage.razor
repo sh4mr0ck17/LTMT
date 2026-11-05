@@ -19,7 +19,7 @@
             <a href="Excel/XuatDuLieu?module=PhanCongGiangDay" class="btn btn-outline-primary" id="btnXuatExcel">
                 <i class="bi bi-file-earmark-excel me-1"></i>Xuất Excel
             </a>
-            <AuthorizeView Roles="Superadmin,Admin,DataManager,CanBo">
+            <AuthorizeView Roles="Superadmin,GiaoVien,Admin,DataManager,CanBo">
                 <Authorized>
                     <a href="Excel/TaiTepMau?module=PhanCongGiangDay" class="btn btn-outline-secondary" id="btnTaiMauExcel">
                         <i class="bi bi-download me-1"></i>Tải Mẫu Excel
@@ -88,7 +88,7 @@
                                     </td>
                                     <td><small class="text-muted">@(string.IsNullOrWhiteSpace(pc.GhiChu) ? "-" : pc.GhiChu)</small></td>
                                     <td class="text-center">
-                                        <AuthorizeView Roles="Superadmin,Admin,DataManager,CanBo">
+                                        <AuthorizeView Roles="Superadmin,GiaoVien,Admin,DataManager,CanBo">
                                             <Authorized>
                                                 <div class="btn-group btn-group-sm">
                                                     <a href="PhanCongGiangDay/ChinhSua/@pc.PhanCongId" class="btn btn-outline-primary" id="btnSua_@pc.PhanCongId">

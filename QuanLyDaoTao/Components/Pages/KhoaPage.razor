@@ -18,7 +18,7 @@
             <a href="Excel/XuatDuLieu?module=Khoa" class="btn btn-outline-primary" id="btnXuatExcel">
                 <i class="bi bi-file-earmark-excel me-1"></i>Xuất Excel
             </a>
-            <AuthorizeView Roles="Superadmin,Admin,DataManager,CanBo">
+            <AuthorizeView Roles="Superadmin,GiaoVien,Admin,DataManager,CanBo">
                 <Authorized>
                     <a href="Excel/TaiTepMau?module=Khoa" class="btn btn-outline-secondary" id="btnTaiMauExcel">
                         <i class="bi bi-download me-1"></i>Tải Mẫu Excel
@@ -43,7 +43,7 @@
                         <span class="input-group-text"><i class="bi bi-search"></i></span>
                         <input type="text" class="form-control" id="txtTimKiem" 
                                placeholder="Tìm kiếm theo mã khoa, tên khoa..." 
-                               @bind="tuKhoa" @bind:event="oninput" @onkeyup="LocDuLieu" />
+                               value="@tuKhoa" @oninput="OnTimKiemChanged" />
                     </div>
                 </div>
                 <div class="col-md-3">
@@ -162,7 +162,7 @@
                                                 }
                                                 else
                                                 {
-                                                    <AuthorizeView Roles="Superadmin,Admin,DataManager,CanBo">
+                                                    <AuthorizeView Roles="Superadmin,GiaoVien,Admin,DataManager,CanBo">
                                                         <Authorized>
                                                             <span class="badge bg-light text-dark border p-1 cursor-pointer"
                                                                   @onclick="() => { editingPk = pk; editingField = fieldKey; }"
@@ -185,7 +185,7 @@
                                             <a href="Khoa/ChiTiet/@khoa.KhoaId" class="btn btn-outline-primary" title="Xem chi tiết" id="btnXem_@khoa.KhoaId">
                                                 <i class="bi bi-eye"></i>
                                             </a>
-                                            <AuthorizeView Roles="Superadmin,Admin,DataManager,CanBo">
+                                            <AuthorizeView Roles="Superadmin,GiaoVien,Admin,DataManager,CanBo">
                                                 <Authorized>
                                                     <a href="Khoa/ChinhSua/@khoa.KhoaId" class="btn btn-outline-primary" title="Chỉnh sửa" id="btnSua_@khoa.KhoaId">
                                                         <i class="bi bi-pencil"></i>
@@ -213,6 +213,21 @@
     private List<Khoa>? danhSachHienThi;
     private string tuKhoa = "";
     private bool? coHoatDongLoc = null;
+    private System.Threading.Timer? _debounceTimer;
+
+    private void OnTimKiemChanged(ChangeEventArgs e)
+    {
+        tuKhoa = e.Value?.ToString() ?? "";
+        _debounceTimer?.Dispose();
+        _debounceTimer = new System.Threading.Timer(_ =>
+        {
+            InvokeAsync(() =>
+            {
+                LocDuLieu();
+                StateHasChanged();
+            });
+        }, null, 350, Timeout.Infinite);
+    }
 
     protected override async Task OnInitializedAsync()
     {
